@@ -1,0 +1,129 @@
+/* 主窗口样式 */
+QMainWindow {
+    background-color: #f8f9fa;
+    font-family: "Microsoft YaHei UI", "Segoe UI", Arial, sans-serif;
+}
+
+/* 标题样式 */
+QLabel#titleLabel {
+    font-size: 24px;
+    font-weight: bold;
+    color: #2c3e50;
+    margin: 20px;
+}
+
+/* 按钮样式 */
+QPushButton {
+    background-color: #3498db;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    font-size: 12px;
+    border-radius: 4px;
+    font-weight: bold;
+}
+
+QPushButton:hover {
+    background-color: #2980b9;
+}
+
+QPushButton:pressed {
+    background-color: #21618c;
+}
+
+QPushButton:disabled {
+    background-color: #bdc3c7;
+    color: #7f8c8d;
+}
+
+/* 开始项目按钮 */
+QPushButton#startProjectButton {
+    background-color: #3498db;
+}
+
+QPushButton#startProjectButton:hover {
+    background-color: #2980b9;
+}
+
+/* 生成代码按钮 */
+QPushButton#generateCodeButton {
+    background-color: #27ae60;
+}
+
+QPushButton#generateCodeButton:hover {
+    background-color: #229954;
+}
+
+/* 下拉框样式 */
+QComboBox {
+    background-color: white;
+    border: 2px solid #bdc3c7;
+    border-radius: 4px;
+    padding: 5px;
+    font-size: 12px;
+    min-width: 200px;
+}
+
+QComboBox:hover {
+    border-color: #3498db;
+}
+
+QComboBox::drop-down {
+    border: none;
+    width: 20px;
+}
+
+QComboBox::down-arrow {
+    image: url(:/icons/arrow_down.png);
+    width: 12px;
+    height: 12px;
+}
+
+/* 滚动区域样式 */
+QScrollArea {
+    background-color: transparent;
+    border: none;
+}
+
+/* 芯片容器样式 */
+QWidget#chipContainer {
+    background-color: #ecf0f1;
+    border: 2px solid #bdc3c7;
+    border-radius: 8px;
+}
+
+/* 引脚部件样式 */
+PinWidget {
+    background-color: transparent;
+    border: none;
+}
+
+/* 菜单样式 */
+QMenu {
+    background-color: white;
+    border: 1px solid #bdc3c7;
+    border-radius: 4px;
+    padding: 4px;
+}
+
+QMenu::item {
+    padding: 6px 12px;
+    border-radius: 2px;
+}
+
+QMenu::item:selected {
+    background-color: #3498db;
+    color: white;
+}
+
+QMenu::item:checked {
+    background-color: #2ecc71;
+    color: white;
+}
+
+/* 状态栏样式 */
+QStatusBar {
+    background-color: #34495e;
+    color: white;
+    border-top: 1px solid #2c3e50;
+}
