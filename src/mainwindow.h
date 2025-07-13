@@ -38,6 +38,10 @@ private:
     void createQFNLayout();
     void createBGALayout();
     void clearPinLayout();
+    
+    // 引脚名称映射：BGA位置 -> 实际PAD名称
+    QString mapPinName(const QString& bgaPosition) const;
+    void initializePinNameMappings();
 
     // UI Components
     QWidget *m_centralWidget;
@@ -61,6 +65,9 @@ private:
     QString m_selectedChip;
     QMap<QString, PinWidget*> m_pinWidgets;
     CodeGenerator m_codeGenerator;
+    
+    // BGA位置到PAD名称的映射表
+    QMap<QString, QString> m_pinNameMappings;
 };
 
 #endif // MAINWINDOW_H

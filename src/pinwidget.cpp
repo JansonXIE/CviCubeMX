@@ -11,16 +11,21 @@ PinWidget::PinWidget(const QString& pinName, bool isSquare, QWidget *parent)
     // 设置基本属性
     setMinimumSize(25, 25);
     setMaximumSize(25, 25);
-    setToolTip(QString("%1 - %2").arg(m_pinName, m_function));
     
-    // 初始化可用功能
-    m_functions << "GPIO" << "ADC" << "I2C" << "UART" << "SPI" << "PWM" << "Timer";
+    // 初始化显示名称为引脚名称
+    m_displayName = m_pinName;
+    
+    // 初始化引脚功能
+    initializePinFunctions();
     
     // 设置上下文菜单
     setupContextMenu();
     
     // 更新按钮样式
     updateButtonStyle();
+    
+    // 更新悬浮提示
+    updateTooltip();
 }
 
 void PinWidget::setFunction(const QString& function)
@@ -28,7 +33,7 @@ void PinWidget::setFunction(const QString& function)
     if (m_functions.contains(function)) {
         m_function = function;
         updateButtonStyle();
-        setToolTip(QString("%1 - %2").arg(m_pinName, m_function));
+        updateTooltip();
         emit functionChanged(m_pinName, m_function);
     }
 }
@@ -43,6 +48,37 @@ QString PinWidget::getPinName() const
     return m_pinName;
 }
 
+void PinWidget::setDisplayName(const QString& displayName)
+{
+    m_displayName = displayName;
+    updateTooltip();
+}
+
+QString PinWidget::getDisplayName() const
+{
+    return m_displayName;
+}
+
+void PinWidget::setSupportedFunctions(const QStringList& functions)
+{
+    m_functions = functions;
+    
+    // 如果当前功能不在支持列表中，设置为默认功能
+    if (!m_functions.contains(m_function)) {
+        m_function = m_pinFunction.getDefaultFunction(m_pinName);
+    }
+    
+    // 重新设置上下文菜单
+    setupContextMenu();
+    updateButtonStyle();
+    updateTooltip();
+}
+
+QStringList PinWidget::getSupportedFunctions() const
+{
+    return m_functions;
+}
+
 void PinWidget::paintEvent(QPaintEvent *event)
 {
     QPainter painter(this);
@@ -50,22 +86,36 @@ void PinWidget::paintEvent(QPaintEvent *event)
     
     // 获取颜色
     QColor color;
-    if (m_function == "GPIO") {
-        color = QColor("#95a5a6");
-    } else if (m_function == "ADC") {
-        color = QColor("#e74c3c");
-    } else if (m_function == "I2C") {
-        color = QColor("#3498db");
-    } else if (m_function == "UART") {
-        color = QColor("#2ecc71");
-    } else if (m_function == "SPI") {
-        color = QColor("#f39c12");
-    } else if (m_function == "PWM") {
-        color = QColor("#9b59b6");
-    } else if (m_function == "Timer") {
-        color = QColor("#e67e22");
+    if (m_function == "GPIO" || m_function.startsWith("XGPIO")) {
+        color = QColor("#95a5a6");  // 灰色
+    } else if (m_function == "ADC" || m_function.contains("ADC")) {
+        color = QColor("#e74c3c");  // 红色
+    } else if (m_function == "I2C" || m_function.contains("IIC")) {
+        color = QColor("#3498db");  // 蓝色
+    } else if (m_function == "UART" || m_function.contains("UART")) {
+        color = QColor("#2ecc71");  // 绿色
+    } else if (m_function == "SPI" || m_function.contains("SPI")) {
+        color = QColor("#f39c12");  // 橙色
+    } else if (m_function == "PWM" || m_function.contains("PWM")) {
+        color = QColor("#9b59b6");  // 紫色
+    } else if (m_function == "Timer" || m_function.contains("TIMER")) {
+        color = QColor("#e67e22");  // 棕色
+    } else if (m_function.contains("CAM")) {
+        color = QColor("#1abc9c");  // 青绿色 - 摄像头接口
+    } else if (m_function.contains("AUX")) {
+        color = QColor("#f1c40f");  // 黄色 - 辅助接口
+    } else if (m_function.contains("DBG")) {
+        color = QColor("#8e44ad");  // 深紫色 - 调试接口
+    } else if (m_function.contains("MIPI")) {
+        color = QColor("#e91e63");  // 粉色 - MIPI接口
+    } else if (m_function.contains("VI") || m_function.contains("VO")) {
+        color = QColor("#ff5722");  // 深橙色 - 视频接口
+    } else if (m_function.contains("SD")) {
+        color = QColor("#607d8b");  // 蓝灰色 - SD卡接口
+    } else if (m_function.contains("PAD")) {
+        color = QColor("#795548");  // 棕色 - PAD接口
     } else {
-        color = QColor("#95a5a6");
+        color = QColor("#95a5a6");  // 默认灰色
     }
     
     // 绘制形状
@@ -136,4 +186,21 @@ void PinWidget::updateButtonStyle()
 {
     // 强制重绘
     update();
+}
+
+void PinWidget::initializePinFunctions()
+{
+    // 获取该引脚支持的功能列表
+    m_functions = m_pinFunction.getSupportedFunctions(m_pinName);
+    
+    // 设置默认功能
+    m_function = m_pinFunction.getDefaultFunction(m_pinName);
+}
+
+void PinWidget::updateTooltip()
+{
+    // 格式："显示名称 - 实际引脚名称"
+    // 例如："A2 - PAD_MIPI_TXM4"
+    QString tooltip = QString("%1 - %2").arg(m_displayName, m_pinName);
+    setToolTip(tooltip);
 }

@@ -14,6 +14,7 @@ set(SOURCES
     src/chipconfig.cpp
     src/pinwidget.cpp
     src/codegenerator.cpp
+    src/pinfunction.cpp
 )
 
 set(HEADERS
@@ -21,6 +22,9 @@ set(HEADERS
     src/chipconfig.h
     src/pinwidget.h
     src/codegenerator.h
+    include/pinfunction.h
+    include/pinmux.h
+    include/cvi_board_init.h
 )
 
 set(UI_FILES

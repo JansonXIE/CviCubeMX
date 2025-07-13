@@ -6,6 +6,7 @@
 #include <QMap>
 #include <QDateTime>
 #include "chipconfig.h"
+#include "pinfunction.h"
 
 class CodeGenerator
 {
@@ -23,6 +24,7 @@ private:
     QString getPinMuxName(const QString& pinName, const QString& function);
     
     QMap<QString, QString> m_functionMacros;
+    PinFunction m_pinFunction;
     void initializeFunctionMacros();
 };
 

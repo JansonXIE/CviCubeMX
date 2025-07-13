@@ -21,6 +21,9 @@ MainWindow::MainWindow(QWidget *parent)
 {
     setupUI();
     
+    // 初始化引脚名称映射
+    initializePinNameMappings();
+    
     // 设置窗口属性
     setWindowTitle("CviCubeMX - 芯片引脚配置工具");
     setMinimumSize(1024, 768);
@@ -222,6 +225,10 @@ void MainWindow::createQFNLayout()
         if (pinNumber <= totalPins) {
             QString pinName = QString("%1").arg(pinNumber);
             PinWidget *pinWidget = new PinWidget(pinName, true, this); // true表示方形
+            
+            // QFN的显示名称就是引脚编号，所以设置为相同
+            pinWidget->setDisplayName(pinName);
+            
             connect(pinWidget, &PinWidget::functionChanged, this, &MainWindow::onPinFunctionChanged);
             m_pinLayout->addWidget(pinWidget, i, 0);
             m_pinWidgets[pinName] = pinWidget;
@@ -234,6 +241,10 @@ void MainWindow::createQFNLayout()
         if (pinNumber <= totalPins) {
             QString pinName = QString("%1").arg(pinNumber);
             PinWidget *pinWidget = new PinWidget(pinName, true, this);
+            
+            // QFN的显示名称就是引脚编号，所以设置为相同
+            pinWidget->setDisplayName(pinName);
+            
             connect(pinWidget, &PinWidget::functionChanged, this, &MainWindow::onPinFunctionChanged);
             m_pinLayout->addWidget(pinWidget, gridSize - 1, i);
             m_pinWidgets[pinName] = pinWidget;
@@ -246,6 +257,10 @@ void MainWindow::createQFNLayout()
         if (pinNumber <= totalPins) {
             QString pinName = QString("%1").arg(pinNumber);
             PinWidget *pinWidget = new PinWidget(pinName, true, this);
+            
+            // QFN的显示名称就是引脚编号，所以设置为相同
+            pinWidget->setDisplayName(pinName);
+            
             connect(pinWidget, &PinWidget::functionChanged, this, &MainWindow::onPinFunctionChanged);
             m_pinLayout->addWidget(pinWidget, i, gridSize - 1);
             m_pinWidgets[pinName] = pinWidget;
@@ -258,6 +273,10 @@ void MainWindow::createQFNLayout()
         if (pinNumber <= totalPins) {
             QString pinName = QString("%1").arg(pinNumber);
             PinWidget *pinWidget = new PinWidget(pinName, true, this);
+            
+            // QFN的显示名称就是引脚编号，所以设置为相同
+            pinWidget->setDisplayName(pinName);
+            
             connect(pinWidget, &PinWidget::functionChanged, this, &MainWindow::onPinFunctionChanged);
             m_pinLayout->addWidget(pinWidget, 0, i);
             m_pinWidgets[pinName] = pinWidget;
@@ -308,12 +327,21 @@ void MainWindow::createBGALayout()
             
             // 生成BGA引脚名称，如A1, A2, B1, B2等
             QString rowLabel = (row < rowLabels.size()) ? rowLabels[row] : QString("R%1").arg(row);
-            QString pinName = QString("%1%2").arg(rowLabel).arg(col + 1);
+            QString bgaPosition = QString("%1%2").arg(rowLabel).arg(col + 1);
             
-            PinWidget *pinWidget = new PinWidget(pinName, false, this); // false表示圆形
+            // 映射到实际的PAD名称
+            QString actualPinName = mapPinName(bgaPosition);
+            
+            PinWidget *pinWidget = new PinWidget(actualPinName, false, this); // false表示圆形
+            
+            // 设置显示名称为BGA位置
+            pinWidget->setDisplayName(bgaPosition);
+            
             connect(pinWidget, &PinWidget::functionChanged, this, &MainWindow::onPinFunctionChanged);
             m_pinLayout->addWidget(pinWidget, startRow + row, startCol + col);
-            m_pinWidgets[pinName] = pinWidget;
+            
+            // 使用BGA位置作为key，但引脚显示实际名称
+            m_pinWidgets[bgaPosition] = pinWidget;
             pinIndex++;
         }
     }
@@ -370,4 +398,23 @@ void MainWindow::onGenerateCode()
             QMessageBox::critical(this, "错误", "无法保存文件!");
         }
     }
+}
+
+void MainWindow::initializePinNameMappings()
+{
+    // 初始化BGA位置到PAD名称的映射表
+    // 添加特定引脚的映射关系
+    m_pinNameMappings["A2"] = "PAD_MIPI_TXM4";
+    
+    // 可以在这里添加更多引脚映射
+    // m_pinNameMappings["B3"] = "PAD_MIPI_TXP4";
+    // m_pinNameMappings["C4"] = "PAD_CAM_MCLK0";
+    // 等等...
+}
+
+QString MainWindow::mapPinName(const QString& bgaPosition) const
+{
+    // 如果存在映射关系，返回映射的PAD名称
+    // 否则返回原始的BGA位置名称
+    return m_pinNameMappings.value(bgaPosition, bgaPosition);
 }

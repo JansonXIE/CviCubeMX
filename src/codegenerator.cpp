@@ -14,14 +14,11 @@ QString CodeGenerator::generateCode(const ChipConfig& config)
     code += generateHeader();
     
     // 生成包含文件
-    code += "\n#include \"cvi_board_init.h\"\n";
-    code += "#include \"pinmux.h\"\n\n";
+    // code += "\n#include \"cvi_board_init.h\"\n";
+    // code += "#include \"pinmux.h\"\n\n";
     
     // 生成引脚复用函数
     code += generatePinmuxFunction(config);
-    
-    // 生成文件尾
-    code += generateFooter();
     
     return code;
 }
@@ -49,7 +46,7 @@ QString CodeGenerator::generatePinmuxFunction(const ChipConfig& config)
     function += " * @brief Initialize board pin multiplexing\n";
     function += QString(" * @note Generated for chip: %1\n").arg(config.getChipType());
     function += " */\n";
-    function += "void cvi_board_init(void)\n";
+    function += "int cvi_board_init(void)\n";
     function += "{\n";
     
     // 添加芯片类型注释
@@ -91,7 +88,7 @@ QString CodeGenerator::generatePinmuxFunction(const ChipConfig& config)
         
         for (const QString& pinName : pins) {
             QString pinmuxMacro = getPinMuxName(pinName, funcName);
-            function += QString("    PINMUX(%1, %2);\n").arg(pinName, pinmuxMacro);
+            function += QString("    PINMUX_CONFIG(%1, %2);\n").arg(pinName, pinmuxMacro);
         }
         function += "\n";
     }
@@ -107,107 +104,108 @@ QString CodeGenerator::generatePinmuxFunction(const ChipConfig& config)
     return function;
 }
 
-QString CodeGenerator::generateFooter()
-{
-    QString footer;
-    
-    footer += "\n/**\n";
-    footer += " * @brief Get board initialization status\n";
-    footer += " * @return Board initialization status\n";
-    footer += " */\n";
-    footer += "int cvi_board_init_status(void)\n";
-    footer += "{\n";
-    footer += "    // Return board initialization status\n";
-    footer += "    return 0; // Success\n";
-    footer += "}\n";
-    
-    return footer;
-}
-
 QString CodeGenerator::getPinMuxName(const QString& pinName, const QString& function)
 {
-    // 根据引脚名称和功能生成PINMUX宏名称
-    QString basePinName = pinName;
+    // 使用新的引脚功能系统获取宏名称
+    QString macroName = m_pinFunction.getFunctionMacroName(pinName, function);
     
-    // 处理新的引脚命名方式
-    if (basePinName.startsWith("PIN_")) {
-        // 旧的PIN_数字格式
-        int pinNumber = basePinName.mid(4).toInt();
-        if (pinNumber <= 32) {
-            basePinName = QString("GPIOA%1").arg(pinNumber - 1);
-        } else {
-            basePinName = QString("GPIOB%1").arg(pinNumber - 33);
-        }
-    } else if (basePinName.contains(QRegularExpression("^[A-R]\\d+$"))) {
-        // BGA格式：A1, B2, 等
-        QChar rowChar = basePinName[0];
-        int colNumber = basePinName.mid(1).toInt();
+    // 如果没有找到特定的宏名称，使用通用的处理方式
+    if (macroName == function.toUpper()) {
+        // 根据引脚名称和功能生成PINMUX宏名称
+        QString basePinName = pinName;
         
-        // 将BGA坐标转换为GPIO编号
-        // 这里使用简化映射，实际项目中需要根据具体芯片规格书映射
-        int rowIndex = rowChar.toLatin1() - 'A';
-        if (rowChar >= 'J') rowIndex--; // 跳过I
-        
-        int gpioNumber = rowIndex * 15 + (colNumber - 1);
-        
-        if (gpioNumber < 64) {
-            basePinName = QString("GPIOA%1").arg(gpioNumber);
-        } else {
-            basePinName = QString("GPIOB%1").arg(gpioNumber - 64);
+        // 处理新的引脚命名方式
+        if (basePinName.startsWith("PIN_")) {
+            // 旧的PIN_数字格式
+            int pinNumber = basePinName.mid(4).toInt();
+            if (pinNumber <= 32) {
+                basePinName = QString("GPIOA%1").arg(pinNumber - 1);
+            } else {
+                basePinName = QString("GPIOB%1").arg(pinNumber - 33);
+            }
+        } else if (basePinName.contains(QRegularExpression("^[A-R]\\d+$"))) {
+            // BGA格式：A1, B2, 等
+            QChar rowChar = basePinName[0];
+            int colNumber = basePinName.mid(1).toInt();
+            
+            // 将BGA坐标转换为GPIO编号
+            // 这里使用简化映射，实际项目中需要根据具体芯片规格书映射
+            int rowIndex = rowChar.toLatin1() - 'A';
+            if (rowChar >= 'J') rowIndex--; // 跳过I
+            
+            int gpioNumber = rowIndex * 15 + (colNumber - 1);
+            
+            if (gpioNumber < 64) {
+                basePinName = QString("GPIOA%1").arg(gpioNumber);
+            } else {
+                basePinName = QString("GPIOB%1").arg(gpioNumber - 64);
+            }
+        } else if (basePinName.contains(QRegularExpression ("^\\d+$"))) {
+            // QFN格式：纯数字
+            int pinNumber = basePinName.toInt();
+            if (pinNumber <= 32) {
+                basePinName = QString("GPIOA%1").arg(pinNumber - 1);
+            } else {
+                basePinName = QString("GPIOB%1").arg(pinNumber - 33);
+            }
         }
-    } else if (basePinName.contains(QRegularExpression ("^\\d+$"))) {
-        // QFN格式：纯数字
-        int pinNumber = basePinName.toInt();
-        if (pinNumber <= 32) {
-            basePinName = QString("GPIOA%1").arg(pinNumber - 1);
-        } else {
-            basePinName = QString("GPIOB%1").arg(pinNumber - 33);
+        
+        // 如果是特定功能，直接返回功能宏名称
+        if (function.contains("CAM_") || function.contains("AUX") || 
+            function.contains("DBG_") || function.contains("XGPIO") ||
+            function.contains("PAD_") || function.contains("VI") ||
+            function.contains("VO") || function.contains("SD") ||
+            function.contains("MIPI") || function.contains("PWM_") ||
+            function.contains("IIC")) {
+            return function;
         }
+        
+        // 生成通用功能宏名称
+        QString functionMacro;
+        if (function == "I2C") {
+            // I2C功能需要区分SDA和SCL
+            static int i2cIndex = 0;
+            if (i2cIndex % 2 == 0) {
+                functionMacro = QString("IIC%1_SDA").arg(i2cIndex / 2);
+            } else {
+                functionMacro = QString("IIC%1_SCL").arg(i2cIndex / 2);
+            }
+            i2cIndex++;
+        } else if (function == "UART") {
+            // UART功能需要区分TX和RX
+            static int uartIndex = 0;
+            if (uartIndex % 2 == 0) {
+                functionMacro = QString("UART%1_TX").arg(uartIndex / 2);
+            } else {
+                functionMacro = QString("UART%1_RX").arg(uartIndex / 2);
+            }
+            uartIndex++;
+        } else if (function == "SPI") {
+            // SPI功能需要区分不同信号线
+            static int spiIndex = 0;
+            QStringList spiSignals = {"CLK", "MOSI", "MISO", "CS"};
+            functionMacro = QString("SPI%1_%2").arg(spiIndex / 4).arg(spiSignals[spiIndex % 4]);
+            spiIndex++;
+        } else if (function == "ADC") {
+            static int adcIndex = 0;
+            functionMacro = QString("ADC%1").arg(adcIndex);
+            adcIndex++;
+        } else if (function == "PWM") {
+            static int pwmIndex = 0;
+            functionMacro = QString("PWM%1").arg(pwmIndex);
+            pwmIndex++;
+        } else if (function == "Timer") {
+            static int timerIndex = 0;
+            functionMacro = QString("TIMER%1").arg(timerIndex);
+            timerIndex++;
+        } else {
+            functionMacro = function.toUpper();
+        }
+        
+        return functionMacro;
     }
     
-    // 生成功能宏名称
-    QString functionMacro;
-    if (function == "I2C") {
-        // I2C功能需要区分SDA和SCL
-        static int i2cIndex = 0;
-        if (i2cIndex % 2 == 0) {
-            functionMacro = QString("IIC%1_SDA").arg(i2cIndex / 2);
-        } else {
-            functionMacro = QString("IIC%1_SCL").arg(i2cIndex / 2);
-        }
-        i2cIndex++;
-    } else if (function == "UART") {
-        // UART功能需要区分TX和RX
-        static int uartIndex = 0;
-        if (uartIndex % 2 == 0) {
-            functionMacro = QString("UART%1_TX").arg(uartIndex / 2);
-        } else {
-            functionMacro = QString("UART%1_RX").arg(uartIndex / 2);
-        }
-        uartIndex++;
-    } else if (function == "SPI") {
-        // SPI功能需要区分不同信号线
-        static int spiIndex = 0;
-        QStringList spiSignals = {"CLK", "MOSI", "MISO", "CS"};
-        functionMacro = QString("SPI%1_%2").arg(spiIndex / 4).arg(spiSignals[spiIndex % 4]);
-        spiIndex++;
-    } else if (function == "ADC") {
-        static int adcIndex = 0;
-        functionMacro = QString("ADC%1").arg(adcIndex);
-        adcIndex++;
-    } else if (function == "PWM") {
-        static int pwmIndex = 0;
-        functionMacro = QString("PWM%1").arg(pwmIndex);
-        pwmIndex++;
-    } else if (function == "Timer") {
-        static int timerIndex = 0;
-        functionMacro = QString("TIMER%1").arg(timerIndex);
-        timerIndex++;
-    } else {
-        functionMacro = function.toUpper();
-    }
-    
-    return functionMacro;
+    return macroName;
 }
 
 void CodeGenerator::initializeFunctionMacros()
