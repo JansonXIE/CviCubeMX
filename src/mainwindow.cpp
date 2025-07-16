@@ -450,8 +450,8 @@ void MainWindow::initializePinNameMappings()
     m_pinNameMappings["A2"] = "PAD_MIPI_TXM4";
     m_pinNameMappings["A4"] = "PAD_MIPIRX0N";
     m_pinNameMappings["B1"] = "PAD_MIPI_TXP3";
-    m_pinNameMappings["B2"] = "PAD_UART0_TX";
     m_pinNameMappings["C4"] = "PAD_CAM_MCLK0";
+    m_pinNameMappings["L15"] = "UART2_RTS";
     m_pinNameMappings["M5"] = "PAD_PWM0";
     
     // QFN引脚映射（数字格式）

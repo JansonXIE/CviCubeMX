@@ -73,40 +73,40 @@ void PinFunction::initializePinFunctions()
     m_functionMacros["PWM_15"] = "PWM_15";
     m_functionMacros["IIC1_SCL"] = "IIC1_SCL";
 
-    // C4 引脚功能定义
-    m_pinFunctions["C4"] = QStringList() << "CAM_MCLK0" << "AUX1" << "XGPIOA_0";
-    m_defaultFunctions["C4"] = "CAM_MCLK0";
-    m_functionMacros["C4_CAM_MCLK0"] = "CAM_MCLK0";
-    m_functionMacros["C4_AUX1"] = "AUX1";
-    m_functionMacros["C4_XGPIOA_0"] = "XGPIOA_0";
+    // C1 引脚功能定义 Pin name: PAD_CAM_MCLK0
+    m_pinFunctions["PAD_CAM_MCLK0"] = QStringList() << "CAM_MCLK0" << "AUX1" << "XGPIOA_0";
+    m_defaultFunctions["PAD_CAM_MCLK0"] = "CAM_MCLK0";
+    m_functionMacros["CAM_MCLK0"] = "CAM_MCLK0";
+    m_functionMacros["AUX1"] = "AUX1";
+    m_functionMacros["XGPIOA_0"] = "XGPIOA_0";
+
+    // L15 引脚功能定义 Pin name: UART2_RTS
+    // 引脚名称使用实际的PAD名称
+    m_pinFunctions["UART2_RTS"] = QStringList() << "UART2_RTS" << "PWM_8" << "PWR_GPIO_15" 
+                                        << "KEY_ROW0" << "UART4_RTS" << "IIS2_DO" 
+                                        << "WG1_D0";
+    m_defaultFunctions["UART2_RTS"] = "PWR_GPIO_15";  // 默认功能 (function select 3)
+    // 功能宏映射
+    m_functionMacros["UART2_RTS"] = "UART2_RTS";
+    m_functionMacros["PWM_8"] = "PWM_8";
+    m_functionMacros["PWR_GPIO_15"] = "PWR_GPIO_15";
+    m_functionMacros["KEY_ROW0"] = "KEY_ROW0";
+    m_functionMacros["UART4_RTS"] = "UART4_RTS";
+    m_functionMacros["IIS2_DO"] = "IIS2_DO";
+    m_functionMacros["WG1_D0"] = "WG1_D0";
     
-    // M5 引脚功能定义
-    m_pinFunctions["M5"] = QStringList() << "UART0_TX" << "CAM_MCLK1" << "PWM_4" 
+    // M5 引脚功能定义 Pin name: PAD_PWM0
+    m_pinFunctions["PAD_PWM0"] = QStringList() << "UART0_TX" << "CAM_MCLK1" << "PWM_4" 
                                         << "XGPIOA_16" << "UART1_TX" << "AUX1" << "DBG_6";
-    m_defaultFunctions["M5"] = "UART0_TX";
-    m_functionMacros["M5_UART0_TX"] = "UART0_TX";
-    m_functionMacros["M5_CAM_MCLK1"] = "CAM_MCLK1";
-    m_functionMacros["M5_PWM_4"] = "PWM_4";
-    m_functionMacros["M5_XGPIOA_16"] = "XGPIOA_16";
-    m_functionMacros["M5_UART1_TX"] = "UART1_TX";
-    m_functionMacros["M5_AUX1"] = "AUX1";
-    m_functionMacros["M5_DBG_6"] = "DBG_6";
+    m_defaultFunctions["PAD_PWM0"] = "UART0_TX";
+    m_functionMacros["UART0_TX"] = "UART0_TX";
+    m_functionMacros["CAM_MCLK1"] = "CAM_MCLK1";
+    m_functionMacros["PWM_4"] = "PWM_4";
+    m_functionMacros["XGPIOA_16"] = "XGPIOA_16";
+    m_functionMacros["UART1_TX"] = "UART1_TX";
+    m_functionMacros["AUX1"] = "AUX1";
+    m_functionMacros["DBG_6"] = "DBG_6";
     
-    // B1 引脚功能定义
-    m_pinFunctions["B1"] = QStringList() << "XGPIOA_3" << "IIC1_SDA" << "UART1_RX" << "SPI0_MISO";
-    m_defaultFunctions["B1"] = "XGPIOA_3";
-    m_functionMacros["B1_XGPIOA_3"] = "B1_XGPIOA_3";
-    m_functionMacros["B1_IIC1_SDA"] = "B1_IIC1_SDA";
-    m_functionMacros["B1_UART1_RX"] = "B1_UART1_RX";
-    m_functionMacros["B1_SPI0_MISO"] = "B1_SPI0_MISO";
-    
-    // B2 引脚功能定义
-    m_pinFunctions["B2"] = QStringList() << "XGPIOA_4" << "IIC1_SCL" << "UART1_TX" << "SPI0_MOSI";
-    m_defaultFunctions["B2"] = "XGPIOA_4";
-    m_functionMacros["B2_XGPIOA_4"] = "B2_XGPIOA_4";
-    m_functionMacros["B2_IIC1_SCL"] = "B2_IIC1_SCL";
-    m_functionMacros["B2_UART1_TX"] = "B2_UART1_TX";
-    m_functionMacros["B2_SPI0_MOSI"] = "B2_SPI0_MOSI";
     
     // 为其他引脚添加基本功能支持（可以根据需要扩展）
     QStringList basicFunctions = QStringList() << "GPIO" << "ADC" << "PWM" << "I2C" << "UART" << "SPI";
