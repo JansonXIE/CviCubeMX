@@ -35,14 +35,14 @@ void PinFunction::initializePinFunctions()
                                         << "IIC1_SDA" << "DBG_18";
     m_defaultFunctions["PAD_MIPI_TXM4"] = "XGPIOC_18";  // 默认功能 (function select 3)
     // 功能宏映射
-    m_functionMacros["PAD_MIPI_TXM4_XGPIOC_18"] = "XGPIOC_18";
-    m_functionMacros["PAD_MIPI_TXM4_VI0_D_15"] = "VI0_D_15";
-    m_functionMacros["PAD_MIPI_TXM4_SD1_CLK"] = "SD1_CLK";
-    m_functionMacros["PAD_MIPI_TXM4_VO_D_24"] = "VO_D_24";
-    m_functionMacros["PAD_MIPI_TXM4_CAM_MCLK1"] = "CAM_MCLK1";
-    m_functionMacros["PAD_MIPI_TXM4_PWM_12"] = "PWM_12";
-    m_functionMacros["PAD_MIPI_TXM4_IIC1_SDA"] = "IIC1_SDA";
-    m_functionMacros["PAD_MIPI_TXM4_DBG_18"] = "DBG_18";
+    m_functionMacros["XGPIOC_18"] = "XGPIOC_18";
+    m_functionMacros["VI0_D_15"] = "VI0_D_15";
+    m_functionMacros["SD1_CLK"] = "SD1_CLK";
+    m_functionMacros["VO_D_24"] = "VO_D_24";
+    m_functionMacros["CAM_MCLK1"] = "CAM_MCLK1";
+    m_functionMacros["PWM_12"] = "PWM_12";
+    m_functionMacros["IIC1_SDA"] = "IIC1_SDA";
+    m_functionMacros["DBG_18"] = "DBG_18";
     // A4 引脚功能定义（Pin name: PAD_MIPIRX0N）
     // 引脚名称使用实际的PAD名称
     m_pinFunctions["PAD_MIPIRX0N"] = QStringList() << "VI0_D_7" << "VO_D_6" << "XGPIOC_10" 
@@ -50,13 +50,28 @@ void PinFunction::initializePinFunctions()
                                         << "DBG_10";
     m_defaultFunctions["PAD_MIPIRX0N"] = "XGPIOC_10";  // 默认功能 (function select 3)
     // 功能宏映射
-    m_functionMacros["PAD_MIPIRX0N_VI0_D_7"] = "VI0_D_7";
-    m_functionMacros["PAD_MIPIRX0N_VO_D_6"] = "VO_D_6";
-    m_functionMacros["PAD_MIPIRX0N_XGPIOC_10"] = "XGPIOC_10";
-    m_functionMacros["PAD_MIPIRX0N_IIC1_SCL"] = "IIC1_SCL";
-    m_functionMacros["PAD_MIPIRX0N_CAM_MCLK1"] = "CAM_MCLK1";
-    m_functionMacros["PAD_MIPIRX0N_PWM_OFF_0"] = "PWM_OFF_0";
-    m_functionMacros["PAD_MIPIRX0N_DBG_10"] = "DBG_10";
+    m_functionMacros["VI0_D_7"] = "VI0_D_7";
+    m_functionMacros["VO_D_6"] = "VO_D_6";
+    m_functionMacros["XGPIOC_10"] = "XGPIOC_10";
+    m_functionMacros["IIC1_SCL"] = "IIC1_SCL";
+    m_functionMacros["CAM_MCLK1"] = "CAM_MCLK1";
+    m_functionMacros["PWM_OFF_0"] = "PWM_OFF_0";
+    m_functionMacros["DBG_10"] = "DBG_10";
+
+    // B1 引脚功能定义 Pin name: PAD_MIPI_TXP3
+    // 引脚名称使用实际的PAD名称
+    m_pinFunctions["PAD_MIPI_TXP3"] = QStringList() << "VI0_D_18" << "SD1_D1" << "VO_D_27" 
+                                        << "XGPIOC_21" << "IIC2_SCL" << "PWM_15" 
+                                        << "IIC1_SCL" << "CAM_HS0";
+    m_defaultFunctions["PAD_MIPI_TXP3"] = "XGPIOC_21";  // 默认功能 (function select 3)
+    // 功能宏映射
+    m_functionMacros["VI0_D_18"] = "VI0_D_18";
+    m_functionMacros["VO_D_27"] = "VO_D_27";
+    m_functionMacros["XGPIOC_21"] = "XGPIOC_21";
+    m_functionMacros["IIC2_SCL"] = "IIC2_SCL";
+    m_functionMacros["CAM_HS0"] = "CAM_HS0";
+    m_functionMacros["PWM_15"] = "PWM_15";
+    m_functionMacros["IIC1_SCL"] = "IIC1_SCL";
 
     // C4 引脚功能定义
     m_pinFunctions["C4"] = QStringList() << "CAM_MCLK0" << "AUX1" << "XGPIOA_0";
