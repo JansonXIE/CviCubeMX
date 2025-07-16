@@ -23,7 +23,6 @@ set(HEADERS
     src/pinwidget.h
     src/codegenerator.h
     include/pinfunction.h
-    include/pinmux.h
     include/cvi_board_init.h
 )
 

@@ -29,12 +29,11 @@ bool PinFunction::isPinFunctionSupported(const QString& pinName, const QString& 
 void PinFunction::initializePinFunctions()
 {
     // A2 引脚功能定义（Pin name: PAD_MIPI_TXM4）
-    // 引脚名称使用实际的PAD名称，而不是BGA位置名称
-    m_pinFunctions["PAD_MIPI_TXM4"] = QStringList() << "XGPIOC_18" << "VI0_D_15" << "SD1_CLK" 
-                                        << "VO_D_24" << "CAM_MCLK1" << "PWM_12" 
+    // 引脚名称使用实际的PAD名称
+    m_pinFunctions["PAD_MIPI_TXM4"] = QStringList() << "VI0_D_15" << "SD1_CLK" << "VO_D_24" 
+                                        << "XGPIOC_18" << "CAM_MCLK1" << "PWM_12" 
                                         << "IIC1_SDA" << "DBG_18";
     m_defaultFunctions["PAD_MIPI_TXM4"] = "XGPIOC_18";  // 默认功能 (function select 3)
-    
     // 功能宏映射
     m_functionMacros["PAD_MIPI_TXM4_XGPIOC_18"] = "XGPIOC_18";
     m_functionMacros["PAD_MIPI_TXM4_VI0_D_15"] = "VI0_D_15";
@@ -44,6 +43,20 @@ void PinFunction::initializePinFunctions()
     m_functionMacros["PAD_MIPI_TXM4_PWM_12"] = "PWM_12";
     m_functionMacros["PAD_MIPI_TXM4_IIC1_SDA"] = "IIC1_SDA";
     m_functionMacros["PAD_MIPI_TXM4_DBG_18"] = "DBG_18";
+    // A4 引脚功能定义（Pin name: PAD_MIPIRX0N）
+    // 引脚名称使用实际的PAD名称
+    m_pinFunctions["PAD_MIPIRX0N"] = QStringList() << "VI0_D_7" << "VO_D_6" << "XGPIOC_10" 
+                                        << "IIC1_SCL" << "CAM_MCLK1" << "PWM_OFF_0" 
+                                        << "DBG_10";
+    m_defaultFunctions["PAD_MIPIRX0N"] = "XGPIOC_10";  // 默认功能 (function select 3)
+    // 功能宏映射
+    m_functionMacros["PAD_MIPIRX0N_VI0_D_7"] = "VI0_D_7";
+    m_functionMacros["PAD_MIPIRX0N_VO_D_6"] = "VO_D_6";
+    m_functionMacros["PAD_MIPIRX0N_XGPIOC_10"] = "XGPIOC_10";
+    m_functionMacros["PAD_MIPIRX0N_IIC1_SCL"] = "IIC1_SCL";
+    m_functionMacros["PAD_MIPIRX0N_CAM_MCLK1"] = "CAM_MCLK1";
+    m_functionMacros["PAD_MIPIRX0N_PWM_OFF_0"] = "PWM_OFF_0";
+    m_functionMacros["PAD_MIPIRX0N_DBG_10"] = "DBG_10";
 
     // C4 引脚功能定义
     m_pinFunctions["C4"] = QStringList() << "CAM_MCLK0" << "AUX1" << "XGPIOA_0";

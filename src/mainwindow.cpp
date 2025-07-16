@@ -224,10 +224,20 @@ void MainWindow::createQFNLayout()
     for (int i = 1; i < gridSize - 1; i++) {
         if (pinNumber <= totalPins) {
             QString pinName = QString("%1").arg(pinNumber);
+            
+            // 检查是否有映射关系
+            bool hasMappingRelation = m_pinNameMappings.contains(pinName);
+            
             PinWidget *pinWidget = new PinWidget(pinName, true, this); // true表示方形
             
             // QFN的显示名称就是引脚编号，所以设置为相同
             pinWidget->setDisplayName(pinName);
+            
+            // 如果没有映射关系，禁用该引脚
+            if (!hasMappingRelation) {
+                pinWidget->setEnabled(false);
+                pinWidget->setToolTip(QString("%1 - 未映射引脚（禁用）").arg(pinName));
+            }
             
             connect(pinWidget, &PinWidget::functionChanged, this, &MainWindow::onPinFunctionChanged);
             m_pinLayout->addWidget(pinWidget, i, 0);
@@ -240,10 +250,20 @@ void MainWindow::createQFNLayout()
     for (int i = 1; i < gridSize - 1; i++) {
         if (pinNumber <= totalPins) {
             QString pinName = QString("%1").arg(pinNumber);
+            
+            // 检查是否有映射关系
+            bool hasMappingRelation = m_pinNameMappings.contains(pinName);
+            
             PinWidget *pinWidget = new PinWidget(pinName, true, this);
             
             // QFN的显示名称就是引脚编号，所以设置为相同
             pinWidget->setDisplayName(pinName);
+            
+            // 如果没有映射关系，禁用该引脚
+            if (!hasMappingRelation) {
+                pinWidget->setEnabled(false);
+                pinWidget->setToolTip(QString("%1 - 未映射引脚（禁用）").arg(pinName));
+            }
             
             connect(pinWidget, &PinWidget::functionChanged, this, &MainWindow::onPinFunctionChanged);
             m_pinLayout->addWidget(pinWidget, gridSize - 1, i);
@@ -256,10 +276,20 @@ void MainWindow::createQFNLayout()
     for (int i = gridSize - 2; i > 0; i--) {
         if (pinNumber <= totalPins) {
             QString pinName = QString("%1").arg(pinNumber);
+            
+            // 检查是否有映射关系
+            bool hasMappingRelation = m_pinNameMappings.contains(pinName);
+            
             PinWidget *pinWidget = new PinWidget(pinName, true, this);
             
             // QFN的显示名称就是引脚编号，所以设置为相同
             pinWidget->setDisplayName(pinName);
+            
+            // 如果没有映射关系，禁用该引脚
+            if (!hasMappingRelation) {
+                pinWidget->setEnabled(false);
+                pinWidget->setToolTip(QString("%1 - 未映射引脚（禁用）").arg(pinName));
+            }
             
             connect(pinWidget, &PinWidget::functionChanged, this, &MainWindow::onPinFunctionChanged);
             m_pinLayout->addWidget(pinWidget, i, gridSize - 1);
@@ -272,10 +302,20 @@ void MainWindow::createQFNLayout()
     for (int i = gridSize - 2; i > 0; i--) {
         if (pinNumber <= totalPins) {
             QString pinName = QString("%1").arg(pinNumber);
+            
+            // 检查是否有映射关系
+            bool hasMappingRelation = m_pinNameMappings.contains(pinName);
+            
             PinWidget *pinWidget = new PinWidget(pinName, true, this);
             
             // QFN的显示名称就是引脚编号，所以设置为相同
             pinWidget->setDisplayName(pinName);
+            
+            // 如果没有映射关系，禁用该引脚
+            if (!hasMappingRelation) {
+                pinWidget->setEnabled(false);
+                pinWidget->setToolTip(QString("%1 - 未映射引脚（禁用）").arg(pinName));
+            }
             
             connect(pinWidget, &PinWidget::functionChanged, this, &MainWindow::onPinFunctionChanged);
             m_pinLayout->addWidget(pinWidget, 0, i);
@@ -288,15 +328,8 @@ void MainWindow::createQFNLayout()
 void MainWindow::createBGALayout()
 {
     // BGA封装：引脚在正方形内部
-    int totalPins = m_chipConfig.getPinCount();
-    
-    // 根据总引脚数量计算BGA网格大小
-    int bgaSize = static_cast<int>(std::sqrt(totalPins));
-    
-    // 确保网格大小能容纳所有引脚
-    if (bgaSize * bgaSize < totalPins) {
-        bgaSize++;
-    }
+    // 使用固定的15x15网格（跳过I行）
+    int bgaSize = 15;
     
     // 外部网格大小，留出边缘空间
     int gridSize = bgaSize + 4;
@@ -304,17 +337,16 @@ void MainWindow::createBGALayout()
     // 清空引脚部件映射
     m_pinWidgets.clear();
     
-    // BGA引脚命名系统：行号A-R，列号1-15
+    // BGA引脚命名系统：行号A-R（跳过I），列号1-15
     const QStringList rowLabels = {"A", "B", "C", "D", "E", "F", "G", "H", "J", 
                                    "K", "L", "M", "N", "P", "R"};
     
-    int pinIndex = 0;
     int startRow = (gridSize - bgaSize) / 2;
     int startCol = (gridSize - bgaSize) / 2;
     
     // 在内部区域创建BGA引脚
-    for (int row = 0; row < bgaSize && pinIndex < totalPins; row++) {
-        for (int col = 0; col < bgaSize && pinIndex < totalPins; col++) {
+    for (int row = 0; row < bgaSize; row++) {
+        for (int col = 0; col < bgaSize; col++) {
             // 跳过四个角的引脚位置
             bool isTopLeft = (row == 0 && col == 0);
             bool isTopRight = (row == 0 && col == bgaSize - 1);
@@ -329,6 +361,9 @@ void MainWindow::createBGALayout()
             QString rowLabel = (row < rowLabels.size()) ? rowLabels[row] : QString("R%1").arg(row);
             QString bgaPosition = QString("%1%2").arg(rowLabel).arg(col + 1);
             
+            // 检查是否有映射关系
+            bool hasMappingRelation = m_pinNameMappings.contains(bgaPosition);
+            
             // 映射到实际的PAD名称
             QString actualPinName = mapPinName(bgaPosition);
             
@@ -337,12 +372,18 @@ void MainWindow::createBGALayout()
             // 设置显示名称为BGA位置
             pinWidget->setDisplayName(bgaPosition);
             
+            // 如果没有映射关系，禁用该引脚
+            if (!hasMappingRelation) {
+                pinWidget->setEnabled(false);
+                // 设置特殊的工具提示
+                pinWidget->setToolTip(QString("%1 - 未映射引脚（禁用）").arg(bgaPosition));
+            }
+            
             connect(pinWidget, &PinWidget::functionChanged, this, &MainWindow::onPinFunctionChanged);
             m_pinLayout->addWidget(pinWidget, startRow + row, startCol + col);
             
             // 使用BGA位置作为key，但引脚显示实际名称
             m_pinWidgets[bgaPosition] = pinWidget;
-            pinIndex++;
         }
     }
 }
@@ -402,13 +443,36 @@ void MainWindow::onGenerateCode()
 
 void MainWindow::initializePinNameMappings()
 {
-    // 初始化BGA位置到PAD名称的映射表
-    // 添加特定引脚的映射关系
+    // 初始化BGA/QFN位置到PAD名称的映射表
+    // 只有在这里定义的引脚才会被启用，其他引脚会被禁用并显示×标记
+    
+    // BGA引脚映射（字母数字格式）
     m_pinNameMappings["A2"] = "PAD_MIPI_TXM4";
+    m_pinNameMappings["A4"] = "PAD_MIPIRX0N";
+    m_pinNameMappings["B1"] = "PAD_UART0_RX";
+    m_pinNameMappings["B2"] = "PAD_UART0_TX";
+    m_pinNameMappings["C4"] = "PAD_CAM_MCLK0";
+    m_pinNameMappings["M5"] = "PAD_PWM0";
+    
+    // QFN引脚映射（数字格式）
+    m_pinNameMappings["1"] = "PAD_UART0_TX";
+    m_pinNameMappings["2"] = "PAD_UART0_RX";
+    m_pinNameMappings["5"] = "PAD_I2C0_SCL";
+    m_pinNameMappings["6"] = "PAD_I2C0_SDA";
+    m_pinNameMappings["10"] = "PAD_SPI0_CLK";
+    m_pinNameMappings["11"] = "PAD_SPI0_MOSI";
+    m_pinNameMappings["12"] = "PAD_SPI0_MISO";
+    m_pinNameMappings["15"] = "PAD_PWM0";
+    m_pinNameMappings["16"] = "PAD_PWM1";
     
     // 可以在这里添加更多引脚映射
+    // BGA格式：
     // m_pinNameMappings["B3"] = "PAD_MIPI_TXP4";
-    // m_pinNameMappings["C4"] = "PAD_CAM_MCLK0";
+    // m_pinNameMappings["D5"] = "PAD_I2C1_SCL";
+    // m_pinNameMappings["E6"] = "PAD_I2C1_SDA";
+    // QFN格式：
+    // m_pinNameMappings["20"] = "PAD_GPIO0";
+    // m_pinNameMappings["21"] = "PAD_GPIO1";
     // 等等...
 }
 

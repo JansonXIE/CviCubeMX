@@ -118,9 +118,17 @@ void PinWidget::paintEvent(QPaintEvent *event)
         color = QColor("#95a5a6");  // 默认灰色
     }
     
+    // 如果引脚被禁用，淡化颜色
+    if (!isEnabled()) {
+        // 将颜色的透明度降低到40%，营造淡化效果
+        color.setAlpha(102);  // 102 = 255 * 0.4
+        // 或者可以将颜色调亮一些
+        color = color.lighter(150);  // 调亮70%
+    }
+    
     // 绘制形状
     painter.setBrush(color);
-    painter.setPen(QPen(QColor("#2c3e50"), 2));
+    painter.setPen(QPen(QColor("#ffffffff"), 2));
     
     if (m_isSquare) {
         // 绘制方形（QFN封装）
@@ -130,8 +138,17 @@ void PinWidget::paintEvent(QPaintEvent *event)
         painter.drawEllipse(2, 2, width() - 4, height() - 4);
     }
     
+    // 如果引脚被禁用，绘制×标记
+    if (!isEnabled()) {
+        painter.setPen(QPen(QColor("#e74c3c"), 2));  // 红色×
+        int margin = 4;
+        // 绘制×的两条线
+        painter.drawLine(margin, margin, width() - margin, height() - margin);
+        painter.drawLine(width() - margin, margin, margin, height() - margin);
+    }
+    
     // 绘制悬停效果
-    if (underMouse()) {
+    if (underMouse() && isEnabled()) {
         painter.setBrush(QBrush());
         painter.setPen(QPen(QColor("#34495e"), 3));
         if (m_isSquare) {
