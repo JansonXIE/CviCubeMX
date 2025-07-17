@@ -1,6 +1,8 @@
 #include "mainwindow.h"
 #include <QApplication>
 #include <QScreen>
+#include <QTimer>
+#include <QLineEdit>
 #include <cmath>
 
 MainWindow::MainWindow(QWidget *parent)
@@ -18,6 +20,12 @@ MainWindow::MainWindow(QWidget *parent)
     , m_chipViewPage(nullptr)
     , m_chipContainer(nullptr)
     , m_pinLayout(nullptr)
+    , m_searchLayout(nullptr)
+    , m_searchLabel(nullptr)
+    , m_searchLineEdit(nullptr)
+    , m_blinkTimer(nullptr)
+    , m_highlightedPin(nullptr)
+    , m_blinkState(false)
 {
     setupUI();
     
@@ -135,16 +143,57 @@ void MainWindow::setupUI()
     m_stackedWidget->addWidget(m_welcomePage);
     m_stackedWidget->addWidget(m_chipViewPage);
     
+    // 设置搜索框
+    setupSearchBox();
+    
     // 添加到主布局
     m_mainLayout->addWidget(m_titleLabel);
     m_mainLayout->addLayout(m_controlLayout);
     m_mainLayout->addWidget(m_stackedWidget);
+    m_mainLayout->addLayout(m_searchLayout);
     
     // 连接信号和槽
     connect(m_chipComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, &MainWindow::onChipSelectionChanged);
     connect(m_startProjectButton, &QPushButton::clicked, this, &MainWindow::onStartProject);
     connect(m_generateCodeButton, &QPushButton::clicked, this, &MainWindow::onGenerateCode);
+    connect(m_searchLineEdit, &QLineEdit::textChanged, this, &MainWindow::onSearchTextChanged);
+}
+
+void MainWindow::setupSearchBox()
+{
+    // 创建搜索布局
+    m_searchLayout = new QHBoxLayout();
+    
+    // 创建搜索标签
+    m_searchLabel = new QLabel("搜索管脚:", this);
+    m_searchLabel->setStyleSheet("font-size: 14px; font-weight: bold;");
+    
+    // 创建搜索输入框
+    m_searchLineEdit = new QLineEdit(this);
+    m_searchLineEdit->setPlaceholderText("输入管脚号 (例如: A2, 15)");
+    m_searchLineEdit->setMaximumWidth(200);
+    m_searchLineEdit->setStyleSheet(
+        "QLineEdit { "
+        "border: 2px solid #bdc3c7; "
+        "border-radius: 4px; "
+        "padding: 5px; "
+        "font-size: 12px; "
+        "} "
+        "QLineEdit:focus { "
+        "border-color: #3498db; "
+        "}"
+    );
+    
+    // 添加到搜索布局
+    m_searchLayout->addWidget(m_searchLabel);
+    m_searchLayout->addWidget(m_searchLineEdit);
+    m_searchLayout->addStretch();
+    
+    // 初始化闪烁定时器
+    m_blinkTimer = new QTimer(this);
+    m_blinkTimer->setInterval(500); // 500ms 闪烁间隔
+    connect(m_blinkTimer, &QTimer::timeout, this, &MainWindow::onBlinkTimeout);
 }
 
 void MainWindow::onChipSelectionChanged()
@@ -415,6 +464,20 @@ void MainWindow::onPinFunctionChanged(const QString& pinName, const QString& fun
 {
     // 更新引脚功能映射
     m_chipConfig.setPinFunction(pinName, function);
+    
+    // 如果当前正在高亮这个引脚，且功能不是默认GPIO，则取消高亮
+    if (m_highlightedPin && 
+        (m_highlightedPin->getPinName() == pinName || m_highlightedPin->getDisplayName() == pinName) &&
+        function != "GPIO") {
+        
+        // 停止闪烁并清除高亮
+        m_blinkTimer->stop();
+        m_highlightedPin->setHighlight(false);
+        m_highlightedPin = nullptr;
+        
+        // 清空搜索框
+        m_searchLineEdit->clear();
+    }
 }
 
 void MainWindow::onGenerateCode()
@@ -481,4 +544,66 @@ QString MainWindow::mapPinName(const QString& bgaPosition) const
     // 如果存在映射关系，返回映射的PAD名称
     // 否则返回原始的BGA位置名称
     return m_pinNameMappings.value(bgaPosition, bgaPosition);
+}
+
+void MainWindow::onSearchTextChanged(const QString& text)
+{
+    // 清除之前的高亮
+    if (m_highlightedPin) {
+        m_highlightedPin->setHighlight(false);
+        m_highlightedPin = nullptr;
+    }
+    
+    // 停止闪烁定时器
+    m_blinkTimer->stop();
+    
+    // 更新当前搜索文本
+    m_currentSearchText = text.trimmed();
+    
+    // 如果搜索文本为空，直接返回
+    if (m_currentSearchText.isEmpty()) {
+        return;
+    }
+    
+    // 查找匹配的引脚
+    PinWidget* foundPin = nullptr;
+    
+    // 在引脚部件映射中查找
+    for (auto it = m_pinWidgets.begin(); it != m_pinWidgets.end(); ++it) {
+        const QString& pinKey = it.key();
+        PinWidget* pinWidget = it.value();
+        
+        // 检查是否匹配（支持部分匹配）
+        if (pinKey.contains(m_currentSearchText, Qt::CaseInsensitive) ||
+            pinWidget->getDisplayName().contains(m_currentSearchText, Qt::CaseInsensitive)) {
+            foundPin = pinWidget;
+            break;
+        }
+    }
+    
+    // 如果找到匹配的引脚
+    if (foundPin && foundPin->isEnabled()) {
+        m_highlightedPin = foundPin;
+        // 开始闪烁效果
+        m_blinkState = true;
+        m_highlightedPin->setHighlight(true, m_blinkState);
+        m_blinkTimer->start();
+    }
+}
+
+void MainWindow::onBlinkTimeout()
+{
+    if (m_highlightedPin) {
+        // 切换闪烁状态
+        m_blinkState = !m_blinkState;
+        m_highlightedPin->setHighlight(true, m_blinkState);
+    }
+}
+
+void MainWindow::highlightPin(const QString& pinName, bool highlight)
+{
+    if (m_pinWidgets.contains(pinName)) {
+        PinWidget* pin = m_pinWidgets[pinName];
+        pin->setHighlight(highlight);
+    }
 }

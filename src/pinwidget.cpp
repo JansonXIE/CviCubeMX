@@ -7,6 +7,8 @@ PinWidget::PinWidget(const QString& pinName, bool isSquare, QWidget *parent)
     , m_function("GPIO")
     , m_isSquare(isSquare)
     , m_contextMenu(nullptr)
+    , m_isHighlighted(false)
+    , m_blinkState(false)
 {
     // 设置基本属性
     setMinimumSize(25, 25);
@@ -79,6 +81,18 @@ QStringList PinWidget::getSupportedFunctions() const
     return m_functions;
 }
 
+void PinWidget::setHighlight(bool highlight, bool blinkState)
+{
+    m_isHighlighted = highlight;
+    m_blinkState = blinkState;
+    update(); // 触发重绘
+}
+
+bool PinWidget::isHighlighted() const
+{
+    return m_isHighlighted;
+}
+
 void PinWidget::paintEvent(QPaintEvent *event)
 {
     QPainter painter(this);
@@ -129,6 +143,15 @@ void PinWidget::paintEvent(QPaintEvent *event)
     // 绘制形状
     painter.setBrush(color);
     painter.setPen(QPen(QColor("#ffffffff"), 2));
+    
+    // 如果是高亮状态，根据闪烁状态改变边框颜色
+    if (m_isHighlighted && isEnabled()) {
+        if (m_blinkState) {
+            painter.setPen(QPen(QColor("#000000"), 4)); // 黑色粗边框
+        } else {
+            painter.setPen(QPen(QColor("#000000"), 2)); // 黑色细边框
+        }
+    }
     
     if (m_isSquare) {
         // 绘制方形（QFN封装）

@@ -44,6 +44,19 @@ public:
      * @return 支持的功能列表
      */
     QStringList getSupportedFunctions() const;
+    
+    /**
+     * @brief 设置引脚是否闪烁高亮
+     * @param highlight 是否高亮
+     * @param blinkState 闪烁状态（用于控制闪烁效果）
+     */
+    void setHighlight(bool highlight, bool blinkState = false);
+    
+    /**
+     * @brief 获取引脚是否处于高亮状态
+     * @return 是否高亮
+     */
+    bool isHighlighted() const;
 
 signals:
     void functionChanged(const QString& pinName, const QString& function);
@@ -68,6 +81,10 @@ private:
     QMenu *m_contextMenu;
     QStringList m_functions;
     PinFunction m_pinFunction;
+    
+    // 高亮闪烁相关
+    bool m_isHighlighted;
+    bool m_blinkState;
 };
 
 #endif // PINWIDGET_H

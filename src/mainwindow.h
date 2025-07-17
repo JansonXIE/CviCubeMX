@@ -11,6 +11,8 @@
 #include <QScrollArea>
 #include <QMessageBox>
 #include <QFileDialog>
+#include <QLineEdit>
+#include <QTimer>
 #include "chipconfig.h"
 #include "pinwidget.h"
 #include "codegenerator.h"
@@ -31,6 +33,8 @@ private slots:
     void onStartProject();
     void onGenerateCode();
     void onPinFunctionChanged(const QString& pinName, const QString& function);
+    void onSearchTextChanged(const QString& text);
+    void onBlinkTimeout();
 
 private:
     void setupUI();
@@ -42,6 +46,10 @@ private:
     // 引脚名称映射：BGA位置 -> 实际PAD名称
     QString mapPinName(const QString& bgaPosition) const;
     void initializePinNameMappings();
+    
+    // 搜索功能
+    void setupSearchBox();
+    void highlightPin(const QString& pinName, bool highlight);
 
     // UI Components
     QWidget *m_centralWidget;
@@ -60,6 +68,12 @@ private:
     QWidget *m_chipContainer;
     QGridLayout *m_pinLayout;
     
+    // 搜索功能组件
+    QHBoxLayout *m_searchLayout;
+    QLabel *m_searchLabel;
+    QLineEdit *m_searchLineEdit;
+    QTimer *m_blinkTimer;
+    
     // Data
     ChipConfig m_chipConfig;
     QString m_selectedChip;
@@ -68,6 +82,11 @@ private:
     
     // BGA位置到PAD名称的映射表
     QMap<QString, QString> m_pinNameMappings;
+    
+    // 搜索功能相关
+    QString m_currentSearchText;
+    PinWidget* m_highlightedPin;
+    bool m_blinkState;
 };
 
 #endif // MAINWINDOW_H
