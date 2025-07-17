@@ -3,6 +3,11 @@
 #include <QScreen>
 #include <QTimer>
 #include <QLineEdit>
+#include <QTreeWidget>
+#include <QTreeWidgetItem>
+#include <QSplitter>
+#include <QMenu>
+#include <QAction>
 #include <cmath>
 
 MainWindow::MainWindow(QWidget *parent)
@@ -11,6 +16,10 @@ MainWindow::MainWindow(QWidget *parent)
     , m_mainLayout(nullptr)
     , m_headerLayout(nullptr)
     , m_controlLayout(nullptr)
+    , m_mainSplitter(nullptr)
+    , m_configPanel(nullptr)
+    , m_configLayout(nullptr)
+    , m_configTree(nullptr)
     , m_titleLabel(nullptr)
     , m_chipComboBox(nullptr)
     , m_startProjectButton(nullptr)
@@ -56,28 +65,35 @@ void MainWindow::setupUI()
     
     // 创建主布局
     m_mainLayout = new QVBoxLayout(m_centralWidget);
+    m_mainLayout->setContentsMargins(0, 0, 0, 0);
+    m_mainLayout->setSpacing(0);
     
     // 创建标题
     m_titleLabel = new QLabel("CviCubeMX 芯片引脚配置工具", this);
     m_titleLabel->setAlignment(Qt::AlignCenter);
-    m_titleLabel->setStyleSheet("font-size: 24px; font-weight: bold; margin: 20px; color: #2c3e50;");
+    m_titleLabel->setStyleSheet("font-size: 14px; font-weight: bold; margin: 0px; padding: 6px; color: #2c3e50; background-color: #f8f9fa; border-bottom: 1px solid #dee2e6;");
+    m_titleLabel->setMaximumHeight(30);
     
     // 创建控制区域
     m_controlLayout = new QHBoxLayout();
+    m_controlLayout->setContentsMargins(8, 4, 8, 4);
+    m_controlLayout->setSpacing(8);
     
     // 芯片选型标签
     QLabel *chipLabel = new QLabel("芯片选型:", this);
-    chipLabel->setStyleSheet("font-size: 14px; font-weight: bold;");
+    chipLabel->setStyleSheet("font-size: 12px; font-weight: bold; color: #495057;");
     
     // 芯片选择下拉框
     m_chipComboBox = new QComboBox(this);
     m_chipComboBox->addItems({"请选择芯片型号", "cv1801c", "cv1801h", "cv1811c", "cv1811h", "cv1842cp", "cv1842hp"});
-    m_chipComboBox->setMinimumWidth(200);
-    m_chipComboBox->setStyleSheet("font-size: 12px; padding: 5px;");
+    m_chipComboBox->setMinimumWidth(160);
+    m_chipComboBox->setMaximumHeight(28);
+    m_chipComboBox->setStyleSheet("font-size: 11px; padding: 3px; border: 1px solid #ced4da; border-radius: 3px;");
     
     // 开始项目按钮
     m_startProjectButton = new QPushButton("开始项目", this);
     m_startProjectButton->setEnabled(false);
+    m_startProjectButton->setMaximumHeight(28);
     m_startProjectButton->setStyleSheet(
         "QPushButton { "
         "background-color: #3498db; "
@@ -98,6 +114,7 @@ void MainWindow::setupUI()
     // 生成代码按钮
     m_generateCodeButton = new QPushButton("生成代码", this);
     m_generateCodeButton->setEnabled(false);
+    m_generateCodeButton->setMaximumHeight(28);
     m_generateCodeButton->setStyleSheet(
         "QPushButton { "
         "background-color: #27ae60; "
@@ -125,6 +142,30 @@ void MainWindow::setupUI()
     // 创建堆叠窗口部件
     m_stackedWidget = new QStackedWidget(this);
     
+    // 创建主分隔器
+    m_mainSplitter = new QSplitter(Qt::Horizontal, this);
+    
+    // 设置配置面板
+    setupConfigPanel();
+    
+    // 创建右侧内容部件
+    QWidget *rightContent = new QWidget();
+    QVBoxLayout *rightLayout = new QVBoxLayout(rightContent);
+    rightLayout->addWidget(m_stackedWidget);
+    
+    // 设置搜索框
+    setupSearchBox();
+    rightLayout->addLayout(m_searchLayout);
+    
+    // 添加到分隔器
+    m_mainSplitter->addWidget(m_configPanel);
+    m_mainSplitter->addWidget(rightContent);
+    
+    // 设置分隔器比例（配置面板:主内容 = 1:3）
+    m_mainSplitter->setStretchFactor(0, 1);
+    m_mainSplitter->setStretchFactor(1, 3);
+    m_mainSplitter->setSizes({250, 750});
+    
     // 创建欢迎页面
     m_welcomePage = new QWidget();
     QVBoxLayout *welcomeLayout = new QVBoxLayout(m_welcomePage);
@@ -143,14 +184,10 @@ void MainWindow::setupUI()
     m_stackedWidget->addWidget(m_welcomePage);
     m_stackedWidget->addWidget(m_chipViewPage);
     
-    // 设置搜索框
-    setupSearchBox();
-    
     // 添加到主布局
     m_mainLayout->addWidget(m_titleLabel);
     m_mainLayout->addLayout(m_controlLayout);
-    m_mainLayout->addWidget(m_stackedWidget);
-    m_mainLayout->addLayout(m_searchLayout);
+    m_mainLayout->addWidget(m_mainSplitter);
     
     // 连接信号和槽
     connect(m_chipComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged),
@@ -158,6 +195,72 @@ void MainWindow::setupUI()
     connect(m_startProjectButton, &QPushButton::clicked, this, &MainWindow::onStartProject);
     connect(m_generateCodeButton, &QPushButton::clicked, this, &MainWindow::onGenerateCode);
     connect(m_searchLineEdit, &QLineEdit::textChanged, this, &MainWindow::onSearchTextChanged);
+    connect(m_configTree, &QTreeWidget::itemClicked, this, &MainWindow::onPeripheralItemClicked);
+}
+
+void MainWindow::setupConfigPanel()
+{
+    // 创建配置面板
+    m_configPanel = new QWidget();
+    m_configPanel->setMinimumWidth(200);
+    m_configPanel->setMaximumWidth(300);
+    m_configPanel->setStyleSheet(
+        "QWidget { "
+        "background-color: #f8f9fa; "
+        "border-right: 1px solid #dee2e6; "
+        "} "
+        "QTreeWidget { "
+        "background-color: #ffffff; "
+        "border: 1px solid #dee2e6; "
+        "border-radius: 4px; "
+        "} "
+        "QTreeWidget::item { "
+        "padding: 5px; "
+        "border-bottom: 1px solid #e9ecef; "
+        "} "
+        "QTreeWidget::item:selected { "
+        "background-color: #007bff; "
+        "color: white; "
+        "} "
+        "QTreeWidget::item:hover { "
+        "background-color: #e9ecef; "
+        "}"
+    );
+    
+    // 创建配置布局
+    m_configLayout = new QVBoxLayout(m_configPanel);
+    m_configLayout->setContentsMargins(10, 10, 10, 10);
+    
+    // 创建配置面板标题
+    QLabel *configTitle = new QLabel("配置面板", m_configPanel);
+    configTitle->setStyleSheet("font-size: 16px; font-weight: bold; color: #495057; margin-bottom: 10px;");
+    configTitle->setAlignment(Qt::AlignCenter);
+    
+    // 创建配置树
+    m_configTree = new QTreeWidget(m_configPanel);
+    m_configTree->setHeaderHidden(true);
+    m_configTree->setRootIsDecorated(true);
+    m_configTree->setIndentation(20);
+    
+    // 创建外设节点
+    QTreeWidgetItem *peripheralItem = new QTreeWidgetItem(m_configTree);
+    peripheralItem->setText(0, "外设");
+    peripheralItem->setIcon(0, style()->standardIcon(QStyle::SP_ComputerIcon));
+    peripheralItem->setExpanded(true);
+    
+    // 创建外设子项
+    QStringList peripherals = {"PWM", "I2C", "SPI", "UART", "GPIO", "ADC"};
+    for (const QString &peripheral : peripherals) {
+        QTreeWidgetItem *subItem = new QTreeWidgetItem(peripheralItem);
+        subItem->setText(0, peripheral);
+        subItem->setIcon(0, style()->standardIcon(QStyle::SP_FileIcon));
+        subItem->setData(0, Qt::UserRole, peripheral); // 存储外设类型
+    }
+    
+    // 添加到布局
+    m_configLayout->addWidget(configTitle);
+    m_configLayout->addWidget(m_configTree);
+    m_configLayout->addStretch();
 }
 
 void MainWindow::setupSearchBox()
@@ -606,4 +709,147 @@ void MainWindow::highlightPin(const QString& pinName, bool highlight)
         PinWidget* pin = m_pinWidgets[pinName];
         pin->setHighlight(highlight);
     }
+}
+
+void MainWindow::onPeripheralItemClicked(QTreeWidgetItem* item, int column)
+{
+    Q_UNUSED(column)
+    
+    if (!item) return;
+    
+    // 获取外设类型
+    QString peripheralType = item->data(0, Qt::UserRole).toString();
+    
+    if (peripheralType.isEmpty()) {
+        // 如果是父节点（外设），展开或折叠
+        if (item->text(0) == "外设") {
+            item->setExpanded(!item->isExpanded());
+        }
+        return;
+    }
+    
+    // 显示外设配置菜单
+    QMenu contextMenu(this);
+    contextMenu.setStyleSheet(
+        "QMenu { "
+        "background-color: #ffffff; "
+        "border: 1px solid #dee2e6; "
+        "border-radius: 4px; "
+        "padding: 5px; "
+        "} "
+        "QMenu::item { "
+        "padding: 8px 16px; "
+        "} "
+        "QMenu::item:selected { "
+        "background-color: #007bff; "
+        "color: white; "
+        "}"
+    );
+    
+    // 根据外设类型添加不同的选项
+    if (peripheralType == "PWM") {
+        QAction *pwm0Action = contextMenu.addAction("PWM0");
+        QAction *pwm1Action = contextMenu.addAction("PWM1");
+        QAction *pwm2Action = contextMenu.addAction("PWM2");
+        QAction *pwm3Action = contextMenu.addAction("PWM3");
+        
+        pwm0Action->setData("PWM0");
+        pwm1Action->setData("PWM1");
+        pwm2Action->setData("PWM2");
+        pwm3Action->setData("PWM3");
+        
+        connect(pwm0Action, &QAction::triggered, this, &MainWindow::onPeripheralActionTriggered);
+        connect(pwm1Action, &QAction::triggered, this, &MainWindow::onPeripheralActionTriggered);
+        connect(pwm2Action, &QAction::triggered, this, &MainWindow::onPeripheralActionTriggered);
+        connect(pwm3Action, &QAction::triggered, this, &MainWindow::onPeripheralActionTriggered);
+    }
+    else if (peripheralType == "I2C") {
+        QAction *i2c0Action = contextMenu.addAction("I2C0");
+        QAction *i2c1Action = contextMenu.addAction("I2C1");
+        QAction *i2c2Action = contextMenu.addAction("I2C2");
+        
+        i2c0Action->setData("I2C0");
+        i2c1Action->setData("I2C1");
+        i2c2Action->setData("I2C2");
+        
+        connect(i2c0Action, &QAction::triggered, this, &MainWindow::onPeripheralActionTriggered);
+        connect(i2c1Action, &QAction::triggered, this, &MainWindow::onPeripheralActionTriggered);
+        connect(i2c2Action, &QAction::triggered, this, &MainWindow::onPeripheralActionTriggered);
+    }
+    else if (peripheralType == "SPI") {
+        QAction *spi0Action = contextMenu.addAction("SPI0");
+        QAction *spi1Action = contextMenu.addAction("SPI1");
+        QAction *spi2Action = contextMenu.addAction("SPI2");
+        
+        spi0Action->setData("SPI0");
+        spi1Action->setData("SPI1");
+        spi2Action->setData("SPI2");
+        
+        connect(spi0Action, &QAction::triggered, this, &MainWindow::onPeripheralActionTriggered);
+        connect(spi1Action, &QAction::triggered, this, &MainWindow::onPeripheralActionTriggered);
+        connect(spi2Action, &QAction::triggered, this, &MainWindow::onPeripheralActionTriggered);
+    }
+    else if (peripheralType == "UART") {
+        QAction *uart0Action = contextMenu.addAction("UART0");
+        QAction *uart1Action = contextMenu.addAction("UART1");
+        QAction *uart2Action = contextMenu.addAction("UART2");
+        QAction *uart3Action = contextMenu.addAction("UART3");
+        
+        uart0Action->setData("UART0");
+        uart1Action->setData("UART1");
+        uart2Action->setData("UART2");
+        uart3Action->setData("UART3");
+        
+        connect(uart0Action, &QAction::triggered, this, &MainWindow::onPeripheralActionTriggered);
+        connect(uart1Action, &QAction::triggered, this, &MainWindow::onPeripheralActionTriggered);
+        connect(uart2Action, &QAction::triggered, this, &MainWindow::onPeripheralActionTriggered);
+        connect(uart3Action, &QAction::triggered, this, &MainWindow::onPeripheralActionTriggered);
+    }
+    else if (peripheralType == "GPIO") {
+        QAction *gpioAction = contextMenu.addAction("配置GPIO");
+        gpioAction->setData("GPIO");
+        connect(gpioAction, &QAction::triggered, this, &MainWindow::onPeripheralActionTriggered);
+    }
+    else if (peripheralType == "ADC") {
+        QAction *adc0Action = contextMenu.addAction("ADC0");
+        QAction *adc1Action = contextMenu.addAction("ADC1");
+        
+        adc0Action->setData("ADC0");
+        adc1Action->setData("ADC1");
+        
+        connect(adc0Action, &QAction::triggered, this, &MainWindow::onPeripheralActionTriggered);
+        connect(adc1Action, &QAction::triggered, this, &MainWindow::onPeripheralActionTriggered);
+    }
+    else if (peripheralType == "Timer") {
+        QAction *timer0Action = contextMenu.addAction("Timer0");
+        QAction *timer1Action = contextMenu.addAction("Timer1");
+        QAction *timer2Action = contextMenu.addAction("Timer2");
+        
+        timer0Action->setData("Timer0");
+        timer1Action->setData("Timer1");
+        timer2Action->setData("Timer2");
+        
+        connect(timer0Action, &QAction::triggered, this, &MainWindow::onPeripheralActionTriggered);
+        connect(timer1Action, &QAction::triggered, this, &MainWindow::onPeripheralActionTriggered);
+        connect(timer2Action, &QAction::triggered, this, &MainWindow::onPeripheralActionTriggered);
+    }
+    
+    // 在鼠标位置显示菜单
+    QPoint globalPos = m_configTree->mapToGlobal(m_configTree->visualItemRect(item).center());
+    contextMenu.exec(globalPos);
+}
+
+void MainWindow::onPeripheralActionTriggered()
+{
+    QAction *action = qobject_cast<QAction*>(sender());
+    if (!action) return;
+    
+    QString peripheralFunction = action->data().toString();
+    
+    // 显示提示信息
+    QMessageBox::information(this, "外设配置", 
+        QString("您选择了：%1\n这里可以添加具体的外设配置功能").arg(peripheralFunction));
+    
+    // 这里可以添加具体的外设配置逻辑
+    // 例如：打开外设配置对话框，设置引脚功能等
 }

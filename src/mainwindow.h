@@ -13,6 +13,11 @@
 #include <QFileDialog>
 #include <QLineEdit>
 #include <QTimer>
+#include <QTreeWidget>
+#include <QTreeWidgetItem>
+#include <QSplitter>
+#include <QMenu>
+#include <QAction>
 #include "chipconfig.h"
 #include "pinwidget.h"
 #include "codegenerator.h"
@@ -35,6 +40,8 @@ private slots:
     void onPinFunctionChanged(const QString& pinName, const QString& function);
     void onSearchTextChanged(const QString& text);
     void onBlinkTimeout();
+    void onPeripheralItemClicked(QTreeWidgetItem* item, int column);
+    void onPeripheralActionTriggered();
 
 private:
     void setupUI();
@@ -42,6 +49,7 @@ private:
     void createQFNLayout();
     void createBGALayout();
     void clearPinLayout();
+    void setupConfigPanel();
     
     // 引脚名称映射：BGA位置 -> 实际PAD名称
     QString mapPinName(const QString& bgaPosition) const;
@@ -56,6 +64,12 @@ private:
     QVBoxLayout *m_mainLayout;
     QHBoxLayout *m_headerLayout;
     QHBoxLayout *m_controlLayout;
+    QSplitter *m_mainSplitter;
+    
+    // 左侧配置面板
+    QWidget *m_configPanel;
+    QVBoxLayout *m_configLayout;
+    QTreeWidget *m_configTree;
     
     QLabel *m_titleLabel;
     QComboBox *m_chipComboBox;
