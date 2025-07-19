@@ -14,10 +14,12 @@ public:
     CodeGenerator();
     
     QString generateCode(const ChipConfig& config);
+    QString updateExistingFile(const QString& filePath, const ChipConfig& config);
 
 private:
     QString generateHeader();
     QString generatePinmuxFunction(const ChipConfig& config);
+    QString generatePinmuxConfig(const ChipConfig& config);
     QString generateFooter();
     
     QString functionToMacro(const QString& function, const QString& pinName);

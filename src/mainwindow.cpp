@@ -585,24 +585,35 @@ void MainWindow::onPinFunctionChanged(const QString& pinName, const QString& fun
 
 void MainWindow::onGenerateCode()
 {
-    // 生成代码
-    QString code = m_codeGenerator.generateCode(m_chipConfig);
+    // 直接更新或生成代码到默认位置
+    QString result = m_codeGenerator.generateCode(m_chipConfig);
     
-    // 保存文件
-    QString fileName = QFileDialog::getSaveFileName(this, 
-        "保存代码文件", 
-        "cvi_board_init.c", 
-        "C Files (*.c);;All Files (*)");
-    
-    if (!fileName.isEmpty()) {
-        QFile file(fileName);
-        if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-            QTextStream stream(&file);
-            stream << code;
-            file.close();
-            QMessageBox::information(this, "成功", "代码文件已生成: " + fileName);
-        } else {
-            QMessageBox::critical(this, "错误", "无法保存文件!");
+    // 检查结果是否为错误信息
+    if (result.startsWith("Error:")) {
+        QMessageBox::critical(this, "错误", result);
+    } else if (result == "File updated successfully") {
+        QMessageBox::information(this, "成功", "已成功更新 cvi_board_init.c 文件的 PINMUX 配置！");
+    } else if (result == "Existing generated configurations removed") {
+        QMessageBox::information(this, "信息", "已移除原有的生成配置（当前无新配置需要添加）。");
+    } else if (result == "No pin configurations to add") {
+        QMessageBox::information(this, "信息", "当前没有引脚配置需要生成。");
+    } else {
+        // 如果返回的是生成的代码内容（文件不存在的情况）
+        QString fileName = QFileDialog::getSaveFileName(this, 
+            "保存代码文件", 
+            "cvi_board_init.c", 
+            "C Files (*.c);;All Files (*)");
+        
+        if (!fileName.isEmpty()) {
+            QFile file(fileName);
+            if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+                QTextStream stream(&file);
+                stream << result;
+                file.close();
+                QMessageBox::information(this, "成功", "代码文件已生成: " + fileName);
+            } else {
+                QMessageBox::critical(this, "错误", "无法保存文件!");
+            }
         }
     }
 }

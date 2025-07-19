@@ -1,5 +1,7 @@
 #include "codegenerator.h"
 #include <QRegularExpression>
+#include <QFile>
+#include <QTextStream>
 
 CodeGenerator::CodeGenerator()
 {
@@ -8,19 +10,104 @@ CodeGenerator::CodeGenerator()
 
 QString CodeGenerator::generateCode(const ChipConfig& config)
 {
-    QString code;
+    // 检查是否存在默认的 cvi_board_init.c 文件
+    QString defaultFilePath = "C:\\Users\\jansonxie\\Desktop\\CviCubeMX\\boards\\cv184x\\cv1842hp_wevb_0014a_emmc\\u-boot\\cvi_board_init.c";
+    QFile defaultFile(defaultFilePath);
     
-    // 生成文件头
-    code += generateHeader();
+    if (defaultFile.exists()) {
+        // 如果存在默认文件，则更新它
+        return updateExistingFile(defaultFilePath, config);
+    } else {
+        // 如果不存在默认文件，则生成新的代码（保留原有逻辑）
+        QString code;
+        
+        // 生成文件头
+        code += generateHeader();
+        
+        // 生成包含文件
+        // code += "\n#include \"cvi_board_init.h\"\n";
+        // code += "#include \"pinmux.h\"\n\n";
+        
+        // 生成引脚复用函数
+        code += generatePinmuxFunction(config);
+        
+        return code;
+    }
+}
+
+QString CodeGenerator::updateExistingFile(const QString& filePath, const ChipConfig& config)
+{
+    QFile file(filePath);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        return QString("Error: Cannot open file %1").arg(filePath);
+    }
     
-    // 生成包含文件
-    // code += "\n#include \"cvi_board_init.h\"\n";
-    // code += "#include \"pinmux.h\"\n\n";
+    QTextStream in(&file);
+    QString content = in.readAll();
+    file.close();
     
-    // 生成引脚复用函数
-    code += generatePinmuxFunction(config);
+    // 查找现有的生成配置块并删除（包括前后的空行）
+    QRegularExpression generatedRegex("\\n*\\s*// Generated PINMUX configurations\\n.*?(?=\\n*\\s*return\\s+0\\s*;)", 
+                                     QRegularExpression::DotMatchesEverythingOption);
+    content.remove(generatedRegex);
     
-    return code;
+    // 清理可能存在的多余换行符（在return之前）
+    QRegularExpression multipleNewlines("(\\n\\s*){3,}(\\s*return\\s+0\\s*;)");
+    content.replace(multipleNewlines, "\n\n\\2");
+    
+    // 查找 return 0; 的位置，但不依赖其当前的缩进状态
+    QRegularExpression returnRegex("\\n*\\s*return\\s+0\\s*;");
+    QRegularExpressionMatch match = returnRegex.match(content);
+    
+    if (!match.hasMatch()) {
+        return "Error: Cannot find 'return 0;' in the existing file";
+    }
+    
+    int returnPosition = match.capturedStart();
+    
+    // 生成新的 PINMUX 配置
+    QString pinmuxConfig = generatePinmuxConfig(config);
+    
+    if (!pinmuxConfig.isEmpty()) {
+        // 在 return 0; 之前插入新的配置
+        QString newContent = content.left(returnPosition);
+        
+        // 确保以换行结尾
+        if (!newContent.endsWith("\n")) {
+            newContent += "\n";
+        }
+        
+        // 始终使用制表符缩进，不依赖于当前return语句的缩进状态
+        newContent += "\n\t// Generated PINMUX configurations\n";
+        newContent += pinmuxConfig;
+        newContent += "\n\treturn 0;\n";
+        newContent += "}";
+        
+        // 写回文件
+        if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+            return QString("Error: Cannot write to file %1").arg(filePath);
+        }
+        
+        QTextStream out(&file);
+        out << newContent;
+        file.close();
+        
+        return "File updated successfully";
+    } else {
+        // 如果没有配置要添加，确保删除任何现有的生成配置，并保持正确的return格式
+        QRegularExpression returnFix("\\n*\\s*return\\s+0\\s*;");
+        content.replace(returnFix, "\n\treturn 0;");
+        
+        if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+            return QString("Error: Cannot write to file %1").arg(filePath);
+        }
+        
+        QTextStream out(&file);
+        out << content;
+        file.close();
+        
+        return "Existing generated configurations removed";
+    }
 }
 
 QString CodeGenerator::generateHeader()
@@ -102,6 +189,46 @@ QString CodeGenerator::generatePinmuxFunction(const ChipConfig& config)
     function += "}\n";
     
     return function;
+}
+
+QString CodeGenerator::generatePinmuxConfig(const ChipConfig& config)
+{
+    QString configCode;
+    
+    // 生成引脚复用配置
+    QMap<QString, QString> pinFunctions = config.getAllPinFunctions();
+    
+    // 按功能分组
+    QMap<QString, QStringList> functionGroups;
+    for (auto it = pinFunctions.begin(); it != pinFunctions.end(); ++it) {
+        QString pinName = it.key();
+        QString funcName = it.value();
+        if (funcName != "GPIO") { // GPIO不需要特殊配置
+            functionGroups[funcName].append(pinName);
+        }
+    }
+    
+    // 生成每个功能组的配置
+    bool firstGroup = true;
+    for (auto it = functionGroups.begin(); it != functionGroups.end(); ++it) {
+        QString funcName = it.key();
+        QStringList pins = it.value();
+        
+        if (!firstGroup) {
+            configCode += "\n";
+        }
+        firstGroup = false;
+        
+        // 使用制表符缩进，与文件中其他行保持一致
+        configCode += QString("\t// %1 pins configuration\n").arg(funcName);
+        
+        for (const QString& pinName : pins) {
+            QString pinmuxMacro = getPinMuxName(pinName, funcName);
+            configCode += QString("\tPINMUX_CONFIG(%1, %2);\n").arg(pinName, pinmuxMacro);
+        }
+    }
+    
+    return configCode;
 }
 
 QString CodeGenerator::getPinMuxName(const QString& pinName, const QString& function)
