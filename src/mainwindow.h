@@ -42,6 +42,7 @@ private slots:
     void onBlinkTimeout();
     void onPeripheralItemClicked(QTreeWidgetItem* item, int column);
     void onPeripheralActionTriggered();
+    void onPeripheralCheckBoxChanged(const QString& peripheral, bool enabled);
 
 private:
     void setupUI();
@@ -58,6 +59,12 @@ private:
     // 搜索功能
     void setupSearchBox();
     void highlightPin(const QString& pinName, bool highlight);
+    
+    // defconfig文件处理
+    bool loadPeripheralStates();
+    bool savePeripheralStates();
+    QString getDefconfigPath() const;
+    QMap<QString, QStringList> getPeripheralConfigs() const;
 
     // UI Components
     QWidget *m_centralWidget;
@@ -101,6 +108,9 @@ private:
     QString m_currentSearchText;
     PinWidget* m_highlightedPin;
     bool m_blinkState;
+    
+    // 外设配置状态
+    QMap<QString, bool> m_peripheralStates;
 };
 
 #endif // MAINWINDOW_H

@@ -8,6 +8,11 @@
 #include <QSplitter>
 #include <QMenu>
 #include <QAction>
+#include <QCheckBox>
+#include <QFile>
+#include <QTextStream>
+#include <QDir>
+#include <QDebug>
 #include <cmath>
 
 MainWindow::MainWindow(QWidget *parent)
@@ -236,6 +241,9 @@ void MainWindow::setupConfigPanel()
     configTitle->setStyleSheet("font-size: 16px; font-weight: bold; color: #495057; margin-bottom: 10px;");
     configTitle->setAlignment(Qt::AlignCenter);
     
+    // 加载外设状态
+    loadPeripheralStates();
+    
     // 创建配置树
     m_configTree = new QTreeWidget(m_configPanel);
     m_configTree->setHeaderHidden(true);
@@ -245,16 +253,29 @@ void MainWindow::setupConfigPanel()
     // 创建外设节点
     QTreeWidgetItem *peripheralItem = new QTreeWidgetItem(m_configTree);
     peripheralItem->setText(0, "外设");
-    peripheralItem->setIcon(0, style()->standardIcon(QStyle::SP_ComputerIcon));
+    peripheralItem->setIcon(0, style()->standardIcon(QStyle::SP_DriveHDIcon));
     peripheralItem->setExpanded(true);
     
     // 创建外设子项
     QStringList peripherals = {"PWM", "I2C", "SPI", "UART", "GPIO", "ADC"};
     for (const QString &peripheral : peripherals) {
         QTreeWidgetItem *subItem = new QTreeWidgetItem(peripheralItem);
-        subItem->setText(0, peripheral);
+        
+        // 创建复选框
+        QCheckBox *checkBox = new QCheckBox();
+        checkBox->setText(peripheral);
+        checkBox->setChecked(m_peripheralStates.value(peripheral, false));
+        
+        // 连接复选框信号
+        connect(checkBox, &QCheckBox::toggled, this, [this, peripheral](bool checked) {
+            onPeripheralCheckBoxChanged(peripheral, checked);
+        });
+        
         subItem->setIcon(0, style()->standardIcon(QStyle::SP_FileIcon));
         subItem->setData(0, Qt::UserRole, peripheral); // 存储外设类型
+        
+        // 将复选框设置为树节点的widget
+        m_configTree->setItemWidget(subItem, 0, checkBox);
     }
     
     // 添加到布局
@@ -728,14 +749,20 @@ void MainWindow::onPeripheralItemClicked(QTreeWidgetItem* item, int column)
     
     if (!item) return;
     
-    // 获取外设类型
-    QString peripheralType = item->data(0, Qt::UserRole).toString();
+    // 检查是否点击的是父节点（外设）
+    if (item->text(0) == "外设") {
+        // 如果是父节点，展开或折叠
+        item->setExpanded(!item->isExpanded());
+        return;
+    }
+    
+    // 对于子项，现在包含复选框，获取外设类型需要从复选框获取
+    QCheckBox *checkBox = qobject_cast<QCheckBox*>(m_configTree->itemWidget(item, 0));
+    if (!checkBox) return;
+    
+    QString peripheralType = checkBox->text();
     
     if (peripheralType.isEmpty()) {
-        // 如果是父节点（外设），展开或折叠
-        if (item->text(0) == "外设") {
-            item->setExpanded(!item->isExpanded());
-        }
         return;
     }
     
@@ -863,4 +890,170 @@ void MainWindow::onPeripheralActionTriggered()
     
     // 这里可以添加具体的外设配置逻辑
     // 例如：打开外设配置对话框，设置引脚功能等
+}
+
+void MainWindow::onPeripheralCheckBoxChanged(const QString& peripheral, bool enabled)
+{
+    // 更新状态
+    m_peripheralStates[peripheral] = enabled;
+    
+    // 保存到defconfig文件
+    if (savePeripheralStates()) {
+        qDebug() << QString("外设 %1 已%2").arg(peripheral).arg(enabled ? "启用" : "禁用");
+    } else {
+        // 如果保存失败，恢复复选框状态
+        QMessageBox::warning(this, "警告", "无法更新defconfig文件配置");
+        
+        // 恢复复选框状态
+        m_peripheralStates[peripheral] = !enabled;
+        
+        // 找到对应的复选框并恢复状态
+        QTreeWidgetItem *peripheralItem = m_configTree->topLevelItem(0);
+        if (peripheralItem) {
+            for (int i = 0; i < peripheralItem->childCount(); ++i) {
+                QTreeWidgetItem *subItem = peripheralItem->child(i);
+                QCheckBox *checkBox = qobject_cast<QCheckBox*>(m_configTree->itemWidget(subItem, 0));
+                if (checkBox && checkBox->text() == peripheral) {
+                    checkBox->setChecked(!enabled);
+                    break;
+                }
+            }
+        }
+    }
+}
+
+QString MainWindow::getDefconfigPath() const
+{
+    // 根据选择的芯片类型返回对应的defconfig文件路径
+    QString chipType = m_selectedChip;
+    if (chipType.isEmpty() || chipType == "请选择芯片型号") {
+        chipType = "cv1842hp"; // 默认使用cv1842hp
+    }
+    
+    QString defconfigPath = QString("boards/cv184x/%1_wevb_0014a_emmc/linux/cvitek_%1_wevb_0014a_emmc_defconfig")
+                           .arg(chipType);
+    
+    // 转换为绝对路径
+    QDir workspaceDir("c:\\Users\\jansonxie\\Desktop\\CviCubeMX");
+    return workspaceDir.absoluteFilePath(defconfigPath);
+}
+
+QMap<QString, QStringList> MainWindow::getPeripheralConfigs() const
+{
+    QMap<QString, QStringList> configs;
+    
+    // 定义每个外设对应的CONFIG项
+    configs["PWM"] = {"CONFIG_PWM", "CONFIG_PWM_SYSFS", "CONFIG_CVI_PWM"};
+    configs["I2C"] = {"CONFIG_I2C", "CONFIG_I2C_SMBUS", "CONFIG_I2C_CHARDEV", "CONFIG_I2C_DESIGNWARE_PLATFORM"};
+    configs["SPI"] = {"CONFIG_SPI"};
+    configs["UART"] = {"CONFIG_SERIAL_8250", "CONFIG_SERIAL_8250_CONSOLE", "CONFIG_SERIAL_8250_DW"};
+    configs["GPIO"] = {"CONFIG_GPIOLIB", "CONFIG_GPIO_SYSFS", "CONFIG_GPIO_DWAPB"};
+    configs["ADC"] = {"CONFIG_IIO", "CONFIG_IIO_BUFFER", "CONFIG_IIO_TRIGGER"};
+    
+    return configs;
+}
+
+bool MainWindow::loadPeripheralStates()
+{
+    QString defconfigPath = getDefconfigPath();
+    QFile file(defconfigPath);
+    
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        qDebug() << "无法打开defconfig文件：" << defconfigPath;
+        
+        // 如果文件不存在，设置默认状态为false
+        QStringList peripherals = {"PWM", "I2C", "SPI", "UART", "GPIO", "ADC"};
+        for (const QString &peripheral : peripherals) {
+            m_peripheralStates[peripheral] = false;
+        }
+        return false;
+    }
+    
+    QTextStream in(&file);
+    QString content = in.readAll();
+    file.close();
+    
+    QMap<QString, QStringList> peripheralConfigs = getPeripheralConfigs();
+    
+    // 检查每个外设的CONFIG项
+    for (auto it = peripheralConfigs.begin(); it != peripheralConfigs.end(); ++it) {
+        const QString &peripheral = it.key();
+        const QStringList &configItems = it.value();
+        
+        bool isEnabled = true;
+        
+        // 检查所有相关的CONFIG项是否都启用
+        for (const QString &configItem : configItems) {
+            QString enabledPattern = configItem + "=y";
+            QString disabledPattern = "# " + configItem + " is not set";
+            
+            if (content.contains(disabledPattern) || !content.contains(enabledPattern)) {
+                isEnabled = false;
+                break;
+            }
+        }
+        
+        m_peripheralStates[peripheral] = isEnabled;
+    }
+    
+    return true;
+}
+
+bool MainWindow::savePeripheralStates()
+{
+    QString defconfigPath = getDefconfigPath();
+    QFile file(defconfigPath);
+    
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        qDebug() << "无法打开defconfig文件：" << defconfigPath;
+        return false;
+    }
+    
+    QTextStream in(&file);
+    QString content = in.readAll();
+    file.close();
+    
+    QMap<QString, QStringList> peripheralConfigs = getPeripheralConfigs();
+    
+    // 更新每个外设的CONFIG项
+    for (auto it = peripheralConfigs.begin(); it != peripheralConfigs.end(); ++it) {
+        const QString &peripheral = it.key();
+        const QStringList &configItems = it.value();
+        bool isEnabled = m_peripheralStates.value(peripheral, false);
+        
+        for (const QString &configItem : configItems) {
+            QString enabledPattern = configItem + "=y";
+            QString disabledPattern = "# " + configItem + " is not set";
+            
+            if (isEnabled) {
+                // 启用该配置项
+                if (content.contains(disabledPattern)) {
+                    content.replace(disabledPattern, enabledPattern);
+                } else if (!content.contains(enabledPattern)) {
+                    // 如果既没有启用也没有禁用的配置，在适当位置添加
+                    content.append("\n" + enabledPattern);
+                }
+            } else {
+                // 禁用该配置项
+                if (content.contains(enabledPattern)) {
+                    content.replace(enabledPattern, disabledPattern);
+                } else if (!content.contains(disabledPattern)) {
+                    // 如果既没有启用也没有禁用的配置，在适当位置添加
+                    content.append("\n" + disabledPattern);
+                }
+            }
+        }
+    }
+    
+    // 写回文件
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        qDebug() << "无法写入defconfig文件：" << defconfigPath;
+        return false;
+    }
+    
+    QTextStream out(&file);
+    out << content;
+    file.close();
+    
+    return true;
 }
