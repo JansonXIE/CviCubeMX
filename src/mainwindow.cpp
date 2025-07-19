@@ -649,6 +649,7 @@ void MainWindow::initializePinNameMappings()
     m_pinNameMappings["A4"] = "PAD_MIPIRX0N";
     m_pinNameMappings["B1"] = "PAD_MIPI_TXP3";
     m_pinNameMappings["C4"] = "PAD_CAM_MCLK0";
+    m_pinNameMappings["D4"] = "IIC3_SCL";
     m_pinNameMappings["L15"] = "UART2_RTS";
     m_pinNameMappings["M5"] = "PAD_PWM0";
     

@@ -80,6 +80,12 @@ void PinFunction::initializePinFunctions()
     m_functionMacros["AUX1"] = "AUX1";
     m_functionMacros["XGPIOA_0"] = "XGPIOA_0";
 
+    // D4 引脚功能定义 Pin name: IIC3_SCL
+    m_pinFunctions["IIC3_SCL"] = QStringList() << "IIC3_SCL" << "XGPIOA_5";
+    m_defaultFunctions["IIC3_SCL"] = "XGPIOA_5";  // 默认功能 (function select 3)
+    m_functionMacros["IIC3_SCL"] = "IIC3_SCL";
+    m_functionMacros["XGPIOA_5"] = "XGPIOA_5";
+
     // L15 引脚功能定义 Pin name: UART2_RTS
     // 引脚名称使用实际的PAD名称
     m_pinFunctions["UART2_RTS"] = QStringList() << "UART2_RTS" << "PWM_8" << "PWR_GPIO_15" 
