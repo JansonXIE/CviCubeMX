@@ -29,6 +29,7 @@ private slots:
     void onClockChanged();
     void onFreqChanged();
     void onPwmCellsChanged();
+    void onCurrentSpeedChanged();
 
 private:
     void setupUI();
@@ -63,6 +64,9 @@ private:
     
     QLabel *m_pwmCellsLabel;
     QSpinBox *m_pwmCellsSpinBox;
+    
+    QLabel *m_currentSpeedLabel;
+    QSpinBox *m_currentSpeedSpinBox;
     
     QHBoxLayout *m_buttonLayout;
     QPushButton *m_applyButton;

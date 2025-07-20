@@ -20,6 +20,8 @@ PeripheralConfigDialog::PeripheralConfigDialog(const QString &peripheralType, Dt
     , m_freqUnitLabel(nullptr)
     , m_pwmCellsLabel(nullptr)
     , m_pwmCellsSpinBox(nullptr)
+    , m_currentSpeedLabel(nullptr)
+    , m_currentSpeedSpinBox(nullptr)
     , m_buttonLayout(nullptr)
     , m_applyButton(nullptr)
     , m_cancelButton(nullptr)
@@ -137,6 +139,13 @@ void PeripheralConfigDialog::loadPeripheralConfig()
             m_pwmCellsSpinBox->setValue(m_currentInfo.pwmCells);
         }
     }
+    
+    if (m_currentSpeedSpinBox) {
+        // 设置波特率
+        if (m_currentInfo.hasCurrentSpeed && m_currentInfo.currentSpeed > 0) {
+            m_currentSpeedSpinBox->setValue(m_currentInfo.currentSpeed);
+        }
+    }
 }
 
 void PeripheralConfigDialog::savePeripheralConfig()
@@ -164,10 +173,9 @@ void PeripheralConfigDialog::savePeripheralConfig()
         m_dtsConfig->setPeripheralPwmCells(m_currentPeripheral, m_pwmCellsSpinBox->value());
     }
     
-    // 保存PWM cells（如果支持）
-    bool hasPwmCellsSupport = (m_peripheralType == "pwm");
-    if (hasPwmCellsSupport) {
-        m_dtsConfig->setPeripheralPwmCells(m_currentPeripheral, m_pwmCellsSpinBox->value());
+    // 保存波特率（如果支持）
+    if (m_currentSpeedSpinBox) {
+        m_dtsConfig->setPeripheralCurrentSpeed(m_currentPeripheral, m_currentSpeedSpinBox->value());
     }
 }
 
@@ -204,6 +212,14 @@ void PeripheralConfigDialog::onFreqChanged()
 void PeripheralConfigDialog::onPwmCellsChanged()
 {
     // 实时更新PWM cells配置
+    if (!m_currentPeripheral.isEmpty()) {
+        savePeripheralConfig();
+    }
+}
+
+void PeripheralConfigDialog::onCurrentSpeedChanged()
+{
+    // 实时更新波特率配置
     if (!m_currentPeripheral.isEmpty()) {
         savePeripheralConfig();
     }
@@ -249,7 +265,7 @@ void PeripheralConfigDialog::setupPeripheralSpecificUI(int &currentRow)
         currentRow++;
         
     } else if (m_peripheralType == "uart") {
-        // UART: 显示时钟频率
+        // UART: 显示时钟频率和波特率
         m_freqLabel = new QLabel("时钟频率:", this);
         m_freqSpinBox = new QSpinBox(this);
         m_freqSpinBox->setRange(1000, 500000000);
@@ -257,6 +273,15 @@ void PeripheralConfigDialog::setupPeripheralSpecificUI(int &currentRow)
         m_freqSpinBox->setValue(25000000);  // UART默认25MHz
         m_peripheralLayout->addWidget(m_freqLabel, currentRow, 0);
         m_peripheralLayout->addWidget(m_freqSpinBox, currentRow, 1);
+        currentRow++;
+        
+        m_currentSpeedLabel = new QLabel("波特率:", this);
+        m_currentSpeedSpinBox = new QSpinBox(this);
+        m_currentSpeedSpinBox->setRange(300, 3000000);  // 支持常见波特率范围
+        m_currentSpeedSpinBox->setSuffix(" bps");
+        m_currentSpeedSpinBox->setValue(115200);  // 默认115200波特率
+        m_peripheralLayout->addWidget(m_currentSpeedLabel, currentRow, 0);
+        m_peripheralLayout->addWidget(m_currentSpeedSpinBox, currentRow, 1);
         currentRow++;
         
     } else if (m_peripheralType == "pwm") {
@@ -314,6 +339,11 @@ void PeripheralConfigDialog::setupConnections()
     if (m_pwmCellsSpinBox) {
         connect(m_pwmCellsSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), 
                 this, &PeripheralConfigDialog::onPwmCellsChanged);
+    }
+    
+    if (m_currentSpeedSpinBox) {
+        connect(m_currentSpeedSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), 
+                this, &PeripheralConfigDialog::onCurrentSpeedChanged);
     }
 }
 

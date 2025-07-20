@@ -12,10 +12,12 @@ struct PeripheralInfo {
     QString clockFreq;
     int clockFrequency;  // 时钟频率 (从 clock-frequency 属性解析)
     int pwmCells;        // PWM cells 数量 (从 #pwm-cells 属性解析)
+    int currentSpeed;    // 波特率 (从 current-speed 属性解析，仅UART使用)
     bool hasStatus;
     bool hasClock;
     bool hasClockFreq;  // 是否有 clock-frequency 属性
     bool hasPwmCells;   // 是否有 #pwm-cells 属性
+    bool hasCurrentSpeed; // 是否有 current-speed 属性 (仅UART使用)
     int lineNumber;  // 在文件中的行号，用于定位修改
 };
 
@@ -49,6 +51,9 @@ public:
     
     // 设置PWM cells数量 (#pwm-cells)
     bool setPeripheralPwmCells(const QString &peripheral, int cells);
+    
+    // 设置UART波特率 (current-speed)
+    bool setPeripheralCurrentSpeed(const QString &peripheral, int speed);
     
     // 获取特定外设信息
     PeripheralInfo getPeripheralInfo(const QString &peripheral) const;

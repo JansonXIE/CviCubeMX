@@ -199,6 +199,21 @@ PeripheralInfo DtsConfig::parseNode(const QString &nodeName, int startPos, int e
         info.pwmCells = 1; // 默认值
     }
     
+    // 解析current-speed属性（仅UART使用）
+    QRegularExpression currentSpeedRegex("current-speed\\s*=\\s*<([^>]+)>;");
+    QRegularExpressionMatch currentSpeedMatch = currentSpeedRegex.match(nodeContent);
+    if (currentSpeedMatch.hasMatch()) {
+        info.hasCurrentSpeed = true;
+        bool ok;
+        info.currentSpeed = currentSpeedMatch.captured(1).toInt(&ok);
+        if (!ok) {
+            info.currentSpeed = 115200; // 默认值
+        }
+    } else {
+        info.hasCurrentSpeed = false;
+        info.currentSpeed = 115200; // 默认值
+    }
+    
     // 计算行号
     QString beforeNode = m_fileContent.left(startPos);
     info.lineNumber = beforeNode.count('\n') + 1;
@@ -354,6 +369,23 @@ void DtsConfig::updateSinglePeripheralContent(const QString &peripheral)
         }
     }
     
+    // 更新current-speed（如果需要的话，仅UART使用）
+    if (info.hasCurrentSpeed && info.currentSpeed > 0) {
+        QRegularExpression currentSpeedRegex("\\s*current-speed\\s*=\\s*<[^>]+>\\s*;");
+        QString currentSpeedLine = QString("\n\t\tcurrent-speed = <%1>;").arg(info.currentSpeed);
+        
+        if (currentSpeedRegex.match(newNodeContent).hasMatch()) {
+            // 替换现有current-speed
+            newNodeContent.replace(currentSpeedRegex, currentSpeedLine);
+        } else {
+            // 添加新的current-speed行
+            int lastSemicolon = newNodeContent.lastIndexOf(';');
+            if (lastSemicolon != -1) {
+                newNodeContent.insert(lastSemicolon + 1, currentSpeedLine);
+            }
+        }
+    }
+    
     // 更新文件内容
     m_fileContent.replace(nodePos.first, nodePos.second - nodePos.first, newNodeContent);
 }
@@ -411,6 +443,18 @@ bool DtsConfig::setPeripheralPwmCells(const QString &peripheral, int cells)
     
     m_peripherals[peripheral].pwmCells = cells;
     m_peripherals[peripheral].hasPwmCells = true;
+    
+    return true;
+}
+
+bool DtsConfig::setPeripheralCurrentSpeed(const QString &peripheral, int speed)
+{
+    if (!m_peripherals.contains(peripheral)) {
+        return false;
+    }
+    
+    m_peripherals[peripheral].currentSpeed = speed;
+    m_peripherals[peripheral].hasCurrentSpeed = true;
     
     return true;
 }
