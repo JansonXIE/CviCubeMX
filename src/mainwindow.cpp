@@ -1,4 +1,5 @@
 #include "mainwindow.h"
+#include "peripheralconfigdialog.h"
 #include <QApplication>
 #include <QScreen>
 #include <QTimer>
@@ -40,11 +41,15 @@ MainWindow::MainWindow(QWidget *parent)
     , m_blinkTimer(nullptr)
     , m_highlightedPin(nullptr)
     , m_blinkState(false)
+    , m_dtsConfig(nullptr)
 {
     setupUI();
     
     // 初始化引脚名称映射
     initializePinNameMappings();
+    
+    // 初始化设备树配置
+    initializeDtsConfig();
     
     // 设置窗口属性
     setWindowTitle("CviCubeMX - 芯片引脚配置工具");
@@ -60,6 +65,9 @@ MainWindow::MainWindow(QWidget *parent)
 
 MainWindow::~MainWindow()
 {
+    if (m_dtsConfig) {
+        delete m_dtsConfig;
+    }
 }
 
 void MainWindow::setupUI()
@@ -744,6 +752,176 @@ void MainWindow::highlightPin(const QString& pinName, bool highlight)
     }
 }
 
+/**
+ * 处理外设项点击事件
+ * 如果点击的是父节点（外设），则展开或折叠子项
+ * 如果点击的是子项，则显示外设配置菜单
+ */
+// void MainWindow::onPeripheralItemClicked(QTreeWidgetItem* item, int column)
+// {
+//     Q_UNUSED(column)
+    
+//     if (!item) return;
+    
+//     // 检查是否点击的是父节点（外设）
+//     if (item->text(0) == "外设") {
+//         // 如果是父节点，展开或折叠
+//         item->setExpanded(!item->isExpanded());
+//         return;
+//     }
+    
+//     // 对于子项，现在包含复选框，获取外设类型需要从复选框获取
+//     QCheckBox *checkBox = qobject_cast<QCheckBox*>(m_configTree->itemWidget(item, 0));
+//     if (!checkBox) return;
+    
+//     QString peripheralType = checkBox->text();
+    
+//     if (peripheralType.isEmpty()) {
+//         return;
+//     }
+    
+//     // 显示外设配置菜单
+//     QMenu contextMenu(this);
+//     contextMenu.setStyleSheet(
+//         "QMenu { "
+//         "background-color: #ffffff; "
+//         "border: 1px solid #dee2e6; "
+//         "border-radius: 4px; "
+//         "padding: 5px; "
+//         "} "
+//         "QMenu::item { "
+//         "padding: 8px 16px; "
+//         "} "
+//         "QMenu::item:selected { "
+//         "background-color: #007bff; "
+//         "color: white; "
+//         "}"
+//     );
+    
+//     // 根据外设类型添加不同的选项
+//     if (peripheralType == "PWM") {
+//         QAction *pwm0Action = contextMenu.addAction("PWM0");
+//         QAction *pwm1Action = contextMenu.addAction("PWM1");
+//         QAction *pwm2Action = contextMenu.addAction("PWM2");
+//         QAction *pwm3Action = contextMenu.addAction("PWM3");
+        
+//         pwm0Action->setData("PWM0");
+//         pwm1Action->setData("PWM1");
+//         pwm2Action->setData("PWM2");
+//         pwm3Action->setData("PWM3");
+        
+//         connect(pwm0Action, &QAction::triggered, this, &MainWindow::onPeripheralActionTriggered);
+//         connect(pwm1Action, &QAction::triggered, this, &MainWindow::onPeripheralActionTriggered);
+//         connect(pwm2Action, &QAction::triggered, this, &MainWindow::onPeripheralActionTriggered);
+//         connect(pwm3Action, &QAction::triggered, this, &MainWindow::onPeripheralActionTriggered);
+//     }
+//     else if (peripheralType == "I2C") {
+//         QAction *i2c0Action = contextMenu.addAction("I2C0");
+//         QAction *i2c1Action = contextMenu.addAction("I2C1");
+//         QAction *i2c2Action = contextMenu.addAction("I2C2");
+        
+//         i2c0Action->setData("I2C0");
+//         i2c1Action->setData("I2C1");
+//         i2c2Action->setData("I2C2");
+        
+//         connect(i2c0Action, &QAction::triggered, this, &MainWindow::onPeripheralActionTriggered);
+//         connect(i2c1Action, &QAction::triggered, this, &MainWindow::onPeripheralActionTriggered);
+//         connect(i2c2Action, &QAction::triggered, this, &MainWindow::onPeripheralActionTriggered);
+//     }
+//     else if (peripheralType == "SPI") {
+//         QAction *spi0Action = contextMenu.addAction("SPI0");
+//         QAction *spi1Action = contextMenu.addAction("SPI1");
+//         QAction *spi2Action = contextMenu.addAction("SPI2");
+        
+//         spi0Action->setData("SPI0");
+//         spi1Action->setData("SPI1");
+//         spi2Action->setData("SPI2");
+        
+//         connect(spi0Action, &QAction::triggered, this, &MainWindow::onPeripheralActionTriggered);
+//         connect(spi1Action, &QAction::triggered, this, &MainWindow::onPeripheralActionTriggered);
+//         connect(spi2Action, &QAction::triggered, this, &MainWindow::onPeripheralActionTriggered);
+//     }
+//     else if (peripheralType == "UART") {
+//         QAction *uart0Action = contextMenu.addAction("UART0");
+//         QAction *uart1Action = contextMenu.addAction("UART1");
+//         QAction *uart2Action = contextMenu.addAction("UART2");
+//         QAction *uart3Action = contextMenu.addAction("UART3");
+        
+//         uart0Action->setData("UART0");
+//         uart1Action->setData("UART1");
+//         uart2Action->setData("UART2");
+//         uart3Action->setData("UART3");
+        
+//         connect(uart0Action, &QAction::triggered, this, &MainWindow::onPeripheralActionTriggered);
+//         connect(uart1Action, &QAction::triggered, this, &MainWindow::onPeripheralActionTriggered);
+//         connect(uart2Action, &QAction::triggered, this, &MainWindow::onPeripheralActionTriggered);
+//         connect(uart3Action, &QAction::triggered, this, &MainWindow::onPeripheralActionTriggered);
+//     }
+//     else if (peripheralType == "GPIO") {
+//         QAction *gpioAction = contextMenu.addAction("配置GPIO");
+//         gpioAction->setData("GPIO");
+//         connect(gpioAction, &QAction::triggered, this, &MainWindow::onPeripheralActionTriggered);
+//     }
+//     else if (peripheralType == "ADC") {
+//         QAction *adc0Action = contextMenu.addAction("ADC0");
+//         QAction *adc1Action = contextMenu.addAction("ADC1");
+        
+//         adc0Action->setData("ADC0");
+//         adc1Action->setData("ADC1");
+        
+//         connect(adc0Action, &QAction::triggered, this, &MainWindow::onPeripheralActionTriggered);
+//         connect(adc1Action, &QAction::triggered, this, &MainWindow::onPeripheralActionTriggered);
+//     }
+//     else if (peripheralType == "Timer") {
+//         QAction *timer0Action = contextMenu.addAction("Timer0");
+//         QAction *timer1Action = contextMenu.addAction("Timer1");
+//         QAction *timer2Action = contextMenu.addAction("Timer2");
+        
+//         timer0Action->setData("Timer0");
+//         timer1Action->setData("Timer1");
+//         timer2Action->setData("Timer2");
+        
+//         connect(timer0Action, &QAction::triggered, this, &MainWindow::onPeripheralActionTriggered);
+//         connect(timer1Action, &QAction::triggered, this, &MainWindow::onPeripheralActionTriggered);
+//         connect(timer2Action, &QAction::triggered, this, &MainWindow::onPeripheralActionTriggered);
+//     }
+    
+//     // 在鼠标位置显示菜单
+//     QPoint globalPos = m_configTree->mapToGlobal(m_configTree->visualItemRect(item).center());
+//     contextMenu.exec(globalPos);
+// }
+
+// void MainWindow::onPeripheralActionTriggered()
+// {
+//     QAction *action = qobject_cast<QAction*>(sender());
+//     if (!action) return;
+    
+//     QString peripheralFunction = action->data().toString();
+    
+//     // 提取外设类型（例如从 "PWM0" 提取 "PWM"）
+//     QString peripheralType;
+//     if (peripheralFunction.startsWith("PWM")) {
+//         peripheralType = "PWM";
+//     } else if (peripheralFunction.startsWith("I2C")) {
+//         peripheralType = "I2C";
+//     } else if (peripheralFunction.startsWith("SPI")) {
+//         peripheralType = "SPI";
+//     } else if (peripheralFunction.startsWith("UART")) {
+//         peripheralType = "UART";
+//     } else if (peripheralFunction.startsWith("GPIO")) {
+//         peripheralType = "GPIO";
+//     } else if (peripheralFunction.startsWith("ADC")) {
+//         peripheralType = "ADC";
+//     } else {
+//         QMessageBox::information(this, "外设配置", 
+//             QString("您选择了：%1\n这里可以添加具体的外设配置功能").arg(peripheralFunction));
+//         return;
+//     }
+    
+//     // 显示外设配置对话框
+//     showPeripheralConfig(peripheralType);
+// }
+
 void MainWindow::onPeripheralItemClicked(QTreeWidgetItem* item, int column)
 {
     Q_UNUSED(column)
@@ -767,130 +945,8 @@ void MainWindow::onPeripheralItemClicked(QTreeWidgetItem* item, int column)
         return;
     }
     
-    // 显示外设配置菜单
-    QMenu contextMenu(this);
-    contextMenu.setStyleSheet(
-        "QMenu { "
-        "background-color: #ffffff; "
-        "border: 1px solid #dee2e6; "
-        "border-radius: 4px; "
-        "padding: 5px; "
-        "} "
-        "QMenu::item { "
-        "padding: 8px 16px; "
-        "} "
-        "QMenu::item:selected { "
-        "background-color: #007bff; "
-        "color: white; "
-        "}"
-    );
-    
-    // 根据外设类型添加不同的选项
-    if (peripheralType == "PWM") {
-        QAction *pwm0Action = contextMenu.addAction("PWM0");
-        QAction *pwm1Action = contextMenu.addAction("PWM1");
-        QAction *pwm2Action = contextMenu.addAction("PWM2");
-        QAction *pwm3Action = contextMenu.addAction("PWM3");
-        
-        pwm0Action->setData("PWM0");
-        pwm1Action->setData("PWM1");
-        pwm2Action->setData("PWM2");
-        pwm3Action->setData("PWM3");
-        
-        connect(pwm0Action, &QAction::triggered, this, &MainWindow::onPeripheralActionTriggered);
-        connect(pwm1Action, &QAction::triggered, this, &MainWindow::onPeripheralActionTriggered);
-        connect(pwm2Action, &QAction::triggered, this, &MainWindow::onPeripheralActionTriggered);
-        connect(pwm3Action, &QAction::triggered, this, &MainWindow::onPeripheralActionTriggered);
-    }
-    else if (peripheralType == "I2C") {
-        QAction *i2c0Action = contextMenu.addAction("I2C0");
-        QAction *i2c1Action = contextMenu.addAction("I2C1");
-        QAction *i2c2Action = contextMenu.addAction("I2C2");
-        
-        i2c0Action->setData("I2C0");
-        i2c1Action->setData("I2C1");
-        i2c2Action->setData("I2C2");
-        
-        connect(i2c0Action, &QAction::triggered, this, &MainWindow::onPeripheralActionTriggered);
-        connect(i2c1Action, &QAction::triggered, this, &MainWindow::onPeripheralActionTriggered);
-        connect(i2c2Action, &QAction::triggered, this, &MainWindow::onPeripheralActionTriggered);
-    }
-    else if (peripheralType == "SPI") {
-        QAction *spi0Action = contextMenu.addAction("SPI0");
-        QAction *spi1Action = contextMenu.addAction("SPI1");
-        QAction *spi2Action = contextMenu.addAction("SPI2");
-        
-        spi0Action->setData("SPI0");
-        spi1Action->setData("SPI1");
-        spi2Action->setData("SPI2");
-        
-        connect(spi0Action, &QAction::triggered, this, &MainWindow::onPeripheralActionTriggered);
-        connect(spi1Action, &QAction::triggered, this, &MainWindow::onPeripheralActionTriggered);
-        connect(spi2Action, &QAction::triggered, this, &MainWindow::onPeripheralActionTriggered);
-    }
-    else if (peripheralType == "UART") {
-        QAction *uart0Action = contextMenu.addAction("UART0");
-        QAction *uart1Action = contextMenu.addAction("UART1");
-        QAction *uart2Action = contextMenu.addAction("UART2");
-        QAction *uart3Action = contextMenu.addAction("UART3");
-        
-        uart0Action->setData("UART0");
-        uart1Action->setData("UART1");
-        uart2Action->setData("UART2");
-        uart3Action->setData("UART3");
-        
-        connect(uart0Action, &QAction::triggered, this, &MainWindow::onPeripheralActionTriggered);
-        connect(uart1Action, &QAction::triggered, this, &MainWindow::onPeripheralActionTriggered);
-        connect(uart2Action, &QAction::triggered, this, &MainWindow::onPeripheralActionTriggered);
-        connect(uart3Action, &QAction::triggered, this, &MainWindow::onPeripheralActionTriggered);
-    }
-    else if (peripheralType == "GPIO") {
-        QAction *gpioAction = contextMenu.addAction("配置GPIO");
-        gpioAction->setData("GPIO");
-        connect(gpioAction, &QAction::triggered, this, &MainWindow::onPeripheralActionTriggered);
-    }
-    else if (peripheralType == "ADC") {
-        QAction *adc0Action = contextMenu.addAction("ADC0");
-        QAction *adc1Action = contextMenu.addAction("ADC1");
-        
-        adc0Action->setData("ADC0");
-        adc1Action->setData("ADC1");
-        
-        connect(adc0Action, &QAction::triggered, this, &MainWindow::onPeripheralActionTriggered);
-        connect(adc1Action, &QAction::triggered, this, &MainWindow::onPeripheralActionTriggered);
-    }
-    else if (peripheralType == "Timer") {
-        QAction *timer0Action = contextMenu.addAction("Timer0");
-        QAction *timer1Action = contextMenu.addAction("Timer1");
-        QAction *timer2Action = contextMenu.addAction("Timer2");
-        
-        timer0Action->setData("Timer0");
-        timer1Action->setData("Timer1");
-        timer2Action->setData("Timer2");
-        
-        connect(timer0Action, &QAction::triggered, this, &MainWindow::onPeripheralActionTriggered);
-        connect(timer1Action, &QAction::triggered, this, &MainWindow::onPeripheralActionTriggered);
-        connect(timer2Action, &QAction::triggered, this, &MainWindow::onPeripheralActionTriggered);
-    }
-    
-    // 在鼠标位置显示菜单
-    QPoint globalPos = m_configTree->mapToGlobal(m_configTree->visualItemRect(item).center());
-    contextMenu.exec(globalPos);
-}
-
-void MainWindow::onPeripheralActionTriggered()
-{
-    QAction *action = qobject_cast<QAction*>(sender());
-    if (!action) return;
-    
-    QString peripheralFunction = action->data().toString();
-    
-    // 显示提示信息
-    QMessageBox::information(this, "外设配置", 
-        QString("您选择了：%1\n这里可以添加具体的外设配置功能").arg(peripheralFunction));
-    
-    // 这里可以添加具体的外设配置逻辑
-    // 例如：打开外设配置对话框，设置引脚功能等
+    // 直接显示外设配置对话框，不需要二级菜单选择
+    showPeripheralConfig(peripheralType);
 }
 
 void MainWindow::onPeripheralCheckBoxChanged(const QString& peripheral, bool enabled)
@@ -1057,4 +1113,26 @@ bool MainWindow::savePeripheralStates()
     file.close();
     
     return true;
+}
+
+void MainWindow::initializeDtsConfig()
+{
+    m_dtsConfig = new DtsConfig(this);
+    
+    // 加载设备树文件
+    QString dtsFilePath = "C:\\Users\\jansonxie\\Desktop\\CviCubeMX\\boards\\default\\dts\\cv184x\\cv184x_base.dtsi";
+    if (!m_dtsConfig->loadDtsFile(dtsFilePath)) {
+        qDebug() << "警告：无法加载设备树文件，外设配置功能将不可用";
+    }
+}
+
+void MainWindow::showPeripheralConfig(const QString& peripheralType)
+{
+    if (!m_dtsConfig) {
+        QMessageBox::warning(this, "警告", "设备树配置未初始化！");
+        return;
+    }
+    
+    PeripheralConfigDialog dialog(peripheralType, m_dtsConfig, this);
+    dialog.exec();
 }

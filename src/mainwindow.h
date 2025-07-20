@@ -21,6 +21,7 @@
 #include "chipconfig.h"
 #include "pinwidget.h"
 #include "codegenerator.h"
+#include "dtsconfig.h"
 
 QT_BEGIN_NAMESPACE
 QT_END_NAMESPACE
@@ -41,7 +42,6 @@ private slots:
     void onSearchTextChanged(const QString& text);
     void onBlinkTimeout();
     void onPeripheralItemClicked(QTreeWidgetItem* item, int column);
-    void onPeripheralActionTriggered();
     void onPeripheralCheckBoxChanged(const QString& peripheral, bool enabled);
 
 private:
@@ -65,6 +65,10 @@ private:
     bool savePeripheralStates();
     QString getDefconfigPath() const;
     QMap<QString, QStringList> getPeripheralConfigs() const;
+    
+    // 设备树配置处理
+    void initializeDtsConfig();
+    void showPeripheralConfig(const QString& peripheralType);
 
     // UI Components
     QWidget *m_centralWidget;
@@ -111,6 +115,9 @@ private:
     
     // 外设配置状态
     QMap<QString, bool> m_peripheralStates;
+    
+    // 设备树配置管理器
+    DtsConfig *m_dtsConfig;
 };
 
 #endif // MAINWINDOW_H
