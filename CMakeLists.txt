@@ -17,6 +17,7 @@ set(SOURCES
     src/pinfunction.cpp
     src/dtsconfig.cpp
     src/peripheralconfigdialog.cpp
+    src/clockconfig.cpp
 )
 
 set(HEADERS
@@ -26,6 +27,7 @@ set(HEADERS
     src/codegenerator.h
     src/dtsconfig.h
     src/peripheralconfigdialog.h
+    src/clockconfig.h
     include/pinfunction.h
     include/cvi_board_init.h
 )

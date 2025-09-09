@@ -18,10 +18,12 @@
 #include <QSplitter>
 #include <QMenu>
 #include <QAction>
+#include <QTabWidget>
 #include "chipconfig.h"
 #include "pinwidget.h"
 #include "codegenerator.h"
 #include "dtsconfig.h"
+#include "clockconfig.h"
 
 QT_BEGIN_NAMESPACE
 QT_END_NAMESPACE
@@ -43,14 +45,18 @@ private slots:
     void onBlinkTimeout();
     void onPeripheralItemClicked(QTreeWidgetItem* item, int column);
     void onPeripheralCheckBoxChanged(const QString& peripheral, bool enabled);
+    void onClockConfigChanged();
+    void onConfigTabChanged(int index);
 
 private:
     void setupUI();
+    void setupPinoutTab();
+    void setupPinoutConfigPanel();
+    void setupClockTab();
     void setupChipView();
     void createQFNLayout();
     void createBGALayout();
     void clearPinLayout();
-    void setupConfigPanel();
     
     // 引脚名称映射：BGA位置 -> 实际PAD名称
     QString mapPinName(const QString& bgaPosition) const;
@@ -75,12 +81,21 @@ private:
     QVBoxLayout *m_mainLayout;
     QHBoxLayout *m_headerLayout;
     QHBoxLayout *m_controlLayout;
-    QSplitter *m_mainSplitter;
     
-    // 左侧配置面板
-    QWidget *m_configPanel;
-    QVBoxLayout *m_configLayout;
-    QTreeWidget *m_configTree;
+    // 顶部配置标签页
+    QTabWidget *m_configTabWidget;
+    QWidget *m_pinoutTab;
+    QWidget *m_clockTab;
+    
+    // Pinout配置页面的分隔器和布局
+    QSplitter *m_pinoutSplitter;
+    QWidget *m_pinoutConfigPanel;
+    QVBoxLayout *m_pinoutConfigLayout;
+    QTreeWidget *m_pinoutConfigTree;
+    
+    // 右侧内容区域
+    QWidget *m_contentWidget;
+    QVBoxLayout *m_contentLayout;
     
     QLabel *m_titleLabel;
     QComboBox *m_chipComboBox;
@@ -92,6 +107,9 @@ private:
     QScrollArea *m_chipViewPage;
     QWidget *m_chipContainer;
     QGridLayout *m_pinLayout;
+    
+    // 时钟配置页面
+    ClockConfigWidget *m_clockConfigPage;
     
     // 搜索功能组件
     QHBoxLayout *m_searchLayout;

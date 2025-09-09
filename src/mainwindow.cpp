@@ -22,10 +22,15 @@ MainWindow::MainWindow(QWidget *parent)
     , m_mainLayout(nullptr)
     , m_headerLayout(nullptr)
     , m_controlLayout(nullptr)
-    , m_mainSplitter(nullptr)
-    , m_configPanel(nullptr)
-    , m_configLayout(nullptr)
-    , m_configTree(nullptr)
+    , m_configTabWidget(nullptr)
+    , m_pinoutTab(nullptr)
+    , m_clockTab(nullptr)
+    , m_pinoutSplitter(nullptr)
+    , m_pinoutConfigPanel(nullptr)
+    , m_pinoutConfigLayout(nullptr)
+    , m_pinoutConfigTree(nullptr)
+    , m_contentWidget(nullptr)
+    , m_contentLayout(nullptr)
     , m_titleLabel(nullptr)
     , m_chipComboBox(nullptr)
     , m_startProjectButton(nullptr)
@@ -35,6 +40,7 @@ MainWindow::MainWindow(QWidget *parent)
     , m_chipViewPage(nullptr)
     , m_chipContainer(nullptr)
     , m_pinLayout(nullptr)
+    , m_clockConfigPage(nullptr)
     , m_searchLayout(nullptr)
     , m_searchLabel(nullptr)
     , m_searchLineEdit(nullptr)
@@ -87,24 +93,85 @@ void MainWindow::setupUI()
     m_titleLabel->setStyleSheet("font-size: 14px; font-weight: bold; margin: 0px; padding: 6px; color: #2c3e50; background-color: #f8f9fa; border-bottom: 1px solid #dee2e6;");
     m_titleLabel->setMaximumHeight(30);
     
+    // 创建顶部配置标签页
+    m_configTabWidget = new QTabWidget(this);
+    m_configTabWidget->setStyleSheet(
+        "QTabWidget::pane { "
+        "border: 1px solid #dee2e6; "
+        "background-color: #ffffff; "
+        "} "
+        "QTabBar::tab { "
+        "background-color: #f8f9fa; "
+        "border: 1px solid #dee2e6; "
+        "padding: 8px 16px; "
+        "margin-right: 2px; "
+        "} "
+        "QTabBar::tab:selected { "
+        "background-color: #ffffff; "
+        "border-bottom-color: #ffffff; "
+        "} "
+        "QTabBar::tab:hover { "
+        "background-color: #e9ecef; "
+        "}"
+    );
+    
+    // 创建Pinout配置标签页
+    setupPinoutTab();
+    
+    // 创建时钟配置标签页
+    setupClockTab();
+    
+    // 添加标签页
+    m_configTabWidget->addTab(m_pinoutTab, "芯片引脚配置");
+    m_configTabWidget->addTab(m_clockTab, "时钟配置");
+    
+    // 添加到主布局
+    m_mainLayout->addWidget(m_titleLabel);
+    m_mainLayout->addWidget(m_configTabWidget);
+    
+    // 连接信号和槽
+    connect(m_chipComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, &MainWindow::onChipSelectionChanged);
+    connect(m_startProjectButton, &QPushButton::clicked, this, &MainWindow::onStartProject);
+    connect(m_generateCodeButton, &QPushButton::clicked, this, &MainWindow::onGenerateCode);
+    connect(m_searchLineEdit, &QLineEdit::textChanged, this, &MainWindow::onSearchTextChanged);
+    connect(m_pinoutConfigTree, &QTreeWidget::itemClicked, this, &MainWindow::onPeripheralItemClicked);
+    connect(m_configTabWidget, &QTabWidget::currentChanged, this, &MainWindow::onConfigTabChanged);
+    
+    // 连接时钟配置信号
+    connect(m_clockConfigPage, &ClockConfigWidget::configChanged, this, &MainWindow::onClockConfigChanged);
+}
+
+void MainWindow::setupPinoutTab()
+{
+    // 创建Pinout配置标签页
+    m_pinoutTab = new QWidget();
+    
+    // 创建分隔器（水平分隔：左侧配置面板，右侧芯片视图）
+    m_pinoutSplitter = new QSplitter(Qt::Horizontal, m_pinoutTab);
+    
+    // 设置Pinout标签页布局
+    QVBoxLayout* pinoutLayout = new QVBoxLayout(m_pinoutTab);
+    pinoutLayout->setContentsMargins(0, 0, 0, 0);
+    
     // 创建控制区域
     m_controlLayout = new QHBoxLayout();
-    m_controlLayout->setContentsMargins(8, 4, 8, 4);
+    m_controlLayout->setContentsMargins(8, 8, 8, 8);
     m_controlLayout->setSpacing(8);
     
     // 芯片选型标签
-    QLabel *chipLabel = new QLabel("芯片选型:", this);
+    QLabel *chipLabel = new QLabel("芯片选型:", m_pinoutTab);
     chipLabel->setStyleSheet("font-size: 12px; font-weight: bold; color: #495057;");
     
     // 芯片选择下拉框
-    m_chipComboBox = new QComboBox(this);
+    m_chipComboBox = new QComboBox(m_pinoutTab);
     m_chipComboBox->addItems({"请选择芯片型号", "cv1801c", "cv1801h", "cv1811c", "cv1811h", "cv1842cp", "cv1842hp"});
     m_chipComboBox->setMinimumWidth(160);
     m_chipComboBox->setMaximumHeight(28);
     m_chipComboBox->setStyleSheet("font-size: 11px; padding: 3px; border: 1px solid #ced4da; border-radius: 3px;");
     
     // 开始项目按钮
-    m_startProjectButton = new QPushButton("开始项目", this);
+    m_startProjectButton = new QPushButton("开始项目", m_pinoutTab);
     m_startProjectButton->setEnabled(false);
     m_startProjectButton->setMaximumHeight(28);
     m_startProjectButton->setStyleSheet(
@@ -125,7 +192,7 @@ void MainWindow::setupUI()
     );
     
     // 生成代码按钮
-    m_generateCodeButton = new QPushButton("生成代码", this);
+    m_generateCodeButton = new QPushButton("生成代码", m_pinoutTab);
     m_generateCodeButton->setEnabled(false);
     m_generateCodeButton->setMaximumHeight(28);
     m_generateCodeButton->setStyleSheet(
@@ -152,38 +219,21 @@ void MainWindow::setupUI()
     m_controlLayout->addWidget(m_generateCodeButton);
     m_controlLayout->addStretch();
     
+    // 创建左侧配置面板
+    setupPinoutConfigPanel();
+    
+    // 创建右侧内容区域
+    m_contentWidget = new QWidget();
+    m_contentLayout = new QVBoxLayout(m_contentWidget);
+    m_contentLayout->setContentsMargins(0, 0, 0, 0);
+    
     // 创建堆叠窗口部件
-    m_stackedWidget = new QStackedWidget(this);
-    
-    // 创建主分隔器
-    m_mainSplitter = new QSplitter(Qt::Horizontal, this);
-    
-    // 设置配置面板
-    setupConfigPanel();
-    
-    // 创建右侧内容部件
-    QWidget *rightContent = new QWidget();
-    QVBoxLayout *rightLayout = new QVBoxLayout(rightContent);
-    rightLayout->addWidget(m_stackedWidget);
-    
-    // 设置搜索框
-    setupSearchBox();
-    rightLayout->addLayout(m_searchLayout);
-    
-    // 添加到分隔器
-    m_mainSplitter->addWidget(m_configPanel);
-    m_mainSplitter->addWidget(rightContent);
-    
-    // 设置分隔器比例（配置面板:主内容 = 1:3）
-    m_mainSplitter->setStretchFactor(0, 1);
-    m_mainSplitter->setStretchFactor(1, 3);
-    m_mainSplitter->setSizes({250, 750});
+    m_stackedWidget = new QStackedWidget();
     
     // 创建欢迎页面
     m_welcomePage = new QWidget();
     QVBoxLayout *welcomeLayout = new QVBoxLayout(m_welcomePage);
-    QLabel *welcomeLabel = new QLabel("请选择芯片型号并点击", m_welcomePage);
-    QLabel *startProjectLabel = new QLabel("开始项目", m_welcomePage);
+    QLabel *welcomeLabel = new QLabel("请选择芯片型号并点击开始项目", m_welcomePage);
     welcomeLabel->setAlignment(Qt::AlignCenter);
     welcomeLabel->setStyleSheet("font-size: 18px; color: #7f8c8d; margin: 50px;");
     welcomeLayout->addWidget(welcomeLabel);
@@ -197,27 +247,34 @@ void MainWindow::setupUI()
     m_stackedWidget->addWidget(m_welcomePage);
     m_stackedWidget->addWidget(m_chipViewPage);
     
-    // 添加到主布局
-    m_mainLayout->addWidget(m_titleLabel);
-    m_mainLayout->addLayout(m_controlLayout);
-    m_mainLayout->addWidget(m_mainSplitter);
+    // 设置搜索框
+    setupSearchBox();
     
-    // 连接信号和槽
-    connect(m_chipComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged),
-            this, &MainWindow::onChipSelectionChanged);
-    connect(m_startProjectButton, &QPushButton::clicked, this, &MainWindow::onStartProject);
-    connect(m_generateCodeButton, &QPushButton::clicked, this, &MainWindow::onGenerateCode);
-    connect(m_searchLineEdit, &QLineEdit::textChanged, this, &MainWindow::onSearchTextChanged);
-    connect(m_configTree, &QTreeWidget::itemClicked, this, &MainWindow::onPeripheralItemClicked);
+    // 添加到右侧内容布局
+    m_contentLayout->addWidget(m_stackedWidget);
+    m_contentLayout->addLayout(m_searchLayout);
+    
+    // 添加到分隔器
+    m_pinoutSplitter->addWidget(m_pinoutConfigPanel);
+    m_pinoutSplitter->addWidget(m_contentWidget);
+    
+    // 设置分隔器比例（配置面板:主内容 = 1:3）
+    m_pinoutSplitter->setStretchFactor(0, 1);
+    m_pinoutSplitter->setStretchFactor(1, 3);
+    m_pinoutSplitter->setSizes({250, 750});
+    
+    // 添加到Pinout标签页布局
+    pinoutLayout->addLayout(m_controlLayout);
+    pinoutLayout->addWidget(m_pinoutSplitter);
 }
 
-void MainWindow::setupConfigPanel()
+void MainWindow::setupPinoutConfigPanel()
 {
-    // 创建配置面板
-    m_configPanel = new QWidget();
-    m_configPanel->setMinimumWidth(200);
-    m_configPanel->setMaximumWidth(300);
-    m_configPanel->setStyleSheet(
+    // 创建左侧配置面板
+    m_pinoutConfigPanel = new QWidget();
+    m_pinoutConfigPanel->setMinimumWidth(200);
+    m_pinoutConfigPanel->setMaximumWidth(300);
+    m_pinoutConfigPanel->setStyleSheet(
         "QWidget { "
         "background-color: #f8f9fa; "
         "border-right: 1px solid #dee2e6; "
@@ -241,11 +298,11 @@ void MainWindow::setupConfigPanel()
     );
     
     // 创建配置布局
-    m_configLayout = new QVBoxLayout(m_configPanel);
-    m_configLayout->setContentsMargins(10, 10, 10, 10);
+    m_pinoutConfigLayout = new QVBoxLayout(m_pinoutConfigPanel);
+    m_pinoutConfigLayout->setContentsMargins(10, 10, 10, 10);
     
     // 创建配置面板标题
-    QLabel *configTitle = new QLabel("配置面板", m_configPanel);
+    QLabel *configTitle = new QLabel("外设配置", m_pinoutConfigPanel);
     configTitle->setStyleSheet("font-size: 16px; font-weight: bold; color: #495057; margin-bottom: 10px;");
     configTitle->setAlignment(Qt::AlignCenter);
     
@@ -253,13 +310,13 @@ void MainWindow::setupConfigPanel()
     loadPeripheralStates();
     
     // 创建配置树
-    m_configTree = new QTreeWidget(m_configPanel);
-    m_configTree->setHeaderHidden(true);
-    m_configTree->setRootIsDecorated(true);
-    m_configTree->setIndentation(20);
+    m_pinoutConfigTree = new QTreeWidget(m_pinoutConfigPanel);
+    m_pinoutConfigTree->setHeaderHidden(true);
+    m_pinoutConfigTree->setRootIsDecorated(true);
+    m_pinoutConfigTree->setIndentation(20);
     
     // 创建外设节点
-    QTreeWidgetItem *peripheralItem = new QTreeWidgetItem(m_configTree);
+    QTreeWidgetItem *peripheralItem = new QTreeWidgetItem(m_pinoutConfigTree);
     peripheralItem->setText(0, "外设");
     peripheralItem->setIcon(0, style()->standardIcon(QStyle::SP_DriveHDIcon));
     peripheralItem->setExpanded(true);
@@ -283,13 +340,27 @@ void MainWindow::setupConfigPanel()
         subItem->setData(0, Qt::UserRole, peripheral); // 存储外设类型
         
         // 将复选框设置为树节点的widget
-        m_configTree->setItemWidget(subItem, 0, checkBox);
+        m_pinoutConfigTree->setItemWidget(subItem, 0, checkBox);
     }
     
     // 添加到布局
-    m_configLayout->addWidget(configTitle);
-    m_configLayout->addWidget(m_configTree);
-    m_configLayout->addStretch();
+    m_pinoutConfigLayout->addWidget(configTitle);
+    m_pinoutConfigLayout->addWidget(m_pinoutConfigTree);
+    m_pinoutConfigLayout->addStretch();
+}
+
+void MainWindow::setupClockTab()
+{
+    // 创建时钟配置标签页
+    m_clockTab = new QWidget();
+    
+    // 创建时钟配置页面
+    m_clockConfigPage = new ClockConfigWidget();
+    
+    // 设置时钟标签页布局
+    QVBoxLayout* clockLayout = new QVBoxLayout(m_clockTab);
+    clockLayout->setContentsMargins(0, 0, 0, 0);
+    clockLayout->addWidget(m_clockConfigPage);
 }
 
 void MainWindow::setupSearchBox()
@@ -1043,7 +1114,7 @@ void MainWindow::onPeripheralItemClicked(QTreeWidgetItem* item, int column)
     }
     
     // 对于子项，现在包含复选框，获取外设类型需要从复选框获取
-    QCheckBox *checkBox = qobject_cast<QCheckBox*>(m_configTree->itemWidget(item, 0));
+    QCheckBox *checkBox = qobject_cast<QCheckBox*>(m_pinoutConfigTree->itemWidget(item, 0));
     if (!checkBox) return;
     
     QString peripheralType = checkBox->text();
@@ -1072,11 +1143,11 @@ void MainWindow::onPeripheralCheckBoxChanged(const QString& peripheral, bool ena
         m_peripheralStates[peripheral] = !enabled;
         
         // 找到对应的复选框并恢复状态
-        QTreeWidgetItem *peripheralItem = m_configTree->topLevelItem(0);
+        QTreeWidgetItem *peripheralItem = m_pinoutConfigTree->topLevelItem(0);
         if (peripheralItem) {
             for (int i = 0; i < peripheralItem->childCount(); ++i) {
                 QTreeWidgetItem *subItem = peripheralItem->child(i);
-                QCheckBox *checkBox = qobject_cast<QCheckBox*>(m_configTree->itemWidget(subItem, 0));
+                QCheckBox *checkBox = qobject_cast<QCheckBox*>(m_pinoutConfigTree->itemWidget(subItem, 0));
                 if (checkBox && checkBox->text() == peripheral) {
                     checkBox->setChecked(!enabled);
                     break;
@@ -1098,7 +1169,7 @@ QString MainWindow::getDefconfigPath() const
                            .arg(chipType);
     
     // 转换为绝对路径
-    QDir workspaceDir("c:\\Users\\jansonxie\\Desktop\\CviCubeMX");
+    QDir workspaceDir("D:\\Users\\jianxing.xie\\Desktop\\CviCubeMX");
     return workspaceDir.absoluteFilePath(defconfigPath);
 }
 
@@ -1227,7 +1298,7 @@ void MainWindow::initializeDtsConfig()
     m_dtsConfig = new DtsConfig(this);
     
     // 加载设备树文件
-    QString dtsFilePath = "C:\\Users\\jansonxie\\Desktop\\CviCubeMX\\boards\\default\\dts\\cv184x\\cv184x_base.dtsi";
+    QString dtsFilePath = "D:\\Users\\jianxing.xie\\Desktop\\CviCubeMX\\boards\\default\\dts\\cv184x\\cv184x_base.dtsi";
     if (!m_dtsConfig->loadDtsFile(dtsFilePath)) {
         qDebug() << "警告：无法加载设备树文件，外设配置功能将不可用";
     }
@@ -1242,4 +1313,26 @@ void MainWindow::showPeripheralConfig(const QString& peripheralType)
     
     PeripheralConfigDialog dialog(peripheralType, m_dtsConfig, this);
     dialog.exec();
+}
+
+void MainWindow::onClockConfigChanged()
+{
+    // 时钟配置更改时的处理
+    qDebug() << "时钟配置已更改";
+    
+    // 可以在这里添加保存配置或其他处理逻辑
+    // 比如自动保存时钟配置到文件
+    // m_clockConfigPage->saveConfig("clock_config.json");
+}
+
+void MainWindow::onConfigTabChanged(int index)
+{
+    // 标签页切换时的处理
+    if (index == 0) {
+        // 切换到Pinout配置标签页
+        qDebug() << "切换到芯片引脚配置页面";
+    } else if (index == 1) {
+        // 切换到时钟配置标签页
+        qDebug() << "切换到时钟配置页面";
+    }
 }
