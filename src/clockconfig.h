@@ -46,6 +46,15 @@ struct ClockOutput {
     bool enabled;       // 是否启用
 };
 
+// 模块位置配置结构
+struct ModulePosition {
+    QString moduleName;  // 模块名称
+    int x;              // X坐标
+    int y;              // Y坐标
+    int width;          // 宽度
+    int height;         // 高度
+};
+
 class ClockConfigWidget : public QWidget
 {
     Q_OBJECT
@@ -61,6 +70,13 @@ public:
     // 保存和加载配置
     bool saveConfig(const QString& filePath);
     bool loadConfig(const QString& filePath);
+    
+    // 模块位置配置相关函数
+    void showPositionConfigDialog();
+    void setModulePosition(const QString& moduleName, int x, int y);
+    ModulePosition getModulePosition(const QString& moduleName) const;
+    void resetModulePositions();
+    void applyModulePositions();
 
 protected:
     void paintEvent(QPaintEvent* event) override;
@@ -87,6 +103,7 @@ private:
     void setupOutputs();
     void setupClk1MSubNodes();  // 新增：设置clk_1M子节点区域
     void setupClockTree();
+    void initializeModulePositions();  // 新增：初始化模块位置
     void createPLLWidget(const QString& pllName, QWidget* parent);
     void createSubPLLWidget(const QString& pllName, QWidget* parent);  // 新增：创建子PLL widget
     void createOutputWidget(const QString& outputName, QWidget* parent);
@@ -117,7 +134,7 @@ private:
     // 时钟流程显示区域
     QScrollArea* m_flowScrollArea;
     QWidget* m_flowWidget;
-    QHBoxLayout* m_flowLayout;
+    // QHBoxLayout* m_flowLayout;  // 不再使用布局管理器，改为绝对定位
     
     // 输入源区域
     QWidget* m_inputWidget;
@@ -183,11 +200,13 @@ private:
     QHBoxLayout* m_buttonLayout;
     QPushButton* m_resetButton;
     QPushButton* m_applyButton;
+    QPushButton* m_positionConfigButton;  // 新增：位置配置按钮
     
     // 数据存储
     QMap<QString, PLLConfig> m_pllConfigs;
     QMap<QString, ClockOutput> m_outputs;
     QMap<QString, ClockOutput> m_clk1MSubNodes;  // 新增：clk_1M子节点数据
+    QMap<QString, ModulePosition> m_modulePositions;  // 新增：模块位置配置
     
     // 常量
     static const double OSC_FREQUENCY;  // 25MHz

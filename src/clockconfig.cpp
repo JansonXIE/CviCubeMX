@@ -15,6 +15,9 @@
 #include <QTimer>
 #include <QResizeEvent>
 #include <QEvent>
+#include <QDialog>
+#include <QFormLayout>
+#include <QDialogButtonBox>
 
 // ClockConfigWidget类实现
 const double ClockConfigWidget::OSC_FREQUENCY = 25.0;  // 25MHz
@@ -49,7 +52,7 @@ ClockConfigWidget::ClockConfigWidget(QWidget *parent)
     , m_mainLayout(nullptr)
     , m_flowScrollArea(nullptr)
     , m_flowWidget(nullptr)
-    , m_flowLayout(nullptr)
+    // , m_flowLayout(nullptr)  // 不再使用
     , m_inputWidget(nullptr)
     , m_inputLayout(nullptr)
     , m_pllWidget(nullptr)
@@ -72,6 +75,7 @@ ClockConfigWidget::ClockConfigWidget(QWidget *parent)
     , m_buttonLayout(nullptr)
     , m_resetButton(nullptr)
     , m_applyButton(nullptr)
+    , m_positionConfigButton(nullptr)
     , m_connectionOverlay(nullptr)
 {
     setupUI();
@@ -96,6 +100,9 @@ ClockConfigWidget::ClockConfigWidget(QWidget *parent)
     QTimer::singleShot(100, this, [this]() {
         updateConnectionOverlay();
     });
+    
+    // 初始化模块位置
+    initializeModulePositions();
 }
 
 ClockConfigWidget::~ClockConfigWidget()
@@ -121,11 +128,16 @@ void ClockConfigWidget::setupUI()
     m_flowScrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
     m_flowScrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
     m_flowScrollArea->setMinimumHeight(600);
+    m_flowScrollArea->setFocusPolicy(Qt::WheelFocus); // 启用滚轮焦点
     
     m_flowWidget = new QWidget();
-    m_flowLayout = new QHBoxLayout(m_flowWidget);
-    m_flowLayout->setContentsMargins(20, 20, 20, 20);
-    m_flowLayout->setSpacing(20); // 减少间距为连接线留出空间
+    // 设置足够大的尺寸以包含所有模块，支持滚动
+    m_flowWidget->setMinimumSize(1200, 4200); // 宽度1200，高度4200以容纳OSC输出的长列表
+    m_flowWidget->setFocusPolicy(Qt::WheelFocus); // 启用滚轮焦点
+    // 移除布局管理器，使用绝对定位
+    // m_flowLayout = new QHBoxLayout(m_flowWidget);
+    // m_flowLayout->setContentsMargins(20, 20, 20, 20);
+    // m_flowLayout->setSpacing(20); // 减少间距为连接线留出空间
     
     // 设置流程区域样式
     m_flowWidget->setStyleSheet(
@@ -180,7 +192,27 @@ void ClockConfigWidget::setupUI()
         "}"
     );
     
+    m_positionConfigButton = new QPushButton("位置配置");
+    m_positionConfigButton->setStyleSheet(
+        "QPushButton { "
+        "background-color: #28a745; "
+        "color: white; "
+        "border: none; "
+        "padding: 10px 20px; "
+        "border-radius: 6px; "
+        "font-weight: bold; "
+        "font-size: 14px; "
+        "} "
+        "QPushButton:hover { "
+        "background-color: #218838; "
+        "} "
+        "QPushButton:pressed { "
+        "background-color: #1e7e34; "
+        "}"
+    );
+    
     m_buttonLayout->addWidget(m_resetButton);
+    m_buttonLayout->addWidget(m_positionConfigButton);
     m_buttonLayout->addStretch();
     m_buttonLayout->addWidget(m_applyButton);
     
@@ -191,7 +223,7 @@ void ClockConfigWidget::setupClockSources()
 {
     // 创建输入源区域
     m_inputWidget = new QWidget();
-    m_inputWidget->setFixedWidth(150);
+    m_inputWidget->setFixedSize(150, 400); // 设置固定尺寸而不是仅仅宽度
     m_inputWidget->setStyleSheet(
         "QWidget { "
         "background-color: #e8f5e8; "
@@ -268,15 +300,16 @@ void ClockConfigWidget::setupClockSources()
     
     m_inputLayout->addStretch();
     
-    // 添加到流程布局
-    m_flowLayout->addWidget(m_inputWidget);
+    // 设置父widget为m_flowWidget并使用绝对定位
+    m_inputWidget->setParent(m_flowWidget);
+    // 默认位置将在initializeModulePositions中设置
 }
 
 void ClockConfigWidget::setupPLLs()
 {
     // 创建PLL区域
     m_pllWidget = new QWidget();
-    m_pllWidget->setFixedWidth(200);
+    m_pllWidget->setFixedSize(200, 700); // 设置固定尺寸
     m_pllWidget->setStyleSheet(
         "QWidget { "
         "background-color: #fff3cd; "
@@ -331,15 +364,16 @@ void ClockConfigWidget::setupPLLs()
     
     m_pllLayout->addStretch();
     
-    // 添加到流程布局
-    m_flowLayout->addWidget(m_pllWidget);
+    // 设置父widget为m_flowWidget并使用绝对定位
+    m_pllWidget->setParent(m_flowWidget);
+    // 默认位置将在initializeModulePositions中设置
 }
 
 void ClockConfigWidget::setupSubPLLs()
 {
     // 创建子PLL区域
     m_subPllWidget = new QWidget();
-    m_subPllWidget->setFixedWidth(180);
+    m_subPllWidget->setFixedSize(180, 780); // 设置固定尺寸
     m_subPllWidget->setStyleSheet(
         "QWidget { "
         "background-color: #e8f4f8; "
@@ -395,15 +429,16 @@ void ClockConfigWidget::setupSubPLLs()
     
     m_subPllLayout->addStretch();
     
-    // 添加到流程布局
-    m_flowLayout->addWidget(m_subPllWidget);
+    // 设置父widget为m_flowWidget并使用绝对定位
+    m_subPllWidget->setParent(m_flowWidget);
+    // 默认位置将在initializeModulePositions中设置
 }
 
 void ClockConfigWidget::setupOutputs()
 {
     // 创建OSC输出区域
     m_outputWidget = new QWidget();
-    m_outputWidget->setFixedWidth(200);  // 增加宽度以容纳更多节点
+    m_outputWidget->setFixedSize(200, 4000); // 设置固定尺寸以容纳更多节点
     m_outputWidget->setStyleSheet(
         "QWidget { "
         "background-color: #f8d7da; "
@@ -447,8 +482,9 @@ void ClockConfigWidget::setupOutputs()
     
     m_outputLayout->addStretch();
     
-    // 添加到流程布局
-    m_flowLayout->addWidget(m_outputWidget);
+    // 设置父widget为m_flowWidget并使用绝对定位
+    m_outputWidget->setParent(m_flowWidget);
+    // 默认位置将在initializeModulePositions中设置
     
     // 创建clk_1M子节点区域
     setupClk1MSubNodes();
@@ -458,7 +494,7 @@ void ClockConfigWidget::setupClk1MSubNodes()
 {
     // 创建clk_1M子节点区域
     m_clk1MSubNodeWidget = new QWidget();
-    m_clk1MSubNodeWidget->setFixedWidth(150);
+    m_clk1MSubNodeWidget->setFixedSize(150, 350); // 设置固定尺寸
     m_clk1MSubNodeWidget->setStyleSheet(
         "QWidget { "
         "background-color: #e8f0ff; "
@@ -497,8 +533,9 @@ void ClockConfigWidget::setupClk1MSubNodes()
     
     m_clk1MSubNodeLayout->addStretch();
     
-    // 添加到流程布局
-    m_flowLayout->addWidget(m_clk1MSubNodeWidget);
+    // 设置父widget为m_flowWidget并使用绝对定位
+    m_clk1MSubNodeWidget->setParent(m_flowWidget);
+    // 默认位置将在initializeModulePositions中设置
 }
 
 void ClockConfigWidget::createPLLWidget(const QString& pllName, QWidget* parent)
@@ -842,6 +879,192 @@ void ClockConfigWidget::setupClockTree()
     // 这里保留一个简单的实现作为备用
 }
 
+void ClockConfigWidget::initializeModulePositions()
+{
+    // 初始化各个模块的默认位置
+    ModulePosition inputPos = {"输入源", 20, 50, 150, 400};
+    ModulePosition pllPos = {"锁相环", 190, 50, 200, 700};
+    ModulePosition subPllPos = {"子锁相环", 410, 50, 180, 780};
+    ModulePosition outputPos = {"OSC输出", 610, 50, 200, 1800}; // 调整高度以容纳所有输出节点
+    ModulePosition clk1MSubPos = {"clk_1M子节点", 830, 50, 150, 350};
+    
+    m_modulePositions["输入源"] = inputPos;
+    m_modulePositions["锁相环"] = pllPos;
+    m_modulePositions["子锁相环"] = subPllPos;
+    m_modulePositions["OSC输出"] = outputPos;
+    m_modulePositions["clk_1M子节点"] = clk1MSubPos;
+    
+    // 应用默认位置
+    applyModulePositions();
+}
+
+void ClockConfigWidget::applyModulePositions()
+{
+    if (m_modulePositions.contains("输入源") && m_inputWidget) {
+        ModulePosition pos = m_modulePositions["输入源"];
+        m_inputWidget->move(pos.x, pos.y);
+        m_inputWidget->resize(pos.width, pos.height);
+    }
+    
+    if (m_modulePositions.contains("锁相环") && m_pllWidget) {
+        ModulePosition pos = m_modulePositions["锁相环"];
+        m_pllWidget->move(pos.x, pos.y);
+        m_pllWidget->resize(pos.width, pos.height);
+    }
+    
+    if (m_modulePositions.contains("子锁相环") && m_subPllWidget) {
+        ModulePosition pos = m_modulePositions["子锁相环"];
+        m_subPllWidget->move(pos.x, pos.y);
+        m_subPllWidget->resize(pos.width, pos.height);
+    }
+    
+    if (m_modulePositions.contains("OSC输出") && m_outputWidget) {
+        ModulePosition pos = m_modulePositions["OSC输出"];
+        m_outputWidget->move(pos.x, pos.y);
+        m_outputWidget->resize(pos.width, pos.height);
+    }
+    
+    if (m_modulePositions.contains("clk_1M子节点") && m_clk1MSubNodeWidget) {
+        ModulePosition pos = m_modulePositions["clk_1M子节点"];
+        m_clk1MSubNodeWidget->move(pos.x, pos.y);
+        m_clk1MSubNodeWidget->resize(pos.width, pos.height);
+    }
+    
+    // 重绘连接线
+    updateConnectionOverlay();
+}
+
+void ClockConfigWidget::showPositionConfigDialog()
+{
+    QDialog dialog(this);
+    dialog.setWindowTitle("模块位置配置");
+    dialog.setModal(true);
+    dialog.resize(400, 350);
+    
+    QVBoxLayout* mainLayout = new QVBoxLayout(&dialog);
+    
+    QFormLayout* formLayout = new QFormLayout();
+    
+    // 为每个模块创建位置配置控件
+    QMap<QString, QSpinBox*> xSpinBoxes;
+    QMap<QString, QSpinBox*> ySpinBoxes;
+    QMap<QString, QSpinBox*> widthSpinBoxes;
+    QMap<QString, QSpinBox*> heightSpinBoxes;
+    
+    QStringList moduleNames = {"输入源", "锁相环", "子锁相环", "OSC输出", "clk_1M子节点"};
+    
+    for (const QString& moduleName : moduleNames) {
+        QGroupBox* moduleGroup = new QGroupBox(moduleName);
+        QGridLayout* moduleLayout = new QGridLayout(moduleGroup);
+        
+        // X坐标
+        QLabel* xLabel = new QLabel("X坐标:");
+        QSpinBox* xSpinBox = new QSpinBox();
+        xSpinBox->setRange(0, 2000);
+        if (m_modulePositions.contains(moduleName)) {
+            xSpinBox->setValue(m_modulePositions[moduleName].x);
+        }
+        xSpinBoxes[moduleName] = xSpinBox;
+        
+        // Y坐标
+        QLabel* yLabel = new QLabel("Y坐标:");
+        QSpinBox* ySpinBox = new QSpinBox();
+        ySpinBox->setRange(0, 2000);
+        if (m_modulePositions.contains(moduleName)) {
+            ySpinBox->setValue(m_modulePositions[moduleName].y);
+        }
+        ySpinBoxes[moduleName] = ySpinBox;
+        
+        // 宽度
+        QLabel* widthLabel = new QLabel("宽度:");
+        QSpinBox* widthSpinBox = new QSpinBox();
+        widthSpinBox->setRange(50, 500);
+        if (m_modulePositions.contains(moduleName)) {
+            widthSpinBox->setValue(m_modulePositions[moduleName].width);
+        }
+        widthSpinBoxes[moduleName] = widthSpinBox;
+        
+        // 高度
+        QLabel* heightLabel = new QLabel("高度:");
+        QSpinBox* heightSpinBox = new QSpinBox();
+        heightSpinBox->setRange(50, 800);
+        if (m_modulePositions.contains(moduleName)) {
+            heightSpinBox->setValue(m_modulePositions[moduleName].height);
+        }
+        heightSpinBoxes[moduleName] = heightSpinBox;
+        
+        moduleLayout->addWidget(xLabel, 0, 0);
+        moduleLayout->addWidget(xSpinBox, 0, 1);
+        moduleLayout->addWidget(yLabel, 0, 2);
+        moduleLayout->addWidget(ySpinBox, 0, 3);
+        moduleLayout->addWidget(widthLabel, 1, 0);
+        moduleLayout->addWidget(widthSpinBox, 1, 1);
+        moduleLayout->addWidget(heightLabel, 1, 2);
+        moduleLayout->addWidget(heightSpinBox, 1, 3);
+        
+        formLayout->addRow(moduleGroup);
+    }
+    
+    mainLayout->addLayout(formLayout);
+    
+    // 添加按钮
+    QDialogButtonBox* buttonBox = new QDialogButtonBox(
+        QDialogButtonBox::Ok | QDialogButtonBox::Cancel | QDialogButtonBox::RestoreDefaults);
+    
+    connect(buttonBox, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
+    connect(buttonBox, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
+    connect(buttonBox->button(QDialogButtonBox::RestoreDefaults), &QPushButton::clicked, [&]() {
+        // 恢复默认值
+        initializeModulePositions();
+        for (const QString& moduleName : moduleNames) {
+            if (m_modulePositions.contains(moduleName)) {
+                ModulePosition pos = m_modulePositions[moduleName];
+                xSpinBoxes[moduleName]->setValue(pos.x);
+                ySpinBoxes[moduleName]->setValue(pos.y);
+                widthSpinBoxes[moduleName]->setValue(pos.width);
+                heightSpinBoxes[moduleName]->setValue(pos.height);
+            }
+        }
+    });
+    
+    mainLayout->addWidget(buttonBox);
+    
+    if (dialog.exec() == QDialog::Accepted) {
+        // 应用新的位置配置
+        for (const QString& moduleName : moduleNames) {
+            ModulePosition pos;
+            pos.moduleName = moduleName;
+            pos.x = xSpinBoxes[moduleName]->value();
+            pos.y = ySpinBoxes[moduleName]->value();
+            pos.width = widthSpinBoxes[moduleName]->value();
+            pos.height = heightSpinBoxes[moduleName]->value();
+            
+            m_modulePositions[moduleName] = pos;
+        }
+        
+        applyModulePositions();
+    }
+}
+
+void ClockConfigWidget::setModulePosition(const QString& moduleName, int x, int y)
+{
+    if (m_modulePositions.contains(moduleName)) {
+        m_modulePositions[moduleName].x = x;
+        m_modulePositions[moduleName].y = y;
+        applyModulePositions();
+    }
+}
+
+ModulePosition ClockConfigWidget::getModulePosition(const QString& moduleName) const
+{
+    return m_modulePositions.value(moduleName, ModulePosition());
+}
+
+void ClockConfigWidget::resetModulePositions()
+{
+    initializeModulePositions();
+}
+
 void ClockConfigWidget::connectSignals()
 {
     // 连接PLL控制信号
@@ -889,6 +1112,7 @@ void ClockConfigWidget::connectSignals()
     
     // 连接按钮信号
     connect(m_resetButton, &QPushButton::clicked, this, &ClockConfigWidget::resetToDefaults);
+    connect(m_positionConfigButton, &QPushButton::clicked, this, &ClockConfigWidget::showPositionConfigDialog);
     connect(m_applyButton, &QPushButton::clicked, this, [this]() {
         emit configChanged();
         QMessageBox::information(this, "配置", "时钟配置已应用！");
@@ -1346,14 +1570,14 @@ QPoint ClockConfigWidget::getOSCConnectionPoint() const
         return QPoint();
     }
     
-    // 获取OSC widget在flow widget中的相对位置
+    // 直接使用widget的位置，因为现在使用绝对定位
     QPoint inputPos = m_inputWidget->pos();
     QRect inputRect = m_inputWidget->rect();
     
-    // OSC连接点位于输入源widget的右侧中央
+    // OSC连接点位于输入源widget的右侧中央，考虑RTC和OSC的位置
     QPoint oscPoint = QPoint(
         inputPos.x() + inputRect.width(),
-        inputPos.y() + inputRect.height() / 3 + 30  // 考虑添加的间距，调整OSC位置
+        inputPos.y() + inputRect.height() / 3 * 2 + 30  // OSC位置调整
     );
     
     // 转换为相对于ClockConfigWidget的坐标
@@ -1384,7 +1608,7 @@ QPoint ClockConfigWidget::getPLLConnectionPoint(const QString& pllName) const
     QPoint pllPos = pllWidget->pos();
     QRect pllRect = pllWidget->rect();
     
-    // 获取PLL区域在flow widget中的位置
+    // 获取PLL区域的绝对位置
     QPoint pllAreaPos = m_pllWidget->pos();
     
     // PLL连接点位于PLL widget的左侧中央
