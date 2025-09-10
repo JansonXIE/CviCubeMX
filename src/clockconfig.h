@@ -19,6 +19,12 @@
 #include <QCheckBox>
 #include <QMap>
 #include <QString>
+#include <QPainter>
+#include <QPaintEvent>
+#include <QPolygon>
+
+// 前向声明
+class ConnectionOverlay;
 
 // PLL配置结构
 struct PLLConfig {
@@ -72,6 +78,11 @@ public:
     bool saveConfig(const QString& filePath);
     bool loadConfig(const QString& filePath);
 
+protected:
+    void paintEvent(QPaintEvent* event) override;
+    void resizeEvent(QResizeEvent* event) override;
+    bool eventFilter(QObject* obj, QEvent* event) override;
+
 signals:
     void configChanged();
     void pllConfigChanged(const QString& pllName);
@@ -100,6 +111,13 @@ private:
     void updateChannelFrequency(const QString& channelName);
     void updateOutputFrequency(const QString& outputName);
     void connectSignals();
+    
+    // 连接线绘制相关方法
+    void drawConnectionLines(QPainter& painter);
+    void drawArrowLine(QPainter& painter, const QPoint& start, const QPoint& end, const QColor& color = Qt::blue);
+    QPoint getOSCConnectionPoint() const;
+    QPoint getPLLConnectionPoint(const QString& pllName) const;
+    void updateConnectionOverlay();
     
     // UI组件
     QVBoxLayout* m_mainLayout;
@@ -180,6 +198,9 @@ private:
     static const QStringList PLL_NAMES;
     static const QStringList CHANNEL_NAMES;
     static const QStringList OUTPUT_NAMES;
+    
+    // 连接线覆盖层
+    QWidget* m_connectionOverlay;
 };
 
 #endif // CLOCKCONFIG_H

@@ -7,8 +7,16 @@
 #include <QFile>
 #include <QDebug>
 #include <QCheckBox>
+#include <QPainter>
+#include <QPaintEvent>
+#include <QPolygon>
+#include <QVector2D>
+#include <QScrollBar>
+#include <QTimer>
+#include <QResizeEvent>
+#include <QEvent>
 
-// 定义常量
+// ClockConfigWidget类实现
 const double ClockConfigWidget::OSC_FREQUENCY = 25.0;  // 25MHz
 const double ClockConfigWidget::RTC_FREQUENCY = 0.032768;  // 32.768kHz
 
@@ -53,6 +61,7 @@ ClockConfigWidget::ClockConfigWidget(QWidget *parent)
     , m_buttonLayout(nullptr)
     , m_resetButton(nullptr)
     , m_applyButton(nullptr)
+    , m_connectionOverlay(nullptr)
 {
     setupUI();
     setupClockSources();
@@ -62,6 +71,20 @@ ClockConfigWidget::ClockConfigWidget(QWidget *parent)
     setupClockTree();
     connectSignals();
     updateFrequencies();
+    
+    // 创建连接线覆盖层
+    m_connectionOverlay = new QWidget(this);
+    m_connectionOverlay->setAttribute(Qt::WA_TransparentForMouseEvents);
+    m_connectionOverlay->setAttribute(Qt::WA_NoSystemBackground);
+    m_connectionOverlay->setStyleSheet("background: transparent;");
+    
+    // 重写覆盖层的paintEvent
+    m_connectionOverlay->installEventFilter(this);
+    
+    // 延迟重绘以确保布局完成
+    QTimer::singleShot(100, this, [this]() {
+        updateConnectionOverlay();
+    });
 }
 
 ClockConfigWidget::~ClockConfigWidget()
@@ -91,7 +114,7 @@ void ClockConfigWidget::setupUI()
     m_flowWidget = new QWidget();
     m_flowLayout = new QHBoxLayout(m_flowWidget);
     m_flowLayout->setContentsMargins(20, 20, 20, 20);
-    m_flowLayout->setSpacing(30);
+    m_flowLayout->setSpacing(20); // 减少间距为连接线留出空间
     
     // 设置流程区域样式
     m_flowWidget->setStyleSheet(
@@ -176,31 +199,9 @@ void ClockConfigWidget::setupClockSources()
     inputTitle->setAlignment(Qt::AlignCenter);
     m_inputLayout->addWidget(inputTitle);
     
-    // OSC 25MHz
-    QWidget* oscWidget = new QWidget();
-    oscWidget->setStyleSheet(
-        "QWidget { "
-        "background-color: #ffffff; "
-        "border: 1px solid #28a745; "
-        "border-radius: 6px; "
-        "padding: 8px; "
-        "}"
-    );
-    QVBoxLayout* oscLayout = new QVBoxLayout(oscWidget);
-    oscLayout->setContentsMargins(5, 5, 5, 5);
-    
-    QLabel* oscLabel = new QLabel("25MHz");
-    oscLabel->setStyleSheet("font-weight: bold; color: #28a745; font-size: 12px;");
-    oscLabel->setAlignment(Qt::AlignCenter);
-    
-    QLabel* oscSubLabel = new QLabel("OSC");
-    oscSubLabel->setStyleSheet("color: #28a745; font-size: 10px;");
-    oscSubLabel->setAlignment(Qt::AlignCenter);
-    
-    oscLayout->addWidget(oscLabel);
-    oscLayout->addWidget(oscSubLabel);
-    m_inputLayout->addWidget(oscWidget);
-    
+    // 添加顶部间距，用于调节OSC和RTC组件的位置
+    m_inputLayout->addSpacing(30);  // 向下移动30像素
+
     // RTC 32768Hz
     QWidget* rtcWidget = new QWidget();
     rtcWidget->setStyleSheet(
@@ -225,6 +226,34 @@ void ClockConfigWidget::setupClockSources()
     rtcLayout->addWidget(rtcLabel);
     rtcLayout->addWidget(rtcSubLabel);
     m_inputLayout->addWidget(rtcWidget);
+
+    // OSC和RTC之间添加间距
+    m_inputLayout->addSpacing(200);
+    
+    // OSC 25MHz
+    QWidget* oscWidget = new QWidget();
+    oscWidget->setStyleSheet(
+        "QWidget { "
+        "background-color: #ffffff; "
+        "border: 1px solid #28a745; "
+        "border-radius: 6px; "
+        "padding: 8px; "
+        "}"
+    );
+    QVBoxLayout* oscLayout = new QVBoxLayout(oscWidget);
+    oscLayout->setContentsMargins(5, 5, 5, 5);
+    
+    QLabel* oscLabel = new QLabel("25MHz");
+    oscLabel->setStyleSheet("font-weight: bold; color: #28a745; font-size: 12px;");
+    oscLabel->setAlignment(Qt::AlignCenter);
+    
+    QLabel* oscSubLabel = new QLabel("OSC");
+    oscSubLabel->setStyleSheet("color: #28a745; font-size: 10px;");
+    oscSubLabel->setAlignment(Qt::AlignCenter);
+    
+    oscLayout->addWidget(oscLabel);
+    oscLayout->addWidget(oscSubLabel);
+    m_inputLayout->addWidget(oscWidget);
     
     m_inputLayout->addStretch();
     
@@ -259,15 +288,40 @@ void ClockConfigWidget::setupPLLs()
     for (const QString& pllName : PLL_NAMES) {
         createPLLWidget(pllName, m_pllWidget);
         
-        // 初始化PLL配置
+        // 初始化PLL配置，根据不同PLL设置不同的默认倍频
         PLLConfig config;
         config.name = pllName;
         config.enabled = true;  // 默认启用
         config.inputFreq = OSC_FREQUENCY;
-        config.outputFreq = OSC_FREQUENCY * 20;  // 默认20倍频
         config.divider = 1;  // 分频器固定为1
-        config.multiplier = 20;  // 默认20倍频
         config.source = "OSC";
+        
+        // 根据PLL名称设置不同的默认倍频值
+        if (pllName == "FPLL") {
+            config.multiplier = 40;
+        } else if (pllName == "MIPIMPLL") {
+            config.multiplier = 36;
+        } else if (pllName == "MPLL") {
+            config.multiplier = 48;
+        } else if (pllName == "TPLL") {
+            config.multiplier = 60;
+        } else if (pllName == "APLL") {
+            config.multiplier = 20;  // 保持原有默认值
+        } else if (pllName == "CAM0PLL") {
+            config.multiplier = 20;  // 保持原有默认值
+        } else if (pllName == "CAM1PLL") {
+            config.multiplier = 20;  // 保持原有默认值
+        } else if (pllName == "DISPPLL") {
+            config.multiplier = 20;  // 保持原有默认值
+        } else if (pllName == "APPLL") {
+            config.multiplier = 40;
+        } else if (pllName == "RVPLL") {
+            config.multiplier = 48;
+        } else {
+            config.multiplier = 20;  // 其他PLL使用默认值
+        }
+        
+        config.outputFreq = OSC_FREQUENCY * config.multiplier;
         
         m_pllConfigs[pllName] = config;
     }
@@ -400,7 +454,24 @@ void ClockConfigWidget::createPLLWidget(const QString& pllName, QWidget* parent)
     
     QSpinBox* multBox = new QSpinBox();
     multBox->setRange(1, 100);
-    multBox->setValue(20);  // 默认值改为20倍频
+    
+    // 根据PLL名称设置不同的默认倍频值
+    int defaultMultiplier = 20;  // 默认值
+    if (pllName == "FPLL") {
+        defaultMultiplier = 40;
+    } else if (pllName == "MIPIMPLL") {
+        defaultMultiplier = 36;
+    } else if (pllName == "MPLL") {
+        defaultMultiplier = 48;
+    } else if (pllName == "TPLL") {
+        defaultMultiplier = 60;
+    } else if (pllName == "APPLL") {
+        defaultMultiplier = 40;
+    } else if (pllName == "RVPLL") {
+        defaultMultiplier = 48;
+    }
+    
+    multBox->setValue(defaultMultiplier);
     multBox->setFixedWidth(60);
     multBox->setStyleSheet("font-size: 10px;");
     
@@ -408,7 +479,24 @@ void ClockConfigWidget::createPLLWidget(const QString& pllName, QWidget* parent)
     configLayout->addWidget(multBox);
     
     // 频率显示
-    QLabel* freqLabel = new QLabel("500.000 MHz");
+    QString freqText;
+    if (pllName == "FPLL") {
+        freqText = "1000.000 MHz";  // 25 * 40
+    } else if (pllName == "MIPIMPLL") {
+        freqText = "900.000 MHz";   // 25 * 36
+    } else if (pllName == "MPLL") {
+        freqText = "1200.000 MHz";  // 25 * 48
+    } else if (pllName == "TPLL") {
+        freqText = "1500.000 MHz";  // 25 * 60
+    } else if (pllName == "APPLL") {
+        freqText = "1000.000 MHz";  // 25 * 40
+    } else if (pllName == "RVPLL") {
+        freqText = "1200.000 MHz";  // 25 * 48
+    } else {
+        freqText = "500.000 MHz";   // 25 * 20 (其他PLL的默认值)
+    }
+    
+    QLabel* freqLabel = new QLabel(freqText);
     freqLabel->setStyleSheet("color: #dc3545; font-family: monospace; font-weight: bold; font-size: 9px;");
     freqLabel->setAlignment(Qt::AlignCenter);
     
@@ -606,6 +694,12 @@ void ClockConfigWidget::connectSignals()
         emit configChanged();
         QMessageBox::information(this, "配置", "时钟配置已应用！");
     });
+    
+    // 连接滚动条信号以重绘连接线
+    connect(m_flowScrollArea->horizontalScrollBar(), &QScrollBar::valueChanged, 
+            this, [this]() { updateConnectionOverlay(); });
+    connect(m_flowScrollArea->verticalScrollBar(), &QScrollBar::valueChanged, 
+            this, [this]() { updateConnectionOverlay(); });
 }
 
 void ClockConfigWidget::onPLLMultiplierChanged(const QString& pllName, int multiplier)
@@ -781,12 +875,28 @@ void ClockConfigWidget::resetToDefaults()
 {
     // 重置PLL配置
     for (const QString& pllName : PLL_NAMES) {
+        // 根据PLL名称设置不同的默认倍频值
+        int defaultMultiplier = 20;  // 默认值
+        if (pllName == "FPLL") {
+            defaultMultiplier = 40;
+        } else if (pllName == "MIPIMPLL") {
+            defaultMultiplier = 36;
+        } else if (pllName == "MPLL") {
+            defaultMultiplier = 48;
+        } else if (pllName == "TPLL") {
+            defaultMultiplier = 60;
+        } else if (pllName == "APPLL") {
+            defaultMultiplier = 40;
+        } else if (pllName == "RVPLL") {
+            defaultMultiplier = 48;
+        }
+        
         if (m_pllMultiplierBoxes.contains(pllName)) {
-            m_pllMultiplierBoxes[pllName]->setValue(20);  // 默认20倍频
+            m_pllMultiplierBoxes[pllName]->setValue(defaultMultiplier);
         }
         
         m_pllConfigs[pllName].enabled = true;  // 始终启用
-        m_pllConfigs[pllName].multiplier = 20;  // 默认20倍频
+        m_pllConfigs[pllName].multiplier = defaultMultiplier;
         m_pllConfigs[pllName].divider = 1;      // 分频器固定为1
     }
     
@@ -825,6 +935,7 @@ void ClockConfigWidget::resetToDefaults()
     
     updateFrequencies();
     emit configChanged();
+    updateConnectionOverlay();  // 重绘连接线
 }
 
 PLLConfig ClockConfigWidget::getPLLConfig(const QString& pllName) const
@@ -891,4 +1002,170 @@ bool ClockConfigWidget::loadConfig(const QString& filePath)
     // TODO: 实现配置加载功能
     Q_UNUSED(filePath)
     return true;
+}
+
+void ClockConfigWidget::paintEvent(QPaintEvent* event)
+{
+    QWidget::paintEvent(event);
+    // 连接线现在由覆盖层绘制，这里不再需要绘制
+}
+
+void ClockConfigWidget::resizeEvent(QResizeEvent* event)
+{
+    QWidget::resizeEvent(event);
+    updateConnectionOverlay();
+}
+
+bool ClockConfigWidget::eventFilter(QObject* obj, QEvent* event)
+{
+    if (obj == m_connectionOverlay && event->type() == QEvent::Paint) {
+        QPaintEvent* paintEvent = static_cast<QPaintEvent*>(event);
+        
+        QPainter painter(m_connectionOverlay);
+        painter.setRenderHint(QPainter::Antialiasing, true);
+        
+        // 绘制连接线
+        drawConnectionLines(painter);
+        
+        return true;  // 事件已处理
+    }
+    
+    return QWidget::eventFilter(obj, event);
+}
+
+void ClockConfigWidget::drawConnectionLines(QPainter& painter)
+{
+    // 确保flow widget已经布局完成
+    if (!m_flowWidget || !m_inputWidget || !m_pllWidget) {
+        return;
+    }
+    
+    // 获取OSC连接点
+    QPoint oscPoint = getOSCConnectionPoint();
+    
+    // 需要连接的PLL列表（根据需求：FPLL、MIPIMPLL、MPLL、TPLL、APPLL和RVPLL）
+    QStringList targetPLLs = {"FPLL", "MIPIMPLL", "MPLL", "TPLL", "APPLL", "RVPLL"};
+    
+    // 为每个目标PLL绘制连接线
+    for (const QString& pllName : targetPLLs) {
+        QPoint pllPoint = getPLLConnectionPoint(pllName);
+        if (!pllPoint.isNull() && !oscPoint.isNull()) {
+            // 使用不同颜色来区分不同的连接线
+            QColor lineColor = Qt::blue;
+            if (pllName == "FPLL") lineColor = QColor(220, 53, 69);      // 红色
+            else if (pllName == "MIPIMPLL") lineColor = QColor(255, 193, 7);  // 黄色
+            else if (pllName == "MPLL") lineColor = QColor(40, 167, 69);      // 绿色
+            else if (pllName == "TPLL") lineColor = QColor(23, 162, 184);     // 青色
+            else if (pllName == "APPLL") lineColor = QColor(102, 16, 242);    // 紫色
+            else if (pllName == "RVPLL") lineColor = QColor(255, 102, 0);     // 橙色
+            
+            drawArrowLine(painter, oscPoint, pllPoint, lineColor);
+        }
+    }
+}
+
+void ClockConfigWidget::drawArrowLine(QPainter& painter, const QPoint& start, const QPoint& end, const QColor& color)
+{
+    painter.setPen(QPen(color, 2));
+    painter.setBrush(QBrush(color));
+    
+    // 绘制连接线
+    painter.drawLine(start, end);
+    
+    // 计算箭头
+    QVector2D line(end - start);
+    line = line.normalized();
+    
+    // 箭头大小
+    const int arrowSize = 8;
+    
+    // 计算箭头的两个点
+    QVector2D arrowP1 = QVector2D(end) - line * arrowSize;
+    QVector2D perpendicular(-line.y(), line.x());
+    
+    QPoint arrow1 = (arrowP1 + perpendicular * (arrowSize / 2)).toPoint();
+    QPoint arrow2 = (arrowP1 - perpendicular * (arrowSize / 2)).toPoint();
+    
+    // 绘制箭头
+    QPolygon arrowHead;
+    arrowHead << end << arrow1 << arrow2;
+    painter.drawPolygon(arrowHead);
+}
+
+QPoint ClockConfigWidget::getOSCConnectionPoint() const
+{
+    if (!m_inputWidget || !m_flowWidget) {
+        return QPoint();
+    }
+    
+    // 获取OSC widget在flow widget中的相对位置
+    QPoint inputPos = m_inputWidget->pos();
+    QRect inputRect = m_inputWidget->rect();
+    
+    // OSC连接点位于输入源widget的右侧中央
+    QPoint oscPoint = QPoint(
+        inputPos.x() + inputRect.width(),
+        inputPos.y() + inputRect.height() / 3 + 30  // 考虑添加的间距，调整OSC位置
+    );
+    
+    // 转换为相对于ClockConfigWidget的坐标
+    QPoint flowPos = m_flowWidget->pos();
+    QPoint scrollOffset = QPoint(
+        m_flowScrollArea->horizontalScrollBar()->value(),
+        m_flowScrollArea->verticalScrollBar()->value()
+    );
+    
+    return QPoint(
+        flowPos.x() + oscPoint.x() - scrollOffset.x(),
+        flowPos.y() + oscPoint.y() - scrollOffset.y() + 60  // 加上标题高度
+    );
+}
+
+QPoint ClockConfigWidget::getPLLConnectionPoint(const QString& pllName) const
+{
+    if (!m_pllWidget || !m_flowWidget || !m_pllWidgets.contains(pllName)) {
+        return QPoint();
+    }
+    
+    QWidget* pllWidget = m_pllWidgets[pllName];
+    if (!pllWidget) {
+        return QPoint();
+    }
+    
+    // 获取PLL widget在其父widget中的位置
+    QPoint pllPos = pllWidget->pos();
+    QRect pllRect = pllWidget->rect();
+    
+    // 获取PLL区域在flow widget中的位置
+    QPoint pllAreaPos = m_pllWidget->pos();
+    
+    // PLL连接点位于PLL widget的左侧中央
+    QPoint pllPoint = QPoint(
+        pllAreaPos.x() + pllPos.x(),
+        pllAreaPos.y() + pllPos.y() + pllRect.height() / 2
+    );
+    
+    // 转换为相对于ClockConfigWidget的坐标
+    QPoint flowPos = m_flowWidget->pos();
+    QPoint scrollOffset = QPoint(
+        m_flowScrollArea->horizontalScrollBar()->value(),
+        m_flowScrollArea->verticalScrollBar()->value()
+    );
+    
+    return QPoint(
+        flowPos.x() + pllPoint.x() - scrollOffset.x(),
+        flowPos.y() + pllPoint.y() - scrollOffset.y() + 60  // 加上标题高度
+    );
+}
+
+void ClockConfigWidget::updateConnectionOverlay()
+{
+    if (!m_connectionOverlay) {
+        return;
+    }
+    
+    // 设置覆盖层的大小和位置覆盖整个widget
+    m_connectionOverlay->setGeometry(rect());
+    m_connectionOverlay->raise();  // 确保覆盖层在最上层
+    m_connectionOverlay->update(); // 重绘覆盖层
 }
