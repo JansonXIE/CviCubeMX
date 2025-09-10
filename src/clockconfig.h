@@ -32,21 +32,9 @@ struct PLLConfig {
     bool enabled;          // 是否启用
     double inputFreq;      // 输入频率(MHz)
     double outputFreq;     // 输出频率(MHz)
-    int divider;          // 分频器值
+    double divider;        // 分频器值（支持小数）
     int multiplier;       // 倍频器值
     QString source;       // 时钟源
-};
-
-// 时钟输出通道结构
-struct ClockChannel {
-    QString name;         // 通道名称
-    QString pllSource1;   // PLL源1
-    QString pllSource2;   // PLL源2
-    int divider1;        // 分频器1
-    int divider2;        // 分频器2
-    int muxSelection;    // MUX选择(0=源1, 1=源2)
-    double frequency;    // 输出频率(MHz)
-    bool enabled;        // 是否启用
 };
 
 // 时钟输出结构
@@ -70,10 +58,6 @@ public:
     PLLConfig getPLLConfig(const QString& pllName) const;
     void setPLLConfig(const QString& pllName, const PLLConfig& config);
     
-    // 获取和设置时钟通道配置
-    ClockChannel getClockChannel(const QString& channelName) const;
-    void setClockChannel(const QString& channelName, const ClockChannel& channel);
-    
     // 保存和加载配置
     bool saveConfig(const QString& filePath);
     bool loadConfig(const QString& filePath);
@@ -86,14 +70,11 @@ protected:
 signals:
     void configChanged();
     void pllConfigChanged(const QString& pllName);
-    void channelConfigChanged(const QString& channelName);
 
 private slots:
     void onPLLMultiplierChanged(const QString& pllName, int multiplier);
+    void onSubPLLConfigChanged(const QString& pllName);  // 新增
     void onClockDividerChanged(const QString& outputName, int divider);
-    void onClockTreeItemClicked(QTreeWidgetItem* item, int column);
-    void onChannelConfigChanged(const QString& channelName);
-    void onChannelMuxChanged(const QString& channelName, int selection);
     void updateFrequencies();
     void resetToDefaults();
 
@@ -101,14 +82,15 @@ private:
     void setupUI();
     void setupClockSources();
     void setupPLLs();
-    void setupClockChannels();
+    void setupSubPLLs();  // 新增：设置子PLL区域
     void setupOutputs();
     void setupClockTree();
     void createPLLWidget(const QString& pllName, QWidget* parent);
-    void createClockChannelWidget(const QString& channelName, QWidget* parent);
+    void createSubPLLWidget(const QString& pllName, QWidget* parent);  // 新增：创建子PLL widget
     void createOutputWidget(const QString& outputName, QWidget* parent);
     void updatePLLFrequency(const QString& pllName);
-    void updateChannelFrequency(const QString& channelName);
+    void updateSubPLLFrequency(const QString& pllName);  // 新增
+    void updateAllSubPLLFrequencies();  // 新增
     void updateOutputFrequency(const QString& outputName);
     void connectSignals();
     
@@ -117,6 +99,8 @@ private:
     void drawArrowLine(QPainter& painter, const QPoint& start, const QPoint& end, const QColor& color = Qt::blue);
     QPoint getOSCConnectionPoint() const;
     QPoint getPLLConnectionPoint(const QString& pllName) const;
+    QPoint getSubPLLConnectionPoint(const QString& pllName) const;  // 新增：获取子PLL连接点
+    QPoint getMIPIMPLLConnectionPoint() const;  // 新增：获取MIPIMPLL输出连接点
     void updateConnectionOverlay();
     
     // UI组件
@@ -135,9 +119,9 @@ private:
     QWidget* m_pllWidget;
     QVBoxLayout* m_pllLayout;
     
-    // 时钟通道区域
-    QWidget* m_channelWidget;
-    QVBoxLayout* m_channelLayout;
+    // 子PLL区域
+    QWidget* m_subPllWidget;
+    QVBoxLayout* m_subPllLayout;
     
     // 输出区域
     QWidget* m_outputWidget;
@@ -165,16 +149,11 @@ private:
     QMap<QString, QSpinBox*> m_pllMultiplierBoxes;
     QMap<QString, QLabel*> m_pllFreqLabels;
     
-    // 时钟通道配置组
-    QGroupBox* m_channelGroup;
-    QVBoxLayout* m_channelGroupLayout;
-    QMap<QString, QWidget*> m_channelWidgets;
-    QMap<QString, QComboBox*> m_channelSource1Boxes;
-    QMap<QString, QComboBox*> m_channelSource2Boxes;
-    QMap<QString, QSpinBox*> m_channelDiv1Boxes;
-    QMap<QString, QSpinBox*> m_channelDiv2Boxes;
-    QMap<QString, QComboBox*> m_channelMuxBoxes;
-    QMap<QString, QLabel*> m_channelFreqLabels;
+    // 子PLL配置组
+    QMap<QString, QWidget*> m_subPllWidgets;
+    QMap<QString, QSpinBox*> m_subPllMultiplierBoxes;
+    QMap<QString, QDoubleSpinBox*> m_subPllDividerBoxes;  // 改为QDoubleSpinBox支持小数
+    QMap<QString, QLabel*> m_subPllFreqLabels;
     
     // 输出配置组
     QGroupBox* m_outputGroup;
@@ -189,14 +168,13 @@ private:
     
     // 数据存储
     QMap<QString, PLLConfig> m_pllConfigs;
-    QMap<QString, ClockChannel> m_clockChannels;
     QMap<QString, ClockOutput> m_outputs;
     
     // 常量
     static const double OSC_FREQUENCY;  // 25MHz
     static const double RTC_FREQUENCY;  // 32.768kHz
     static const QStringList PLL_NAMES;
-    static const QStringList CHANNEL_NAMES;
+    static const QStringList SUB_PLL_NAMES;  // 新增：子PLL名称列表
     static const QStringList OUTPUT_NAMES;
     
     // 连接线覆盖层
