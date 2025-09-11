@@ -92,6 +92,11 @@ private slots:
     void onSubPLLConfigChanged(const QString& pllName);  // 新增
     void onClockDividerChanged(const QString& outputName, int divider);
     void onClk1MSubNodeDividerChanged(const QString& nodeName, int divider);  // 新增：clk_1M子节点分频器变化
+    void onClkCam1PLLSubNodeDividerChanged(const QString& nodeName, int divider);  // 新增：clk_cam1pll子节点分频器变化
+    void onClkRawAxiSubNodeDividerChanged(const QString& nodeName, int divider);  // 新增：clk_raw_axi子节点分频器变化
+    void onClkCam0PLLSubNodeDividerChanged(const QString& nodeName, int divider);  // 新增：clk_cam0pll子节点分频器变化
+    void onClkDispPLLSubNodeDividerChanged(const QString& nodeName, int divider);  // 新增：clk_disppll子节点分频器变化
+    void onClkSysDispSubNodeDividerChanged(const QString& nodeName, int divider);  // 新增：clk_sys_disp子节点分频器变化
     void updateFrequencies();
     void resetToDefaults();
 
@@ -102,18 +107,38 @@ private:
     void setupSubPLLs();  // 新增：设置子PLL区域
     void setupOutputs();
     void setupClk1MSubNodes();  // 新增：设置clk_1M子节点区域
+    void setupClkCam1PLLSubNodes();  // 新增：设置clk_cam1pll子节点区域
+    void setupClkRawAxiSubNodes();  // 新增：设置clk_raw_axi子节点区域
+    void setupClkCam0PLLSubNodes();  // 新增：设置clk_cam0pll子节点区域
+    void setupClkDispPLLSubNodes();  // 新增：设置clk_disppll子节点区域
+    void setupClkSysDispSubNodes();  // 新增：设置clk_sys_disp子节点区域
     void setupClockTree();
     void initializeModulePositions();  // 新增：初始化模块位置
     void createPLLWidget(const QString& pllName, QWidget* parent);
     void createSubPLLWidget(const QString& pllName, QWidget* parent);  // 新增：创建子PLL widget
     void createOutputWidget(const QString& outputName, QWidget* parent);
     void createClk1MSubNodeWidget(const QString& nodeName, QWidget* parent);  // 新增：创建clk_1M子节点widget
+    void createClkCam1PLLSubNodeWidget(const QString& nodeName, QWidget* parent);  // 新增：创建clk_cam1pll子节点widget
+    void createClkRawAxiSubNodeWidget(const QString& nodeName, QWidget* parent);  // 新增：创建clk_raw_axi子节点widget
+    void createClkCam0PLLSubNodeWidget(const QString& nodeName, QWidget* parent);  // 新增：创建clk_cam0pll子节点widget
+    void createClkDispPLLSubNodeWidget(const QString& nodeName, QWidget* parent);  // 新增：创建clk_disppll子节点widget
+    void createClkSysDispSubNodeWidget(const QString& nodeName, QWidget* parent);  // 新增：创建clk_sys_disp子节点widget
     void updatePLLFrequency(const QString& pllName);
     void updateSubPLLFrequency(const QString& pllName);  // 新增
     void updateAllSubPLLFrequencies();  // 新增
     void updateOutputFrequency(const QString& outputName);
     void updateClk1MSubNodeFrequency(const QString& nodeName);  // 新增：更新clk_1M子节点频率
     void updateAllClk1MSubNodeFrequencies();  // 新增：更新所有clk_1M子节点频率
+    void updateClkCam1PLLSubNodeFrequency(const QString& nodeName);  // 新增：更新clk_cam1pll子节点频率
+    void updateAllClkCam1PLLSubNodeFrequencies();  // 新增：更新所有clk_cam1pll子节点频率
+    void updateClkRawAxiSubNodeFrequency(const QString& nodeName);  // 新增：更新clk_raw_axi子节点频率
+    void updateAllClkRawAxiSubNodeFrequencies();  // 新增：更新所有clk_raw_axi子节点频率
+    void updateClkCam0PLLSubNodeFrequency(const QString& nodeName);  // 新增：更新clk_cam0pll子节点频率
+    void updateAllClkCam0PLLSubNodeFrequencies();  // 新增：更新所有clk_cam0pll子节点频率
+    void updateClkDispPLLSubNodeFrequency(const QString& nodeName);  // 新增：更新clk_disppll子节点频率
+    void updateAllClkDispPLLSubNodeFrequencies();  // 新增：更新所有clk_disppll子节点频率
+    void updateClkSysDispSubNodeFrequency(const QString& nodeName);  // 新增：更新clk_sys_disp子节点频率
+    void updateAllClkSysDispSubNodeFrequencies();  // 新增：更新所有clk_sys_disp子节点频率
     void connectSignals();
     
     // 连接线绘制相关方法
@@ -126,6 +151,16 @@ private:
     QPoint getOutputAreaConnectionPoint() const;  // 新增：获取输出区域连接点
     QPoint getClk1MConnectionPoint() const;  // 新增：获取clk_1M连接点
     QPoint getClk1MSubNodeConnectionPoint(const QString& nodeName) const;  // 新增：获取clk_1M子节点连接点
+    QPoint getClkCam1PLLConnectionPoint() const;  // 新增：获取clk_cam1pll连接点
+    QPoint getClkCam1PLLSubNodeConnectionPoint(const QString& nodeName) const;  // 新增：获取clk_cam1pll子节点连接点
+    QPoint getClkRawAxiConnectionPoint() const;  // 新增：获取clk_raw_axi连接点
+    QPoint getClkRawAxiSubNodeConnectionPoint(const QString& nodeName) const;  // 新增：获取clk_raw_axi子节点连接点
+    QPoint getClkCam0PLLConnectionPoint() const;  // 新增：获取clk_cam0pll连接点
+    QPoint getClkCam0PLLSubNodeConnectionPoint(const QString& nodeName) const;  // 新增：获取clk_cam0pll子节点连接点
+    QPoint getClkDispPLLConnectionPoint() const;  // 新增：获取clk_disppll连接点
+    QPoint getClkDispPLLSubNodeConnectionPoint(const QString& nodeName) const;  // 新增：获取clk_disppll子节点连接点
+    QPoint getClkSysDispConnectionPoint() const;  // 新增：获取clk_sys_disp连接点
+    QPoint getClkSysDispSubNodeConnectionPoint(const QString& nodeName) const;  // 新增：获取clk_sys_disp子节点连接点
     void updateConnectionOverlay();
     
     // UI组件
@@ -155,6 +190,16 @@ private:
     // clk_1M子节点区域
     QWidget* m_clk1MSubNodeWidget;
     QVBoxLayout* m_clk1MSubNodeLayout;
+    QWidget* m_clkCam1PLLSubNodeWidget;
+    QVBoxLayout* m_clkCam1PLLSubNodeLayout;
+    QWidget* m_clkRawAxiSubNodeWidget;
+    QVBoxLayout* m_clkRawAxiSubNodeLayout;
+    QWidget* m_clkCam0PLLSubNodeWidget;
+    QVBoxLayout* m_clkCam0PLLSubNodeLayout;
+    QWidget* m_clkDispPLLSubNodeWidget;
+    QWidget* m_clkSysDispSubNodeWidget;
+    QVBoxLayout* m_clkDispPLLSubNodeLayout;
+    QVBoxLayout* m_clkSysDispSubNodeLayout;
     
     // 左侧时钟树面板  
     QWidget* m_clockTreeWidget;
@@ -195,6 +240,21 @@ private:
     QMap<QString, QWidget*> m_clk1MSubNodeWidgets;
     QMap<QString, QLabel*> m_clk1MSubNodeFreqLabels;
     QMap<QString, QSpinBox*> m_clk1MSubNodeDividerBoxes;
+    QMap<QString, QWidget*> m_clkCam1PLLSubNodeWidgets;
+    QMap<QString, QLabel*> m_clkCam1PLLSubNodeFreqLabels;
+    QMap<QString, QSpinBox*> m_clkCam1PLLSubNodeDividerBoxes;
+    QMap<QString, QWidget*> m_clkRawAxiSubNodeWidgets;
+    QMap<QString, QLabel*> m_clkRawAxiSubNodeFreqLabels;
+    QMap<QString, QSpinBox*> m_clkRawAxiSubNodeDividerBoxes;
+    QMap<QString, QWidget*> m_clkCam0PLLSubNodeWidgets;
+    QMap<QString, QLabel*> m_clkCam0PLLSubNodeFreqLabels;
+    QMap<QString, QSpinBox*> m_clkCam0PLLSubNodeDividerBoxes;
+    QMap<QString, QWidget*> m_clkDispPLLSubNodeWidgets;
+    QMap<QString, QWidget*> m_clkSysDispSubNodeWidgets;
+    QMap<QString, QLabel*> m_clkDispPLLSubNodeFreqLabels;
+    QMap<QString, QSpinBox*> m_clkDispPLLSubNodeDividerBoxes;
+    QMap<QString, QLabel*> m_clkSysDispSubNodeFreqLabels;
+    QMap<QString, QSpinBox*> m_clkSysDispSubNodeDividerBoxes;
     
     // 控制按钮
     QHBoxLayout* m_buttonLayout;
@@ -206,6 +266,11 @@ private:
     QMap<QString, PLLConfig> m_pllConfigs;
     QMap<QString, ClockOutput> m_outputs;
     QMap<QString, ClockOutput> m_clk1MSubNodes;  // 新增：clk_1M子节点数据
+    QMap<QString, ClockOutput> m_clkCam1PLLSubNodes;  // 新增：clk_cam1pll子节点数据
+    QMap<QString, ClockOutput> m_clkRawAxiSubNodes;  // 新增：clk_raw_axi子节点数据
+    QMap<QString, ClockOutput> m_clkCam0PLLSubNodes;  // 新增：clk_cam0pll子节点数据
+    QMap<QString, ClockOutput> m_clkDispPLLSubNodes;  // 新增：clk_disppll子节点数据
+    QMap<QString, ClockOutput> m_clkSysDispSubNodes;  // 新增：clk_sys_disp子节点数据
     QMap<QString, ModulePosition> m_modulePositions;  // 新增：模块位置配置
     
     // 常量
@@ -215,6 +280,11 @@ private:
     static const QStringList SUB_PLL_NAMES;  // 新增：子PLL名称列表
     static const QStringList OUTPUT_NAMES;
     static const QStringList CLK_1M_SUB_NODES;  // 新增：clk_1M子节点列表
+    static const QStringList CLK_CAM1PLL_SUB_NODES;  // 新增：clk_cam1pll子节点列表
+    static const QStringList CLK_RAW_AXI_SUB_NODES;  // 新增：clk_raw_axi子节点列表
+    static const QStringList CLK_CAM0PLL_SUB_NODES;  // 新增：clk_cam0pll子节点列表
+    static const QStringList CLK_DISPPLL_SUB_NODES;  // 新增：clk_disppll子节点列表
+    static const QStringList CLK_SYS_DISP_SUB_NODES;  // 新增：clk_sys_disp子节点列表
     
     // 连接线覆盖层
     QWidget* m_connectionOverlay;
