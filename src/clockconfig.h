@@ -101,6 +101,7 @@ private slots:
     void onClkRVPLLSubNodeDividerChanged(const QString& nodeName, int divider);  // 新增：clk_rvpll子节点分频器变化
     void onClkAPPLLSubNodeDividerChanged(const QString& nodeName, int divider);  // 新增：clk_appll子节点分频器变化
     void onClkFPLLSubNodeDividerChanged(const QString& nodeName, int divider);  // 新增：clk_fpll子节点分频器变化
+    void onClkTPLLSubNodeDividerChanged(const QString& nodeName, int divider);  // 新增：clk_tpll子节点分频器变化
     void updateFrequencies();
     void resetToDefaults();
 
@@ -120,6 +121,7 @@ private:
     void setupClkRVPLLSubNodes();  // 新增：设置clk_rvpll子节点区域
     void setupClkAPPLLSubNodes();  // 新增：设置clk_appll子节点区域
     void setupClkFPLLSubNodes();  // 新增：设置clk_fpll子节点区域
+    void setupClkTPLLSubNodes();  // 新增：设置clk_tpll子节点区域
     void setupClockTree();
     void initializeModulePositions();  // 新增：初始化模块位置
     void createPLLWidget(const QString& pllName, QWidget* parent);
@@ -135,6 +137,7 @@ private:
     void createClkRVPLLSubNodeWidget(const QString& nodeName, QWidget* parent);  // 新增：创建clk_rvpll子节点widget
     void createClkAPPLLSubNodeWidget(const QString& nodeName, QWidget* parent);  // 新增：创建clk_appll子节点widget
     void createClkFPLLSubNodeWidget(const QString& nodeName, QWidget* parent);  // 新增：创建clk_fpll子节点widget
+    void createClkTPLLSubNodeWidget(const QString& nodeName, QWidget* parent);  // 新增：创建clk_tpll子节点widget
     void updatePLLFrequency(const QString& pllName);
     void updateSubPLLFrequency(const QString& pllName);  // 新增
     void updateAllSubPLLFrequencies();  // 新增
@@ -159,6 +162,8 @@ private:
     void updateAllClkAPPLLSubNodeFrequencies();  // 新增：更新所有clk_appll子节点频率
     void updateClkFPLLSubNodeFrequency(const QString& nodeName);  // 新增：更新clk_fpll子节点频率
     void updateAllClkFPLLSubNodeFrequencies();  // 新增：更新所有clk_fpll子节点频率
+    void updateClkTPLLSubNodeFrequency(const QString& nodeName);  // 新增：更新clk_tpll子节点频率
+    void updateAllClkTPLLSubNodeFrequencies();  // 新增：更新所有clk_tpll子节点频率
     void connectSignals();
     
     // 连接线绘制相关方法
@@ -189,6 +194,8 @@ private:
     QPoint getClkAPPLLSubNodeConnectionPoint(const QString& nodeName) const;  // 新增：获取clk_appll子节点连接点
     QPoint getClkFPLLConnectionPoint() const;  // 新增：获取clk_fpll连接点
     QPoint getClkFPLLSubNodeConnectionPoint(const QString& nodeName) const;  // 新增：获取clk_fpll子节点连接点
+    QPoint getClkTPLLConnectionPoint() const;  // 新增：获取clk_tpll连接点
+    QPoint getClkTPLLSubNodeConnectionPoint(const QString& nodeName) const;  // 新增：获取clk_tpll子节点连接点
     void updateConnectionOverlay();
     
     // UI组件
@@ -244,6 +251,10 @@ private:
     // clk_fpll子节点区域
     QWidget* m_clkFPLLSubNodeWidget;
     QVBoxLayout* m_clkFPLLSubNodeLayout;
+
+    // clk_tpll子节点区域
+    QWidget* m_clkTPLLSubNodeWidget;
+    QVBoxLayout* m_clkTPLLSubNodeLayout;
     
     // 左侧时钟树面板  
     QWidget* m_clockTreeWidget;
@@ -311,6 +322,9 @@ private:
     QMap<QString, QWidget*> m_clkFPLLSubNodeWidgets;
     QMap<QString, QLabel*> m_clkFPLLSubNodeFreqLabels;
     QMap<QString, QSpinBox*> m_clkFPLLSubNodeDividerBoxes;
+    QMap<QString, QWidget*> m_clkTPLLSubNodeWidgets;
+    QMap<QString, QLabel*> m_clkTPLLSubNodeFreqLabels;
+    QMap<QString, QSpinBox*> m_clkTPLLSubNodeDividerBoxes;
     
     // 控制按钮
     QHBoxLayout* m_buttonLayout;
@@ -331,6 +345,7 @@ private:
     QMap<QString, ClockOutput> m_clkRVPLLSubNodes;  // 新增：clk_rvpll子节点数据
     QMap<QString, ClockOutput> m_clkAPPLLSubNodes;  // 新增：clk_appll子节点数据
     QMap<QString, ClockOutput> m_clkFPLLSubNodes;  // 新增：clk_fpll子节点数据
+    QMap<QString, ClockOutput> m_clkTPLLSubNodes;  // 新增：clk_tpll子节点数据
     QMap<QString, ModulePosition> m_modulePositions;  // 新增：模块位置配置
     
     // 常量
@@ -349,6 +364,7 @@ private:
     static const QStringList CLK_RVPLL_SUB_NODES;  // 新增：clk_rvpll子节点列表
     static const QStringList CLK_APPLL_SUB_NODES;  // 新增：clk_appll子节点列表
     static const QStringList CLK_FPLL_SUB_NODES;  // 新增：clk_fpll子节点列表
+    static const QStringList CLK_TPLL_SUB_NODES;  // 新增：clk_tpll子节点列表
     
     // 连接线覆盖层
     QWidget* m_connectionOverlay;
