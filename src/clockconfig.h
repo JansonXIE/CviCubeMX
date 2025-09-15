@@ -99,6 +99,7 @@ private slots:
     void onClkSysDispSubNodeDividerChanged(const QString& nodeName, int divider);  // 新增：clk_sys_disp子节点分频器变化
     void onClkA0PLLSubNodeDividerChanged(const QString& nodeName, int divider);  // 新增：clk_a0pll子节点分频器变化
     void onClkRVPLLSubNodeDividerChanged(const QString& nodeName, int divider);  // 新增：clk_rvpll子节点分频器变化
+    void onClkAPPLLSubNodeDividerChanged(const QString& nodeName, int divider);  // 新增：clk_appll子节点分频器变化
     void updateFrequencies();
     void resetToDefaults();
 
@@ -116,6 +117,7 @@ private:
     void setupClkSysDispSubNodes();  // 新增：设置clk_sys_disp子节点区域
     void setupClkA0PLLSubNodes();  // 新增：设置clk_a0pll子节点区域
     void setupClkRVPLLSubNodes();  // 新增：设置clk_rvpll子节点区域
+    void setupClkAPPLLSubNodes();  // 新增：设置clk_appll子节点区域
     void setupClockTree();
     void initializeModulePositions();  // 新增：初始化模块位置
     void createPLLWidget(const QString& pllName, QWidget* parent);
@@ -129,6 +131,7 @@ private:
     void createClkSysDispSubNodeWidget(const QString& nodeName, QWidget* parent);  // 新增：创建clk_sys_disp子节点widget
     void createClkA0PLLSubNodeWidget(const QString& nodeName, QWidget* parent);  // 新增：创建clk_a0pll子节点widget
     void createClkRVPLLSubNodeWidget(const QString& nodeName, QWidget* parent);  // 新增：创建clk_rvpll子节点widget
+    void createClkAPPLLSubNodeWidget(const QString& nodeName, QWidget* parent);  // 新增：创建clk_appll子节点widget
     void updatePLLFrequency(const QString& pllName);
     void updateSubPLLFrequency(const QString& pllName);  // 新增
     void updateAllSubPLLFrequencies();  // 新增
@@ -149,6 +152,8 @@ private:
     void updateAllClkA0PLLSubNodeFrequencies();  // 新增：更新所有clk_a0pll子节点频率
     void updateClkRVPLLSubNodeFrequency(const QString& nodeName);  // 新增：更新clk_rvpll子节点频率
     void updateAllClkRVPLLSubNodeFrequencies();  // 新增：更新所有clk_rvpll子节点频率
+    void updateClkAPPLLSubNodeFrequency(const QString& nodeName);  // 新增：更新clk_appll子节点频率
+    void updateAllClkAPPLLSubNodeFrequencies();  // 新增：更新所有clk_appll子节点频率
     void connectSignals();
     
     // 连接线绘制相关方法
@@ -175,6 +180,8 @@ private:
     QPoint getClkA0PLLSubNodeConnectionPoint(const QString& nodeName) const;  // 新增：获取clk_a0pll子节点连接点
     QPoint getClkRVPLLConnectionPoint() const;  // 新增：获取clk_rvpll连接点
     QPoint getClkRVPLLSubNodeConnectionPoint(const QString& nodeName) const;  // 新增：获取clk_rvpll子节点连接点
+    QPoint getClkAPPLLConnectionPoint() const;  // 新增：获取clk_appll连接点
+    QPoint getClkAPPLLSubNodeConnectionPoint(const QString& nodeName) const;  // 新增：获取clk_appll子节点连接点
     void updateConnectionOverlay();
     
     // UI组件
@@ -222,6 +229,10 @@ private:
     // clk_rvpll子节点区域
     QWidget* m_clkRVPLLSubNodeWidget;
     QVBoxLayout* m_clkRVPLLSubNodeLayout;
+
+    // clk_appll子节点区域
+    QWidget* m_clkAPPLLSubNodeWidget;
+    QVBoxLayout* m_clkAPPLLSubNodeLayout;
     
     // 左侧时钟树面板  
     QWidget* m_clockTreeWidget;
@@ -283,6 +294,9 @@ private:
     QMap<QString, QWidget*> m_clkRVPLLSubNodeWidgets;
     QMap<QString, QLabel*> m_clkRVPLLSubNodeFreqLabels;
     QMap<QString, QSpinBox*> m_clkRVPLLSubNodeDividerBoxes;
+    QMap<QString, QWidget*> m_clkAPPLLSubNodeWidgets;
+    QMap<QString, QLabel*> m_clkAPPLLSubNodeFreqLabels;
+    QMap<QString, QSpinBox*> m_clkAPPLLSubNodeDividerBoxes;
     
     // 控制按钮
     QHBoxLayout* m_buttonLayout;
@@ -301,6 +315,7 @@ private:
     QMap<QString, ClockOutput> m_clkSysDispSubNodes;  // 新增：clk_sys_disp子节点数据
     QMap<QString, ClockOutput> m_clkA0PLLSubNodes;  // 新增：clk_a0pll子节点数据
     QMap<QString, ClockOutput> m_clkRVPLLSubNodes;  // 新增：clk_rvpll子节点数据
+    QMap<QString, ClockOutput> m_clkAPPLLSubNodes;  // 新增：clk_appll子节点数据
     QMap<QString, ModulePosition> m_modulePositions;  // 新增：模块位置配置
     
     // 常量
@@ -317,6 +332,7 @@ private:
     static const QStringList CLK_SYS_DISP_SUB_NODES;  // 新增：clk_sys_disp子节点列表
     static const QStringList CLK_A0PLL_SUB_NODES;  // 新增：clk_a0pll子节点列表
     static const QStringList CLK_RVPLL_SUB_NODES;  // 新增：clk_rvpll子节点列表
+    static const QStringList CLK_APPLL_SUB_NODES;  // 新增：clk_appll子节点列表
     
     // 连接线覆盖层
     QWidget* m_connectionOverlay;
