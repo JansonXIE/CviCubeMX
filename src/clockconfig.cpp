@@ -24,7 +24,7 @@ const double ClockConfigWidget::OSC_FREQUENCY = 25.0;  // 25MHz
 const double ClockConfigWidget::RTC_FREQUENCY = 0.032768;  // 32.768kHz
 
 const QStringList ClockConfigWidget::PLL_NAMES = {
-    "clk_fpll", "clk_mipimpll", "MPLL", "clk_tpll", "clk_appll", "clk_rvpll"
+    "clk_fpll", "clk_mipimpll", "clk_mpll", "clk_tpll", "clk_appll", "clk_rvpll"
 };
 
 const QStringList ClockConfigWidget::SUB_PLL_NAMES = {
@@ -81,11 +81,18 @@ const QStringList ClockConfigWidget::CLK_APPLL_SUB_NODES = {
 
 const QStringList ClockConfigWidget::CLK_FPLL_SUB_NODES = {
     "clk_xtal_misc", "clk_pwm", "clk_i2c", "clk_eth_pll", "clk_cyc_dsi_esc",
-     "clk_scan_100M", "clk_video_axi", "clk_fab_500M", "clk_fab_100M"
+    "clk_scan_100M", "clk_video_axi", "clk_fab_500M", "clk_fab_100M"
 };
 
 const QStringList ClockConfigWidget::CLK_TPLL_SUB_NODES = {
     "clk_tpu", "clk_tpu_gdma"
+};
+
+const QStringList ClockConfigWidget::CLK_MPLL_SUB_NODES = {
+    "clk_uart0", "clk_uart4", "clk_uart3", "clk_uart2", "clk_uart1", "clk_spi",
+    "clk_spi_nand", "clk_spi_nor", "clk_usb20_ref", "clk_usb20_bus_early", "clk_rtc_spi_nor",
+    "clk_cyc_scan_300M", "clk_vip_sys_4", "clk_vip_sys_3", "clk_vip_sys_1", "clk_vip_sys_0",
+    "clk_vc_src0", "clk_tpu_sys", "clk_gic", "clk_bus", "clk_rtc_sys", "clk_hsperi"
 };
 
 ClockConfigWidget::ClockConfigWidget(QWidget *parent)
@@ -134,6 +141,7 @@ ClockConfigWidget::ClockConfigWidget(QWidget *parent)
     setupClkAPPLLSubNodes();  // 新增：设置clk_appll子节点区域
     setupClkFPLLSubNodes();  // 新增：设置clk_fpll子节点区域
     setupClkTPLLSubNodes();  // 新增：设置clk_tpll子节点区域
+    setupClkMPLLSubNodes();  // 新增：设置clk_mpll子节点区域
     setupClockTree();
     connectSignals();
     updateFrequencies();
@@ -396,7 +404,7 @@ void ClockConfigWidget::setupPLLs()
             config.multiplier = 40;
         } else if (pllName == "clk_mipimpll") {
             config.multiplier = 36;
-        } else if (pllName == "MPLL") {
+        } else if (pllName == "clk_mpll") {
             config.multiplier = 48;
         } else if (pllName == "clk_tpll") {
             config.multiplier = 60;
@@ -1136,6 +1144,103 @@ void ClockConfigWidget::setupClkTPLLSubNodes()
     // 默认位置将在initializeModulePositions中设置
 }
 
+void ClockConfigWidget::setupClkMPLLSubNodes()
+{
+    // 创建clk_mipimpll子节点区域
+    m_clkMPLLSubNodeWidget = new QWidget();
+    m_clkMPLLSubNodeWidget->setFixedSize(150, 1600); // 设置固定尺寸，25个子节点
+    m_clkMPLLSubNodeWidget->setStyleSheet(
+        "QWidget { "
+        "background-color: #ffffff; "
+        "border: 2px solid #ffcc00; "
+        "border-radius: 8px; "
+        "}"
+    );
+
+    m_clkMPLLSubNodeLayout = new QVBoxLayout(m_clkMPLLSubNodeWidget);
+    m_clkMPLLSubNodeLayout->setContentsMargins(10, 10, 10, 10);
+    m_clkMPLLSubNodeLayout->setSpacing(5);
+
+    // 添加标题
+    QLabel* subNodeTitle = new QLabel("clk_mpll子节点");
+    subNodeTitle->setStyleSheet("font-size: 14px; font-weight: bold; color: #996600; text-align: center;");
+    subNodeTitle->setAlignment(Qt::AlignCenter);
+    m_clkMPLLSubNodeLayout->addWidget(subNodeTitle);
+
+    // 为每个clk_mpll子节点创建显示界面
+    for (const QString& nodeName : CLK_MPLL_SUB_NODES) {
+        createClkMPLLSubNodeWidget(nodeName, m_clkMPLLSubNodeWidget);
+
+        // 初始化clk_mpll子节点配置
+        ClockOutput subNode;
+        subNode.name = nodeName;
+        subNode.source = "clk_mpll";
+        subNode.enabled = true;
+        // 根据子节点设置不同的默认分频值
+        if (nodeName == "clk_uart0") {
+            subNode.divider = 651;  // clk_uart0默认分频系数是651
+        } else if (nodeName == "clk_uart4") {
+            subNode.divider = 6;  // clk_uart4默认分频系数是6
+        } else if (nodeName == "clk_uart3") {
+            subNode.divider = 6;  // clk_uart3默认分频系数是6
+        } else if (nodeName == "clk_uart2") {
+            subNode.divider = 6;  // clk_uart2默认分频系数是6
+        } else if (nodeName == "clk_uart1") {
+            subNode.divider = 6;  // clk_uart1默认分频系数是6
+        } else if (nodeName == "clk_spi") {
+            subNode.divider = 6;  // clk_spi默认分频系数是6
+        } else if (nodeName == "clk_spi_nand") {
+            subNode.divider = 4;  // clk_spi_nand默认分频系数是4
+        } else if (nodeName == "clk_spi_nor") {
+            subNode.divider = 4;  // clk_spi_nor默认分频系数是4
+        } else if (nodeName == "clk_usb20_ref") {
+            subNode.divider = 50;  // clk_usb20_ref默认分频系数是50
+        } else if (nodeName == "clk_usb20_bus_early") {
+            subNode.divider = 4;  // clk_usb20_bus_early默认分频系数是4
+        } else if (nodeName == "clk_rtc_spi_nor") {
+            subNode.divider = 4;  // clk_rtc_spi_nor默认分频系数是4
+        } else if (nodeName == "clk_cyc_scan_300M") {
+            subNode.divider = 4;  // clk_cyc_scan_300M默认分频系数是4
+        } else if (nodeName == "clk_vip_sys_4") {
+            subNode.divider = 6;  // clk_vip_sys_4默认分频系数是6
+        } else if (nodeName == "clk_vip_sys_3") {
+            subNode.divider = 2;  // clk_vip_sys_3默认分频系数是2
+        } else if (nodeName == "clk_vip_sys_1") {
+            subNode.divider = 4;  // clk_vip_sys_1默认分频系数是4
+        } else if (nodeName == "clk_vip_sys_0") {
+            subNode.divider = 8;  // clk_vip_sys_0默认分频系数是8
+        } else if (nodeName == "clk_vc_src0") {
+            subNode.divider = 2;  // clk_vc_src0默认分频系数是2
+        } else if (nodeName == "clk_tpu_sys") {
+            subNode.divider = 4;  // clk_tpu_sys默认分频系数是4
+        } else if (nodeName == "clk_gic") {
+            subNode.divider = 4;  // clk_gic默认分频系数是4
+        } else if (nodeName == "clk_bus") {
+            subNode.divider = 2;  // clk_bus默认分频系数是2
+        } else if (nodeName == "clk_rtc_sys") {
+            subNode.divider = 4;  // clk_rtc_sys默认分频系数是4
+        } else if (nodeName == "clk_hsperi") {
+            subNode.divider = 4;  // clk_hsperi默认分频系数是4
+        }
+
+        // 计算频率：clk_mpll的频率 / 分频器
+        // 从clk_mpll的配置中获取正确的频率
+        double clkMPLLFreq = 1200.0; // 默认1200MHz
+        if (m_pllConfigs.contains("clk_mpll")) {
+            clkMPLLFreq = m_pllConfigs["clk_mpll"].outputFreq;
+        }
+        subNode.frequency = clkMPLLFreq / subNode.divider;
+
+        m_clkMPLLSubNodes[nodeName] = subNode;
+    }
+
+    m_clkMPLLSubNodeLayout->addStretch();
+
+    // 设置父widget为m_flowWidget并使用绝对定位
+    m_clkMPLLSubNodeWidget->setParent(m_flowWidget);
+    // 默认位置将在initializeModulePositions中设置
+}
+
 void ClockConfigWidget::createPLLWidget(const QString& pllName, QWidget* parent)
 {
     QWidget* pllWidget = new QWidget();
@@ -1174,7 +1279,7 @@ void ClockConfigWidget::createPLLWidget(const QString& pllName, QWidget* parent)
         defaultMultiplier = 40;
     } else if (pllName == "clk_mipimpll") {
         defaultMultiplier = 36;
-    } else if (pllName == "MPLL") {
+    } else if (pllName == "clk_mpll") {
         defaultMultiplier = 48;
     } else if (pllName == "clk_tpll") {
         defaultMultiplier = 60;
@@ -1197,7 +1302,7 @@ void ClockConfigWidget::createPLLWidget(const QString& pllName, QWidget* parent)
         freqText = "1000.000 MHz";  // 25 * 40
     } else if (pllName == "clk_mipimpll") {
         freqText = "900.000 MHz";   // 25 * 36
-    } else if (pllName == "MPLL") {
+    } else if (pllName == "clk_mpll") {
         freqText = "1200.000 MHz";  // 25 * 48
     } else if (pllName == "clk_tpll") {
         freqText = "1500.000 MHz";  // 25 * 60
@@ -2210,6 +2315,162 @@ void ClockConfigWidget::createClkTPLLSubNodeWidget(const QString& nodeName, QWid
             });
 }
 
+void ClockConfigWidget::createClkMPLLSubNodeWidget(const QString& nodeName, QWidget* parent)
+{
+    QWidget* subNodeWidget = new QWidget();
+    subNodeWidget->setStyleSheet(
+        "QWidget { "
+        "background-color: #ffffff; "
+        "border: 1px solid #ffcc00; "
+        "border-radius: 4px; "
+        "padding: 3px; "
+        "margin: 1px; "
+        "}"
+    );
+    
+    QVBoxLayout* layout = new QVBoxLayout(subNodeWidget);
+    layout->setSpacing(2);
+    layout->setContentsMargins(3, 3, 3, 3);
+    
+    // 子节点名称标签
+    QLabel* nameLabel = new QLabel(nodeName);
+    nameLabel->setStyleSheet("font-weight: bold; color: #996600; font-size: 11px;");
+    nameLabel->setAlignment(Qt::AlignCenter);
+    nameLabel->setWordWrap(true);
+    
+    // 分频器配置
+    QHBoxLayout* divConfigLayout = new QHBoxLayout();
+    divConfigLayout->setSpacing(3);
+    
+    QLabel* divLabel = new QLabel("分频：");
+    divLabel->setStyleSheet("color: #996600; font-size: 10px; font-weight: bold;");
+    
+    QSpinBox* divBox = new QSpinBox();
+    divBox->setRange(1, 1000);
+    // 根据子节点设置不同的默认分频值
+    if (nodeName == "clk_uart0") {
+        divBox->setValue(651);  // clk_uart0默认分频系数是651
+    } else if (nodeName == "clk_uart4") {
+        divBox->setValue(6);  // clk_uart4默认分频系数是6
+    } else if (nodeName == "clk_uart3") {
+        divBox->setValue(6);  // clk_uart3默认分频系数是6
+    } else if (nodeName == "clk_uart2") {
+        divBox->setValue(6);  // clk_uart2默认分频系数是6
+    } else if (nodeName == "clk_uart1") {
+        divBox->setValue(6);  // clk_uart1默认分频系数是6
+    } else if (nodeName == "clk_spi") {
+        divBox->setValue(6);  // clk_spi默认分频系数是6
+    } else if (nodeName == "clk_spi_nand") {
+        divBox->setValue(4);  // clk_spi_nand默认分频系数是4
+    } else if (nodeName == "clk_spi_nor") {
+        divBox->setValue(4);  // clk_spi_nor默认分频系数是4
+    } else if (nodeName == "clk_usb20_ref") {
+        divBox->setValue(50);  // clk_usb20_ref默认分频系数是50
+    } else if (nodeName == "clk_usb20_bus_early") {
+        divBox->setValue(4);  // clk_usb20_bus_early默认分频系数是4
+    } else if (nodeName == "clk_rtc_spi_nor") {
+        divBox->setValue(4);  // clk_rtc_spi_nor默认分频系数是4
+    } else if (nodeName == "clk_cyc_scan_300M") {
+        divBox->setValue(4);  // clk_cyc_scan_300M默认分频系数是4
+    } else if (nodeName == "clk_vip_sys_4") {
+        divBox->setValue(6);  // clk_vip_sys_4默认分频系数是6
+    } else if (nodeName == "clk_vip_sys_3") {
+        divBox->setValue(2);  // clk_vip_sys_3默认分频系数是2
+    } else if (nodeName == "clk_vip_sys_1") {
+        divBox->setValue(4);  // clk_vip_sys_1默认分频系数是4
+    } else if (nodeName == "clk_vip_sys_0") {
+        divBox->setValue(8);  // clk_vip_sys_0默认分频系数是8
+    } else if (nodeName == "clk_vc_src0") {
+        divBox->setValue(2);  // clk_vc_src0默认分频系数是2
+    } else if (nodeName == "clk_tpu_sys") {
+        divBox->setValue(4);  // clk_tpu_sys默认分频系数是4
+    } else if (nodeName == "clk_gic") {
+        divBox->setValue(4);  // clk_gic默认分频系数是4
+    } else if (nodeName == "clk_bus") {
+        divBox->setValue(2);  // clk_bus默认分频系数是2
+    } else if (nodeName == "clk_rtc_sys") {
+        divBox->setValue(4);  // clk_rtc_sys默认分频系数是4
+    } else if (nodeName == "clk_hsperi") {
+        divBox->setValue(4);  // clk_hsperi默认分频系数是4
+    }
+    divBox->setFixedWidth(45);
+    divBox->setStyleSheet("font-size: 10px;");
+    
+    divConfigLayout->addWidget(divLabel);
+    divConfigLayout->addWidget(divBox);
+    
+    // 频率显示
+    double clkMPLLFreq = 1200.0;  // 假设clk_mpll = 1200MHz
+    double calculatedFreq;
+    if (nodeName == "clk_uart0") {
+        calculatedFreq = clkMPLLFreq / 651;  // clk_uart0默认分频系数是651
+    } else if (nodeName == "clk_uart4") {
+        calculatedFreq = clkMPLLFreq / 6;  // clk_uart4默认分频系数是6
+    } else if (nodeName == "clk_uart3") {
+        calculatedFreq = clkMPLLFreq / 6;  // clk_uart3默认分频系数是6
+    } else if (nodeName == "clk_uart2") {
+        calculatedFreq = clkMPLLFreq / 6;  // clk_uart2默认分频系数是6
+    } else if (nodeName == "clk_uart1") {
+        calculatedFreq = clkMPLLFreq / 6;  // clk_uart1默认分频系数是6
+    } else if (nodeName == "clk_spi") {
+        calculatedFreq = clkMPLLFreq / 6;  // clk_spi默认分频系数是6
+    } else if (nodeName == "clk_spi_nand") {
+        calculatedFreq = clkMPLLFreq / 4;  // clk_spi_nand默认分频系数是4
+    } else if (nodeName == "clk_spi_nor") {
+        calculatedFreq = clkMPLLFreq / 4;  // clk_spi_nor默认分频系数是4
+    } else if (nodeName == "clk_usb20_ref") {
+        calculatedFreq = clkMPLLFreq / 50;  // clk_usb20_ref默认分频系数是50
+    } else if (nodeName == "clk_usb20_bus_early") {
+        calculatedFreq = clkMPLLFreq / 4;  // clk_usb20_bus_early默认分频系数是4
+    } else if (nodeName == "clk_rtc_spi_nor") {
+        calculatedFreq = clkMPLLFreq / 4;  // clk_rtc_spi_nor默认分频系数是4
+    } else if (nodeName == "clk_cyc_scan_300M") {
+        calculatedFreq = clkMPLLFreq / 4;  // clk_cyc_scan_300M默认分频系数是4
+    } else if (nodeName == "clk_vip_sys_4") {
+        calculatedFreq = clkMPLLFreq / 6;  // clk_vip_sys_4默认分频系数是6
+    } else if (nodeName == "clk_vip_sys_3") {
+        calculatedFreq = clkMPLLFreq / 2;  // clk_vip_sys_3默认分频系数是2
+    } else if (nodeName == "clk_vip_sys_1") {
+        calculatedFreq = clkMPLLFreq / 4;  // clk_vip_sys_1默认分频系数是4
+    } else if (nodeName == "clk_vip_sys_0") {
+        calculatedFreq = clkMPLLFreq / 8;  // clk_vip_sys_0默认分频系数是8
+    } else if (nodeName == "clk_vc_src0") {
+        calculatedFreq = clkMPLLFreq / 2;  // clk_vc_src0默认分频系数是2
+    } else if (nodeName == "clk_tpu_sys") {
+        calculatedFreq = clkMPLLFreq / 4;  // clk_tpu_sys默认分频系数是4
+    } else if (nodeName == "clk_gic") {
+        calculatedFreq = clkMPLLFreq / 4;  // clk_gic默认分频系数是4
+    } else if (nodeName == "clk_bus") {
+        calculatedFreq = clkMPLLFreq / 2;  // clk_bus默认分频系数是2
+    } else if (nodeName == "clk_rtc_sys") {
+        calculatedFreq = clkMPLLFreq / 4;  // clk_rtc_sys默认分频系数是4
+    } else if (nodeName == "clk_hsperi") {
+        calculatedFreq = clkMPLLFreq / 4;  // clk_hsperi默认分频系数是4
+    }
+    QString freqText = QString("%1 MHz").arg(calculatedFreq, 0, 'f', 1);
+    
+    QLabel* freqLabel = new QLabel(freqText);
+    freqLabel->setStyleSheet("color: #dc3545; font-family: monospace; font-weight: bold; font-size: 9px;");
+    freqLabel->setAlignment(Qt::AlignCenter);
+    
+    layout->addWidget(nameLabel);
+    layout->addLayout(divConfigLayout);
+    layout->addWidget(freqLabel);
+
+    // 存储控件引用
+    m_clkMPLLSubNodeWidgets[nodeName] = subNodeWidget;
+    m_clkMPLLSubNodeFreqLabels[nodeName] = freqLabel;
+    m_clkMPLLSubNodeDividerBoxes[nodeName] = divBox;
+
+    m_clkMPLLSubNodeLayout->addWidget(subNodeWidget);
+
+    // 连接分频器变化信号
+    connect(divBox, QOverload<int>::of(&QSpinBox::valueChanged),
+            [this, nodeName](int value) {
+                onClkMPLLSubNodeDividerChanged(nodeName, value);
+            });
+}
+
 void ClockConfigWidget::setupClockTree()
 {
     // 由于现在使用流程图布局，时钟树功能可以简化或移除
@@ -2233,7 +2494,9 @@ void ClockConfigWidget::initializeModulePositions()
     ModulePosition clkRVPLLSubPos = {"clk_rvpll子节点", 1880, 510, 150, 120}; // 新增clk_rvpll子节点位置
     ModulePosition clkAPPLLSubPos = {"clk_appll子节点", 1880, 640, 150, 120}; // 新增clk_appll子节点位置
     ModulePosition clkFPLLSubPos = {"clk_fpll子节点", 1710, 200, 150, 800}; // 新增clk_fpll子节点位置
-    ModulePosition clkTPUSubPos = {"clk_tpu子节点", 1540, 310, 150, 200}; // 新增clk_tpu子节点位置
+    ModulePosition clkTPLLSubPos = {"clk_tpu子节点", 1540, 310, 150, 200}; // 新增clk_tpu子节点位置
+    ModulePosition clkMPLLSubPos = {"clk_mpll子节点", 1540, 520, 150, 1600}; // 新增clk_mpll子节点位置
+
 
     m_modulePositions["输入源"] = inputPos;
     m_modulePositions["锁相环"] = pllPos;
@@ -2249,7 +2512,8 @@ void ClockConfigWidget::initializeModulePositions()
     m_modulePositions["clk_rvpll子节点"] = clkRVPLLSubPos;
     m_modulePositions["clk_appll子节点"] = clkAPPLLSubPos;
     m_modulePositions["clk_fpll子节点"] = clkFPLLSubPos;
-    m_modulePositions["clk_tpu子节点"] = clkTPUSubPos;
+    m_modulePositions["clk_tpu子节点"] = clkTPLLSubPos;
+    m_modulePositions["clk_mpll子节点"] = clkMPLLSubPos;
     
     // 应用默认位置
     applyModulePositions();
@@ -2345,6 +2609,12 @@ void ClockConfigWidget::applyModulePositions()
         ModulePosition pos = m_modulePositions["clk_tpu子节点"];
         m_clkTPLLSubNodeWidget->move(pos.x, pos.y);
         m_clkTPLLSubNodeWidget->resize(pos.width, pos.height);
+    }
+
+    if (m_modulePositions.contains("clk_mpll子节点") && m_clkMPLLSubNodeWidget) {
+        ModulePosition pos = m_modulePositions["clk_mpll子节点"];
+        m_clkMPLLSubNodeWidget->move(pos.x, pos.y);
+        m_clkMPLLSubNodeWidget->resize(pos.width, pos.height);
     }
     
     // 重绘连接线
@@ -2571,6 +2841,11 @@ void ClockConfigWidget::onPLLMultiplierChanged(const QString& pllName, int multi
     if (pllName == "clk_tpll") {
         updateAllClkTPLLSubNodeFrequencies();
     }
+
+    // 如果是clk_mpll，还需要更新其子节点的频率
+    if (pllName == "clk_mpll") {
+        updateAllClkMPLLSubNodeFrequencies();
+    }
     
     emit pllConfigChanged(pllName);
     emit configChanged();
@@ -2707,6 +2982,15 @@ void ClockConfigWidget::onClkTPLLSubNodeDividerChanged(const QString& nodeName, 
     if (m_clkTPLLSubNodes.contains(nodeName)) {
         m_clkTPLLSubNodes[nodeName].divider = divider;
         updateClkTPLLSubNodeFrequency(nodeName);
+        emit configChanged();
+    }
+}
+
+void ClockConfigWidget::onClkMPLLSubNodeDividerChanged(const QString& nodeName, int divider)
+{
+    if (m_clkMPLLSubNodes.contains(nodeName)) {
+        m_clkMPLLSubNodes[nodeName].divider = divider;
+        updateClkMPLLSubNodeFrequency(nodeName);
         emit configChanged();
     }
 }
@@ -3083,7 +3367,7 @@ void ClockConfigWidget::updateClkTPLLSubNodeFrequency(const QString& nodeName)
     ClockOutput& subNode = m_clkTPLLSubNodes[nodeName];
 
     // 获取clk_tpll的频率
-    double clkTPLLFreq = 1200.0; // 默认1200MHz
+    double clkTPLLFreq = 1500.0; // 默认1500MHz
     if (m_pllConfigs.contains("clk_tpll")) {
         clkTPLLFreq = m_pllConfigs["clk_tpll"].outputFreq;
     }
@@ -3102,6 +3386,35 @@ void ClockConfigWidget::updateAllClkTPLLSubNodeFrequencies()
 {
     for (const QString& nodeName : CLK_TPLL_SUB_NODES) {
         updateClkTPLLSubNodeFrequency(nodeName);
+    }
+}
+
+void ClockConfigWidget::updateClkMPLLSubNodeFrequency(const QString& nodeName)
+{
+    if (!m_clkMPLLSubNodes.contains(nodeName)) return;
+
+    ClockOutput& subNode = m_clkMPLLSubNodes[nodeName];
+
+    // 获取clk_mpll的频率
+    double clkMPLLFreq = 1200.0; // 默认1200MHz
+    if (m_pllConfigs.contains("clk_mpll")) {
+        clkMPLLFreq = m_pllConfigs["clk_mpll"].outputFreq;
+    }
+
+    // clk_mpll子节点频率 = clk_mpll频率 / 分频器
+    subNode.frequency = clkMPLLFreq / subNode.divider;
+
+    // 更新显示
+    if (m_clkMPLLSubNodeFreqLabels.contains(nodeName)) {
+        QString freqText = QString("%1 MHz").arg(subNode.frequency, 0, 'f', 1);
+        m_clkMPLLSubNodeFreqLabels[nodeName]->setText(freqText);
+    }
+}
+
+void ClockConfigWidget::updateAllClkMPLLSubNodeFrequencies()
+{
+    for (const QString& nodeName : CLK_MPLL_SUB_NODES) {
+        updateClkMPLLSubNodeFrequency(nodeName);
     }
 }
 
@@ -3176,6 +3489,11 @@ void ClockConfigWidget::updateFrequencies()
     for (const QString& nodeName : CLK_TPLL_SUB_NODES) {
         updateClkTPLLSubNodeFrequency(nodeName);
     }
+
+    // 更新所有clk_mpll子节点频率
+    for (const QString& nodeName : CLK_MPLL_SUB_NODES) {
+        updateClkMPLLSubNodeFrequency(nodeName);
+    }
 }
 
 void ClockConfigWidget::resetToDefaults()
@@ -3188,7 +3506,7 @@ void ClockConfigWidget::resetToDefaults()
             defaultMultiplier = 40;
         } else if (pllName == "clk_mipimpll") {
             defaultMultiplier = 36;
-        } else if (pllName == "MPLL") {
+        } else if (pllName == "clk_mpll") {
             defaultMultiplier = 48;
         } else if (pllName == "clk_tpll") {
             defaultMultiplier = 60;
@@ -3348,7 +3666,7 @@ void ClockConfigWidget::drawConnectionLines(QPainter& painter)
     QPoint oscPoint = getOSCConnectionPoint();
     
     // 需要连接的PLL列表（根据需求：FPLL、MIPIMPLL、MPLL、TPLL、APPLL和RVPLL）
-    QStringList targetPLLs = {"clk_fpll", "clk_mipimpll", "MPLL", "clk_tpll", "clk_appll", "clk_rvpll"};
+    QStringList targetPLLs = {"clk_fpll", "clk_mipimpll", "clk_mpll", "clk_tpll", "clk_appll", "clk_rvpll"};
     
     // 为每个目标PLL绘制从OSC的连接线
     for (const QString& pllName : targetPLLs) {
@@ -3358,7 +3676,7 @@ void ClockConfigWidget::drawConnectionLines(QPainter& painter)
             QColor lineColor = Qt::blue;
             if (pllName == "clk_fpll") lineColor = QColor(220, 53, 69);      // 红色
             else if (pllName == "clk_mipimpll") lineColor = QColor(255, 193, 7);  // 黄色
-            else if (pllName == "MPLL") lineColor = QColor(40, 167, 69);      // 绿色
+            else if (pllName == "clk_mpll") lineColor = QColor(40, 167, 69);      // 绿色
             else if (pllName == "clk_tpll") lineColor = QColor(23, 162, 184);     // 青色
             else if (pllName == "clk_appll") lineColor = QColor(102, 16, 242);    // 紫色
             else if (pllName == "clk_rvpll") lineColor = QColor(255, 102, 0);     // 橙色
@@ -3543,6 +3861,20 @@ void ClockConfigWidget::drawConnectionLines(QPainter& painter)
                 // 使用深青色来表示clk_tpll到子节点的连接
                 QColor lineColor = QColor(0, 139, 139);  // 深青色
                 drawArrowLine(painter, tPLLPoint, subNodePoint, lineColor);
+            }
+        }
+    }
+
+    // 绘制clk_mpll到其子节点的连接线
+    if (m_clkMPLLSubNodeWidget) {
+        QPoint mPLLPoint = getClkMPLLConnectionPoint();
+
+        for (const QString& nodeName : CLK_MPLL_SUB_NODES) {
+            QPoint subNodePoint = getClkMPLLSubNodeConnectionPoint(nodeName);
+            if (!subNodePoint.isNull() && !mPLLPoint.isNull()) {
+                // 使用深绿色来表示clk_mpll到子节点的连接
+                QColor lineColor = QColor(0, 128, 0);  // 深绿色
+                drawArrowLine(painter, mPLLPoint, subNodePoint, lineColor);
             }
         }
     }
@@ -4554,6 +4886,80 @@ QPoint ClockConfigWidget::getClkTPLLSubNodeConnectionPoint(const QString& nodeNa
         m_flowScrollArea->verticalScrollBar()->value()
     );
     
+    return QPoint(
+        flowPos.x() + subNodePoint.x() - scrollOffset.x(),
+        flowPos.y() + subNodePoint.y() - scrollOffset.y() + 60  // 加上标题高度
+    );
+}
+
+QPoint ClockConfigWidget::getClkMPLLConnectionPoint() const
+{
+    if (!m_pllWidget || !m_flowWidget || !m_pllWidgets.contains("clk_mpll")) {
+        return QPoint();
+    }
+
+    QWidget* mpllWidget = m_pllWidgets["clk_mpll"];
+    if (!mpllWidget) {
+        return QPoint();
+    }
+    
+    // 获取clk_mpll widget在其父widget中的位置
+    QPoint mpllPos = mpllWidget->pos();
+    QRect mpllRect = mpllWidget->rect();
+    
+    // 获取子PLL区域在flow widget中的位置
+    QPoint subPllAreaPos = m_pllWidget->pos();
+    
+    // clk_mpll连接点位于widget的右侧中央
+    QPoint mpllPoint = QPoint(
+        subPllAreaPos.x() + mpllPos.x() + mpllRect.width(),
+        subPllAreaPos.y() + mpllPos.y() + mpllRect.height() / 2
+    );
+    
+    // 转换为相对于ClockConfigWidget的坐标
+    QPoint flowPos = m_flowWidget->pos();
+    QPoint scrollOffset = QPoint(
+        m_flowScrollArea->horizontalScrollBar()->value(),
+        m_flowScrollArea->verticalScrollBar()->value()
+    );
+    
+    return QPoint(
+        flowPos.x() + mpllPoint.x() - scrollOffset.x(),
+        flowPos.y() + mpllPoint.y() - scrollOffset.y() + 60  // 加上标题高度
+    );
+}
+
+QPoint ClockConfigWidget::getClkMPLLSubNodeConnectionPoint(const QString& nodeName) const
+{
+    if (!m_clkMPLLSubNodeWidget || !m_flowWidget || !m_clkMPLLSubNodeWidgets.contains(nodeName)) {
+        return QPoint();
+    }
+
+    QWidget* subNodeWidget = m_clkMPLLSubNodeWidgets[nodeName];
+    if (!subNodeWidget) {
+        return QPoint();
+    }
+
+    // 获取子节点widget在其父widget中的位置
+    QPoint subNodePos = subNodeWidget->pos();
+    QRect subNodeRect = subNodeWidget->rect();
+
+    // 获取clk_mpll子节点区域在flow widget中的位置
+    QPoint subNodeAreaPos = m_clkMPLLSubNodeWidget->pos();
+
+    // 子节点连接点位于widget的左侧中央
+    QPoint subNodePoint = QPoint(
+        subNodeAreaPos.x() + subNodePos.x(),
+        subNodeAreaPos.y() + subNodePos.y() + subNodeRect.height() / 2
+    );
+
+    // 转换为相对于ClockConfigWidget的坐标
+    QPoint flowPos = m_flowWidget->pos();
+    QPoint scrollOffset = QPoint(
+        m_flowScrollArea->horizontalScrollBar()->value(),
+        m_flowScrollArea->verticalScrollBar()->value()
+    );
+
     return QPoint(
         flowPos.x() + subNodePoint.x() - scrollOffset.x(),
         flowPos.y() + subNodePoint.y() - scrollOffset.y() + 60  // 加上标题高度
