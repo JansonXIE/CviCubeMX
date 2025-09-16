@@ -104,6 +104,7 @@ private slots:
     void onClkTPLLSubNodeDividerChanged(const QString& nodeName, int divider);  // 新增：clk_tpll子节点分频器变化
     void onClkMPLLSubNodeDividerChanged(const QString& nodeName, int divider);  // 新增：clk_mpll子节点分频器变化
     void onClkFAB100MSubNodeDividerChanged(const QString& nodeName, int divider);  // 新增：clk_fab_100M子节点分频器变化
+    void onClkSPINANDSubNodeDividerChanged(const QString& nodeName, int divider);  // 新增：clk_spi_nand子节点分频器变化
     void updateFrequencies();
     void resetToDefaults();
 
@@ -126,6 +127,7 @@ private:
     void setupClkTPLLSubNodes();  // 新增：设置clk_tpll子节点区域
     void setupClkMPLLSubNodes();  // 新增：设置clk_mpll子节点区域
     void setupClkFAB100MSubNodes();  // 新增：设置clk_fab_100M子节点区域
+    void setupClkSPINANDSubNodes();  // 新增：设置clk_spi_nand子节点区域
     void setupClockTree();
     void initializeModulePositions();  // 新增：初始化模块位置
     void createPLLWidget(const QString& pllName, QWidget* parent);
@@ -144,6 +146,7 @@ private:
     void createClkTPLLSubNodeWidget(const QString& nodeName, QWidget* parent);  // 新增：创建clk_tpll子节点widget
     void createClkMPLLSubNodeWidget(const QString& nodeName, QWidget* parent);  // 新增：创建clk_mpll子节点widget
     void createClkFAB100MSubNodeWidget(const QString& nodeName, QWidget* parent);  // 新增：创建clk_fab_100M子节点widget
+    void createClkSPINANDSubNodeWidget(const QString& nodeName, QWidget* parent);  // 新增：创建clk_spi_nand子节点widget
     void updatePLLFrequency(const QString& pllName);
     void updateSubPLLFrequency(const QString& pllName);  // 新增
     void updateAllSubPLLFrequencies();  // 新增
@@ -174,6 +177,8 @@ private:
     void updateAllClkMPLLSubNodeFrequencies();  // 新增：更新所有clk_mpll子节点频率
     void updateClkFAB100MSubNodeFrequency(const QString& nodeName);  // 新增：更新clk_fab_100M子节点频率
     void updateAllClkFAB100MSubNodeFrequencies();  // 新增：更新所有clk_fab_100M子节点频率
+    void updateClkSPINANDSubNodeFrequency(const QString& nodeName);  // 新增：更新clk_spi_nand子节点频率
+    void updateAllClkSPINANDSubNodeFrequencies();  // 新增：更新所有clk_spi_nand子节点频率
 
     void connectSignals();
     
@@ -211,6 +216,8 @@ private:
     QPoint getClkMPLLSubNodeConnectionPoint(const QString& nodeName) const;  // 新增：获取clk_mpll子节点连接点
     QPoint getClkFAB100MConnectionPoint() const;  // 新增：获取clk_fab_100M连接点
     QPoint getClkFAB100MSubNodeConnectionPoint(const QString& nodeName) const;  // 新增：获取clk_fab_100M子节点连接点
+    QPoint getClkSPINANDConnectionPoint() const;  // 新增：获取clk_spi_nand连接点
+    QPoint getClkSPINANDSubNodeConnectionPoint(const QString& nodeName) const;  // 新增：获取clk_spi_nand子节点连接点
     void updateConnectionOverlay();
     
     // UI组件
@@ -278,6 +285,10 @@ private:
     // clk_fab_100M子节点区域
     QWidget* m_clkFAB100MSubNodeWidget;
     QVBoxLayout* m_clkFAB100MSubNodeLayout;
+
+    // clk_spi_nand子节点区域
+    QWidget* m_clkSPINANDSubNodeWidget;
+    QVBoxLayout* m_clkSPINANDSubNodeLayout;
 
     // 左侧时钟树面板
     QWidget* m_clockTreeWidget;
@@ -354,6 +365,9 @@ private:
     QMap<QString, QWidget*> m_clkFAB100MSubNodeWidgets;
     QMap<QString, QLabel*> m_clkFAB100MSubNodeFreqLabels;
     QMap<QString, QSpinBox*> m_clkFAB100MSubNodeDividerBoxes;
+    QMap<QString, QWidget*> m_clkSPINANDSubNodeWidgets;
+    QMap<QString, QLabel*> m_clkSPINANDSubNodeFreqLabels;
+    QMap<QString, QSpinBox*> m_clkSPINANDSubNodeDividerBoxes;
     
     // 控制按钮
     QHBoxLayout* m_buttonLayout;
@@ -377,6 +391,7 @@ private:
     QMap<QString, ClockOutput> m_clkTPLLSubNodes;  // 新增：clk_tpll子节点数据
     QMap<QString, ClockOutput> m_clkMPLLSubNodes;  // 新增：clk_mpll子节点数据
     QMap<QString, ClockOutput> m_clkFAB100MSubNodes;  // 新增：clk_fab_100M子节点数据
+    QMap<QString, ClockOutput> m_clkSPINANDSubNodes;  // 新增：clk_spi_nand子节点数据
     QMap<QString, ModulePosition> m_modulePositions;  // 新增：模块位置配置
     
     // 常量
@@ -397,7 +412,8 @@ private:
     static const QStringList CLK_FPLL_SUB_NODES;  // 新增：clk_fpll子节点列表
     static const QStringList CLK_TPLL_SUB_NODES;  // 新增：clk_tpll子节点列表
     static const QStringList CLK_MPLL_SUB_NODES;  // 新增：clk_mpll子节点列表
-    static const QStringList CLK_FAB100M_SUB_NODES;  // 新增：clk_fab_100M子节点列表
+    static const QStringList CLK_FAB_100M_SUB_NODES;  // 新增：clk_fab_100M子节点列表
+    static const QStringList CLK_SPI_NAND_SUB_NODES;  // 新增：clk_spi_nand子节点列表
     
     // 连接线覆盖层
     QWidget* m_connectionOverlay;
