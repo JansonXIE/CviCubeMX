@@ -103,6 +103,10 @@ const QStringList ClockConfigWidget::CLK_SPI_NAND_SUB_NODES = {
     "clk_spi_nand_gate"
 };
 
+const QStringList ClockConfigWidget::CLK_HSPERI_SUB_NODES = {
+    "clk_sdma1_axi", "clk_sdma0_axi"
+};
+
 ClockConfigWidget::ClockConfigWidget(QWidget *parent)
     : QWidget(parent)
     , m_mainLayout(nullptr)
@@ -152,6 +156,7 @@ ClockConfigWidget::ClockConfigWidget(QWidget *parent)
     setupClkMPLLSubNodes();  // 新增：设置clk_mpll子节点区域
     setupClkFAB100MSubNodes();  // 新增：设置clk_fab_100M子节点区域
     setupClkSPINANDSubNodes();  // 新增：设置clk_spi_nand子节点区域
+    setupClkHSPeriSubNodes();  // 新增：设置clk_hsperi子节点区域
     setupClockTree();
     connectSignals();
     updateFrequencies();
@@ -1268,6 +1273,17 @@ void ClockConfigWidget::setupClkMPLLSubNodes()
         m_pllConfigs["clk_spi_nand"] = spiNandConfig;
     }
 
+    // 将clk_hsperi的配置同步到m_pllConfigs中，以便其子节点能正确访问
+    if (m_clkMPLLSubNodes.contains("clk_hsperi")) {
+        PLLConfig hsperiConfig;
+        hsperiConfig.name = "clk_hsperi";
+        hsperiConfig.enabled = true;
+        hsperiConfig.inputFreq = 1200.0; // clk_mpll频率
+        hsperiConfig.multiplier = 1;
+        hsperiConfig.outputFreq = m_clkMPLLSubNodes["clk_hsperi"].frequency;
+        m_pllConfigs["clk_hsperi"] = hsperiConfig;
+    }
+
     // 设置父widget为m_flowWidget并使用绝对定位
     m_clkMPLLSubNodeWidget->setParent(m_flowWidget);
     // 默认位置将在initializeModulePositions中设置
@@ -1340,7 +1356,7 @@ void ClockConfigWidget::setupClkSPINANDSubNodes()
     m_clkSPINANDSubNodeWidget->setStyleSheet(
         "QWidget { "
         "background-color: #ffffff; "
-        "border: 2px solid #28a745; "
+        "border: 2px solid #343a40; "
         "border-radius: 8px; "
         "}"
     );
@@ -1351,7 +1367,7 @@ void ClockConfigWidget::setupClkSPINANDSubNodes()
 
     // 添加标题
     QLabel* subNodeTitle = new QLabel("clk_spi_nand子节点");
-    subNodeTitle->setStyleSheet("font-size: 14px; font-weight: bold; color: #155724; text-align: center;");
+    subNodeTitle->setStyleSheet("font-size: 14px; font-weight: bold; color: #212529; text-align: center;");
     subNodeTitle->setAlignment(Qt::AlignCenter);
     m_clkSPINANDSubNodeLayout->addWidget(subNodeTitle);
 
@@ -1381,6 +1397,63 @@ void ClockConfigWidget::setupClkSPINANDSubNodes()
 
     // 设置父widget为m_flowWidget并使用绝对定位
     m_clkSPINANDSubNodeWidget->setParent(m_flowWidget);
+    // 默认位置将在initializeModulePositions中设置
+}
+
+void ClockConfigWidget::setupClkHSPeriSubNodes()
+{
+    // 创建clk_hsperi子节点区域
+    m_clkHSPeriSubNodeWidget = new QWidget();
+    m_clkHSPeriSubNodeWidget->setFixedSize(150, 200); // 设置固定尺寸，2个子节点
+    m_clkHSPeriSubNodeWidget->setStyleSheet(
+        "QWidget { "
+        "background-color: #ffffff; "
+        "border: 2px solid #17a2b8; "
+        "border-radius: 8px; "
+        "}"
+    );
+
+    m_clkHSPeriSubNodeLayout = new QVBoxLayout(m_clkHSPeriSubNodeWidget);
+    m_clkHSPeriSubNodeLayout->setContentsMargins(10, 10, 10, 10);
+    m_clkHSPeriSubNodeLayout->setSpacing(5);
+
+    // 添加标题
+    QLabel* subNodeTitle = new QLabel("clk_hsperi子节点");
+    subNodeTitle->setStyleSheet("font-size: 14px; font-weight: bold; color: #117a8b; text-align: center;");
+    subNodeTitle->setAlignment(Qt::AlignCenter);
+    m_clkHSPeriSubNodeLayout->addWidget(subNodeTitle);
+
+    // 为每个clk_hsperi子节点创建显示界面
+    for (const QString& nodeName : CLK_HSPERI_SUB_NODES) {
+        createClkHSPeriSubNodeWidget(nodeName, m_clkHSPeriSubNodeWidget);
+
+        // 初始化clk_hsperi子节点配置
+        ClockOutput subNode;
+        subNode.name = nodeName;
+        subNode.source = "clk_hsperi";
+        subNode.enabled = true;
+        // 根据子节点设置不同的默认分频值
+        if (nodeName == "clk_sdma1_axi") {
+            subNode.divider = 1;  // clk_sdma1_axi默认分频系数是1
+        } else if (nodeName == "clk_sdma0_axi") {
+            subNode.divider = 1;  // clk_sdma0_axi默认分频系数是1
+        }
+
+        // 计算频率：clk_hsperi的频率 / 分频器
+        // 从clk_hsperi的配置中获取正确的频率
+        double clkHSPeriFreq = 300.0; // 默认300MHz
+        if (m_pllConfigs.contains("clk_hsperi")) {
+            clkHSPeriFreq = m_pllConfigs["clk_hsperi"].outputFreq;
+        }
+        subNode.frequency = clkHSPeriFreq / subNode.divider;
+
+        m_clkHSPeriSubNodes[nodeName] = subNode;
+    }
+
+    m_clkHSPeriSubNodeLayout->addStretch();
+
+    // 设置父widget为m_flowWidget并使用绝对定位
+    m_clkHSPeriSubNodeWidget->setParent(m_flowWidget);
     // 默认位置将在initializeModulePositions中设置
 }
 
@@ -2760,6 +2833,82 @@ void ClockConfigWidget::createClkSPINANDSubNodeWidget(const QString& nodeName, Q
             });
 }
 
+void ClockConfigWidget::createClkHSPeriSubNodeWidget(const QString& nodeName, QWidget* parent)
+{
+    QWidget* subNodeWidget = new QWidget();
+    subNodeWidget->setStyleSheet(
+        "QWidget { "
+        "background-color: #ffffff; "
+        "border: 1px solid #17a2b8; "
+        "border-radius: 4px; "
+        "padding: 3px; "
+        "margin: 1px; "
+        "}"
+    );
+    
+    QVBoxLayout* layout = new QVBoxLayout(subNodeWidget);
+    layout->setSpacing(2);
+    layout->setContentsMargins(3, 3, 3, 3);
+    
+    // 子节点名称标签
+    QLabel* nameLabel = new QLabel(nodeName);
+    nameLabel->setStyleSheet("font-weight: bold; color: #117a8b; font-size: 11px;");
+    nameLabel->setAlignment(Qt::AlignCenter);
+    nameLabel->setWordWrap(true);
+    
+    // 分频器配置
+    QHBoxLayout* divConfigLayout = new QHBoxLayout();
+    divConfigLayout->setSpacing(3);
+    
+    QLabel* divLabel = new QLabel("分频：");
+    divLabel->setStyleSheet("color: #117a8b; font-size: 10px; font-weight: bold;");
+    
+    QSpinBox* divBox = new QSpinBox();
+    divBox->setRange(1, 1000);
+    // 根据子节点设置不同的默认分频值
+    if (nodeName == "clk_sdma1_axi") {
+        divBox->setValue(1);  // clk_sdma1_axi默认分频系数是1
+    } else if (nodeName == "clk_sdma0_axi") {
+        divBox->setValue(1);  // clk_sdma0_axi默认分频系数是1
+    }
+    divBox->setFixedWidth(45);
+    divBox->setStyleSheet("font-size: 10px;");
+    
+    divConfigLayout->addWidget(divLabel);
+    divConfigLayout->addWidget(divBox);
+    
+    // 频率显示
+    double clkHSPeriFreq = 300.0;  // 假设clk_hsperi = 300MHz
+    double calculatedFreq;
+    if (nodeName == "clk_sdma1_axi") {
+        calculatedFreq = clkHSPeriFreq / 1;  // clk_sdma1_axi默认分频系数是1
+    } else if (nodeName == "clk_sdma0_axi") {
+        calculatedFreq = clkHSPeriFreq / 1;  // clk_sdma0_axi默认分频系数是1
+    }
+    QString freqText = QString("%1 MHz").arg(calculatedFreq, 0, 'f', 1);
+    
+    QLabel* freqLabel = new QLabel(freqText);
+    freqLabel->setStyleSheet("color: #dc3545; font-family: monospace; font-weight: bold; font-size: 9px;");
+    freqLabel->setAlignment(Qt::AlignCenter);
+    
+    layout->addWidget(nameLabel);
+    layout->addLayout(divConfigLayout);
+    layout->addWidget(freqLabel);
+
+    // 存储控件引用
+    m_clkHSPeriSubNodeWidgets[nodeName] = subNodeWidget;
+    m_clkHSPeriSubNodeFreqLabels[nodeName] = freqLabel;
+    m_clkHSPeriSubNodeDividerBoxes[nodeName] = divBox;
+
+    m_clkHSPeriSubNodeLayout->addWidget(subNodeWidget);
+
+    // 连接分频器变化信号
+    connect(divBox, QOverload<int>::of(&QSpinBox::valueChanged),
+            [this, nodeName](int value) {
+                onClkHSPeriSubNodeDividerChanged(nodeName, value);
+            });
+}
+
 void ClockConfigWidget::setupClockTree()
 {
     // 由于现在使用流程图布局，时钟树功能可以简化或移除
@@ -2787,6 +2936,7 @@ void ClockConfigWidget::initializeModulePositions()
     ModulePosition clkMPLLSubPos = {"clk_mpll子节点", 1540, 520, 150, 1600}; // 新增clk_mpll子节点位置
     ModulePosition clkFAB100MSubPos = {"clk_fab100m子节点", 1880, 770, 150, 300}; // 新增clk_fab100m子节点位置
     ModulePosition clkSPINANDSubPos = {"clk_spi_nand子节点", 1710, 1010, 150, 120}; // 新增clk_spi_nand子节点位置
+    ModulePosition clkHSPISubPos = {"clk_hspi子节点", 1710, 1140, 150, 120}; // 新增clk_hspi子节点位置
 
     m_modulePositions["输入源"] = inputPos;
     m_modulePositions["锁相环"] = pllPos;
@@ -2806,6 +2956,7 @@ void ClockConfigWidget::initializeModulePositions()
     m_modulePositions["clk_mpll子节点"] = clkMPLLSubPos;
     m_modulePositions["clk_fab100m子节点"] = clkFAB100MSubPos;
     m_modulePositions["clk_spi_nand子节点"] = clkSPINANDSubPos;
+    m_modulePositions["clk_hspi子节点"] = clkHSPISubPos;
     
     // 应用默认位置
     applyModulePositions();
@@ -2919,6 +3070,12 @@ void ClockConfigWidget::applyModulePositions()
         ModulePosition pos = m_modulePositions["clk_spi_nand子节点"];
         m_clkSPINANDSubNodeWidget->move(pos.x, pos.y);
         m_clkSPINANDSubNodeWidget->resize(pos.width, pos.height);
+    }
+
+    if (m_modulePositions.contains("clk_hspi子节点") && m_clkHSPeriSubNodeWidget) {
+        ModulePosition pos = m_modulePositions["clk_hspi子节点"];
+        m_clkHSPeriSubNodeWidget->move(pos.x, pos.y);
+        m_clkHSPeriSubNodeWidget->resize(pos.width, pos.height);
     }
     
     // 重绘连接线
@@ -3161,6 +3318,11 @@ void ClockConfigWidget::onPLLMultiplierChanged(const QString& pllName, int multi
         updateAllClkSPINANDSubNodeFrequencies();
     }
 
+    // 如果是clk_hspi，还需要更新其子节点的频率
+    if (pllName == "clk_hspi") {
+        updateAllClkHSPeriSubNodeFrequencies();
+    }
+
     emit pllConfigChanged(pllName);
     emit configChanged();
 }
@@ -3326,6 +3488,16 @@ void ClockConfigWidget::onClkMPLLSubNodeDividerChanged(const QString& nodeName, 
             // 更新clk_spi_nand的所有子节点频率
             updateAllClkSPINANDSubNodeFrequencies();
         }
+
+        // 如果修改的是clk_hsperi，需要同步更新其在m_pllConfigs中的频率，并更新其子节点
+        if (nodeName == "clk_hsperi") {
+            // 同步更新m_pllConfigs中的频率
+            if (m_pllConfigs.contains("clk_hsperi")) {
+                m_pllConfigs["clk_hsperi"].outputFreq = m_clkMPLLSubNodes[nodeName].frequency;
+            }
+            // 更新clk_hsperi的所有子节点频率
+            updateAllClkHSPeriSubNodeFrequencies();
+        }
         
         emit configChanged();
     }
@@ -3345,6 +3517,15 @@ void ClockConfigWidget::onClkSPINANDSubNodeDividerChanged(const QString& nodeNam
     if (m_clkSPINANDSubNodes.contains(nodeName)) {
         m_clkSPINANDSubNodes[nodeName].divider = divider;
         updateClkSPINANDSubNodeFrequency(nodeName);
+        emit configChanged();
+    }
+}
+
+void ClockConfigWidget::onClkHSPeriSubNodeDividerChanged(const QString& nodeName, int divider)
+{
+    if (m_clkHSPeriSubNodes.contains(nodeName)) {
+        m_clkHSPeriSubNodes[nodeName].divider = divider;
+        updateClkHSPeriSubNodeFrequency(nodeName);
         emit configChanged();
     }
 }
@@ -3830,6 +4011,34 @@ void ClockConfigWidget::updateAllClkSPINANDSubNodeFrequencies()
     }
 }
 
+void ClockConfigWidget::updateClkHSPeriSubNodeFrequency(const QString& nodeName)
+{
+    if (!m_clkHSPeriSubNodes.contains(nodeName)) return;
+
+    ClockOutput& subNode = m_clkHSPeriSubNodes[nodeName];
+
+    // 获取clk_hsperi的频率
+    double clkHSPeriFreq = 300.0; // 默认300MHz
+    if (m_pllConfigs.contains("clk_hsperi")) {
+        clkHSPeriFreq = m_pllConfigs["clk_hsperi"].outputFreq;
+    }
+
+    // clk_hsperi子节点频率 = clk_hsperi频率 / 分频器
+    subNode.frequency = clkHSPeriFreq / subNode.divider;
+
+    // 更新显示
+    if (m_clkHSPeriSubNodeFreqLabels.contains(nodeName)) {
+        QString freqText = QString("%1 MHz").arg(subNode.frequency, 0, 'f', 1);
+        m_clkHSPeriSubNodeFreqLabels[nodeName]->setText(freqText);
+    }
+}
+
+void ClockConfigWidget::updateAllClkHSPeriSubNodeFrequencies()
+{
+    for (const QString& nodeName : CLK_HSPERI_SUB_NODES) {
+        updateClkHSPeriSubNodeFrequency(nodeName);
+    }
+}
 
 void ClockConfigWidget::updateFrequencies()
 {
@@ -3916,6 +4125,11 @@ void ClockConfigWidget::updateFrequencies()
     // 更新所有clk_spinand子节点频率
     for (const QString& nodeName : CLK_SPI_NAND_SUB_NODES) {
         updateClkSPINANDSubNodeFrequency(nodeName);
+    }
+
+    // 更新所有clk_hsperi子节点频率
+    for (const QString& nodeName : CLK_HSPERI_SUB_NODES) {
+        updateClkHSPeriSubNodeFrequency(nodeName);
     }
 }
 
@@ -4326,6 +4540,20 @@ void ClockConfigWidget::drawConnectionLines(QPainter& painter)
                 // 使用深灰色来表示clk_spinand到子节点的连接
                 QColor lineColor = QColor(105, 105, 105);  // 深灰色
                 drawArrowLine(painter, spinandPoint, subNodePoint, lineColor);
+            }
+        }
+    }
+
+    // 绘制clk_hsperi到其子节点的连接线
+    if (m_clkHSPeriSubNodeWidget) {
+        QPoint hsperiPoint = getClkHSPeriConnectionPoint();
+
+        for (const QString& nodeName : CLK_HSPERI_SUB_NODES) {
+            QPoint subNodePoint = getClkHSPeriSubNodeConnectionPoint(nodeName);
+            if (!subNodePoint.isNull() && !hsperiPoint.isNull()) {
+                // 使用深青绿色来表示clk_hsperi到子节点的连接
+                QColor lineColor = QColor(0, 100, 0);  // 深青绿色
+                drawArrowLine(painter, hsperiPoint, subNodePoint, lineColor);
             }
         }
     }
@@ -5545,6 +5773,80 @@ QPoint ClockConfigWidget::getClkSPINANDSubNodeConnectionPoint(const QString& nod
 
     // 获取clk_spinand子节点区域在flow widget中的位置
     QPoint subNodeAreaPos = m_clkSPINANDSubNodeWidget->pos();
+
+    // 子节点连接点位于widget的左侧中央
+    QPoint subNodePoint = QPoint(
+        subNodeAreaPos.x() + subNodePos.x(),
+        subNodeAreaPos.y() + subNodePos.y() + subNodeRect.height() / 2
+    );
+
+    // 转换为相对于ClockConfigWidget的坐标
+    QPoint flowPos = m_flowWidget->pos();
+    QPoint scrollOffset = QPoint(
+        m_flowScrollArea->horizontalScrollBar()->value(),
+        m_flowScrollArea->verticalScrollBar()->value()
+    );
+
+    return QPoint(
+        flowPos.x() + subNodePoint.x() - scrollOffset.x(),
+        flowPos.y() + subNodePoint.y() - scrollOffset.y() + 60  // 加上标题高度
+    );
+}
+
+QPoint ClockConfigWidget::getClkHSPeriConnectionPoint() const
+{
+    if (!m_clkMPLLSubNodeWidget || !m_flowWidget || !m_clkMPLLSubNodeWidgets.contains("clk_hsperi")) {
+        return QPoint();
+    }
+
+    QWidget* hsperiWidget = m_clkMPLLSubNodeWidgets["clk_hsperi"];
+    if (!hsperiWidget) {
+        return QPoint();
+    }
+    
+    // 获取clk_hsperi widget在其父widget中的位置
+    QPoint hsperiPos = hsperiWidget->pos();
+    QRect hsperiRect = hsperiWidget->rect();
+    
+    // 获取子PLL区域在flow widget中的位置
+    QPoint subPllAreaPos = m_clkMPLLSubNodeWidget->pos();
+    
+    // clk_hsperi连接点位于widget的右侧中央
+    QPoint hsperiPoint = QPoint(
+        subPllAreaPos.x() + hsperiPos.x() + hsperiRect.width(),
+        subPllAreaPos.y() + hsperiPos.y() + hsperiRect.height() / 2
+    );
+    
+    // 转换为相对于ClockConfigWidget的坐标
+    QPoint flowPos = m_flowWidget->pos();
+    QPoint scrollOffset = QPoint(
+        m_flowScrollArea->horizontalScrollBar()->value(),
+        m_flowScrollArea->verticalScrollBar()->value()
+    );
+    
+    return QPoint(
+        flowPos.x() + hsperiPoint.x() - scrollOffset.x(),
+        flowPos.y() + hsperiPoint.y() - scrollOffset.y() + 60  // 加上标题高度
+    );
+}
+
+QPoint ClockConfigWidget::getClkHSPeriSubNodeConnectionPoint(const QString& nodeName) const
+{
+    if (!m_clkHSPeriSubNodeWidget || !m_flowWidget || !m_clkHSPeriSubNodeWidgets.contains(nodeName)) {
+        return QPoint();
+    }
+
+    QWidget* subNodeWidget = m_clkHSPeriSubNodeWidgets[nodeName];
+    if (!subNodeWidget) {
+        return QPoint();
+    }
+
+    // 获取子节点widget在其父widget中的位置
+    QPoint subNodePos = subNodeWidget->pos();
+    QRect subNodeRect = subNodeWidget->rect();
+
+    // 获取clk_hsperi子节点区域在flow widget中的位置
+    QPoint subNodeAreaPos = m_clkHSPeriSubNodeWidget->pos();
 
     // 子节点连接点位于widget的左侧中央
     QPoint subNodePoint = QPoint(
