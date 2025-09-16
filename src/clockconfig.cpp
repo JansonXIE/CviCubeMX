@@ -95,6 +95,10 @@ const QStringList ClockConfigWidget::CLK_MPLL_SUB_NODES = {
     "clk_vc_src0", "clk_tpu_sys", "clk_gic", "clk_bus", "clk_rtc_sys", "clk_hsperi"
 };
 
+const QStringList ClockConfigWidget::CLK_FAB100M_SUB_NODES = {
+    "clk_fab6_100M_free", "clk_efuse_pclk", "clk_x2p"
+};
+
 ClockConfigWidget::ClockConfigWidget(QWidget *parent)
     : QWidget(parent)
     , m_mainLayout(nullptr)
@@ -142,6 +146,7 @@ ClockConfigWidget::ClockConfigWidget(QWidget *parent)
     setupClkFPLLSubNodes();  // 新增：设置clk_fpll子节点区域
     setupClkTPLLSubNodes();  // 新增：设置clk_tpll子节点区域
     setupClkMPLLSubNodes();  // 新增：设置clk_mpll子节点区域
+    setupClkFAB100MSubNodes();  // 新增：设置clk_fab_100M子节点区域
     setupClockTree();
     connectSignals();
     updateFrequencies();
@@ -1238,6 +1243,65 @@ void ClockConfigWidget::setupClkMPLLSubNodes()
 
     // 设置父widget为m_flowWidget并使用绝对定位
     m_clkMPLLSubNodeWidget->setParent(m_flowWidget);
+    // 默认位置将在initializeModulePositions中设置
+}
+
+void ClockConfigWidget::setupClkFAB100MSubNodes()
+{
+    // 创建clk_fab_100M子节点区域
+    m_clkFAB100MSubNodeWidget = new QWidget();
+    m_clkFAB100MSubNodeWidget->setFixedSize(150, 300); // 设置固定尺寸，3个子节点
+    m_clkFAB100MSubNodeWidget->setStyleSheet(
+        "QWidget { "
+        "background-color: #ffffff; "
+        "border: 2px solid #6f42c1; "
+        "border-radius: 8px; "
+        "}"
+    );
+
+    m_clkFAB100MSubNodeLayout = new QVBoxLayout(m_clkFAB100MSubNodeWidget);
+    m_clkFAB100MSubNodeLayout->setContentsMargins(10, 10, 10, 10);
+    m_clkFAB100MSubNodeLayout->setSpacing(5);
+
+    // 添加标题
+    QLabel* subNodeTitle = new QLabel("clk_fab_100M子节点");
+    subNodeTitle->setStyleSheet("font-size: 14px; font-weight: bold; color: #4b0082; text-align: center;");
+    subNodeTitle->setAlignment(Qt::AlignCenter);
+    m_clkFAB100MSubNodeLayout->addWidget(subNodeTitle);
+
+    // 为每个clk_fab_100M子节点创建显示界面
+    for (const QString& nodeName : CLK_FAB100M_SUB_NODES) {
+        createClkFAB100MSubNodeWidget(nodeName, m_clkFAB100MSubNodeWidget);
+
+        // 初始化clk_fab_100M子节点配置
+        ClockOutput subNode;
+        subNode.name = nodeName;
+        subNode.source = "clk_fab_100M";
+        subNode.enabled = true;
+        // 根据子节点设置不同的默认分频值
+        if (nodeName == "clk_fab6_100M_free") {
+            subNode.divider = 1;  // clk_fab6_100M_free默认分频系数是1
+        } else if (nodeName == "clk_efuse_pclk") {
+            subNode.divider = 1;  // clk_efuse_pclk默认分频系数是1
+        } else if (nodeName == "clk_x2p") {
+            subNode.divider = 1;  // clk_x2p默认分频系数是1
+        }
+
+        // 计算频率：clk_fab_100M的频率 / 分频器
+        // 从clk_fab_100M的配置中获取正确的频率
+        double clkFAB100MFreq = 100.0; // 默认100MHz
+        if (m_pllConfigs.contains("clk_fab_100M")) {
+            clkFAB100MFreq = m_pllConfigs["clk_fab_100M"].outputFreq;
+        }
+        subNode.frequency = clkFAB100MFreq / subNode.divider;
+
+        m_clkFAB100MSubNodes[nodeName] = subNode;
+    }
+
+    m_clkFAB100MSubNodeLayout->addStretch();
+
+    // 设置父widget为m_flowWidget并使用绝对定位
+    m_clkFAB100MSubNodeWidget->setParent(m_flowWidget);
     // 默认位置将在initializeModulePositions中设置
 }
 
@@ -2471,6 +2535,86 @@ void ClockConfigWidget::createClkMPLLSubNodeWidget(const QString& nodeName, QWid
             });
 }
 
+void ClockConfigWidget::createClkFAB100MSubNodeWidget(const QString& nodeName, QWidget* parent)
+{
+    QWidget* subNodeWidget = new QWidget();
+    subNodeWidget->setStyleSheet(
+        "QWidget { "
+        "background-color: #ffffff; "
+        "border: 1px solid #6f42c1; "
+        "border-radius: 4px; "
+        "padding: 3px; "
+        "margin: 1px; "
+        "}"
+    );
+    
+    QVBoxLayout* layout = new QVBoxLayout(subNodeWidget);
+    layout->setSpacing(2);
+    layout->setContentsMargins(3, 3, 3, 3);
+    
+    // 子节点名称标签
+    QLabel* nameLabel = new QLabel(nodeName);
+    nameLabel->setStyleSheet("font-weight: bold; color: #4b0082; font-size: 11px;");
+    nameLabel->setAlignment(Qt::AlignCenter);
+    nameLabel->setWordWrap(true);
+    
+    // 分频器配置
+    QHBoxLayout* divConfigLayout = new QHBoxLayout();
+    divConfigLayout->setSpacing(3);
+    
+    QLabel* divLabel = new QLabel("分频：");
+    divLabel->setStyleSheet("color: #4b0082; font-size: 10px; font-weight: bold;");
+    
+    QSpinBox* divBox = new QSpinBox();
+    divBox->setRange(1, 1000);
+    // 根据子节点设置不同的默认分频值
+    if (nodeName == "clk_fab6_100M_free") {
+        divBox->setValue(1);  // clk_fab6_100M_free默认分频系数是1
+    } else if (nodeName == "clk_efuse_pclk") {
+        divBox->setValue(1);  // clk_efuse_pclk默认分频系数是1
+    } else if (nodeName == "clk_x2p") {
+        divBox->setValue(1);  // clk_x2p默认分频系数是1
+    }
+    divBox->setFixedWidth(45);
+    divBox->setStyleSheet("font-size: 10px;");
+    
+    divConfigLayout->addWidget(divLabel);
+    divConfigLayout->addWidget(divBox);
+    
+    // 频率显示
+    double clkFAB100MFreq = 100.0;  // 假设clk_fab_100M = 100MHz
+    double calculatedFreq;
+    if (nodeName == "clk_fab6_100M_free") {
+        calculatedFreq = clkFAB100MFreq / 1;  // clk_fab6_100M_free默认分频系数是1
+    } else if (nodeName == "clk_efuse_pclk") {
+        calculatedFreq = clkFAB100MFreq / 1;  // clk_efuse_pclk默认分频系数是1
+    } else if (nodeName == "clk_x2p") {
+        calculatedFreq = clkFAB100MFreq / 1;  // clk_x2p默认分频系数是1
+    }
+    QString freqText = QString("%1 MHz").arg(calculatedFreq, 0, 'f', 1);
+    
+    QLabel* freqLabel = new QLabel(freqText);
+    freqLabel->setStyleSheet("color: #dc3545; font-family: monospace; font-weight: bold; font-size: 9px;");
+    freqLabel->setAlignment(Qt::AlignCenter);
+    
+    layout->addWidget(nameLabel);
+    layout->addLayout(divConfigLayout);
+    layout->addWidget(freqLabel);
+
+    // 存储控件引用
+    m_clkFAB100MSubNodeWidgets[nodeName] = subNodeWidget;
+    m_clkFAB100MSubNodeFreqLabels[nodeName] = freqLabel;
+    m_clkFAB100MSubNodeDividerBoxes[nodeName] = divBox;
+
+    m_clkFAB100MSubNodeLayout->addWidget(subNodeWidget);
+
+    // 连接分频器变化信号
+    connect(divBox, QOverload<int>::of(&QSpinBox::valueChanged),
+            [this, nodeName](int value) {
+                onClkFAB100MSubNodeDividerChanged(nodeName, value);
+            });
+}
+
 void ClockConfigWidget::setupClockTree()
 {
     // 由于现在使用流程图布局，时钟树功能可以简化或移除
@@ -2496,7 +2640,7 @@ void ClockConfigWidget::initializeModulePositions()
     ModulePosition clkFPLLSubPos = {"clk_fpll子节点", 1710, 200, 150, 800}; // 新增clk_fpll子节点位置
     ModulePosition clkTPLLSubPos = {"clk_tpu子节点", 1540, 310, 150, 200}; // 新增clk_tpu子节点位置
     ModulePosition clkMPLLSubPos = {"clk_mpll子节点", 1540, 520, 150, 1600}; // 新增clk_mpll子节点位置
-
+    ModulePosition clkFAB100MSubPos = {"clk_fab100m子节点", 1880, 770, 150, 300}; // 新增clk_fab100m子节点位置
 
     m_modulePositions["输入源"] = inputPos;
     m_modulePositions["锁相环"] = pllPos;
@@ -2514,6 +2658,7 @@ void ClockConfigWidget::initializeModulePositions()
     m_modulePositions["clk_fpll子节点"] = clkFPLLSubPos;
     m_modulePositions["clk_tpu子节点"] = clkTPLLSubPos;
     m_modulePositions["clk_mpll子节点"] = clkMPLLSubPos;
+    m_modulePositions["clk_fab100m子节点"] = clkFAB100MSubPos;
     
     // 应用默认位置
     applyModulePositions();
@@ -2615,6 +2760,12 @@ void ClockConfigWidget::applyModulePositions()
         ModulePosition pos = m_modulePositions["clk_mpll子节点"];
         m_clkMPLLSubNodeWidget->move(pos.x, pos.y);
         m_clkMPLLSubNodeWidget->resize(pos.width, pos.height);
+    }
+
+    if (m_modulePositions.contains("clk_fab100m子节点") && m_clkFAB100MSubNodeWidget) {
+        ModulePosition pos = m_modulePositions["clk_fab100m子节点"];
+        m_clkFAB100MSubNodeWidget->move(pos.x, pos.y);
+        m_clkFAB100MSubNodeWidget->resize(pos.width, pos.height);
     }
     
     // 重绘连接线
@@ -2846,6 +2997,11 @@ void ClockConfigWidget::onPLLMultiplierChanged(const QString& pllName, int multi
     if (pllName == "clk_mpll") {
         updateAllClkMPLLSubNodeFrequencies();
     }
+
+    // 如果是clk_fab_100m，还需要更新其子节点的频率
+    if (pllName == "clk_fab_100m") {
+        updateAllClkFAB100MSubNodeFrequencies();
+    }
     
     emit pllConfigChanged(pllName);
     emit configChanged();
@@ -2991,6 +3147,15 @@ void ClockConfigWidget::onClkMPLLSubNodeDividerChanged(const QString& nodeName, 
     if (m_clkMPLLSubNodes.contains(nodeName)) {
         m_clkMPLLSubNodes[nodeName].divider = divider;
         updateClkMPLLSubNodeFrequency(nodeName);
+        emit configChanged();
+    }
+}
+
+void ClockConfigWidget::onClkFAB100MSubNodeDividerChanged(const QString& nodeName, int divider)
+{
+    if (m_clkFAB100MSubNodes.contains(nodeName)) {
+        m_clkFAB100MSubNodes[nodeName].divider = divider;
+        updateClkFAB100MSubNodeFrequency(nodeName);
         emit configChanged();
     }
 }
@@ -3418,6 +3583,35 @@ void ClockConfigWidget::updateAllClkMPLLSubNodeFrequencies()
     }
 }
 
+void ClockConfigWidget::updateClkFAB100MSubNodeFrequency(const QString& nodeName)
+{
+    if (!m_clkFAB100MSubNodes.contains(nodeName)) return;
+
+    ClockOutput& subNode = m_clkFAB100MSubNodes[nodeName];
+
+    // 获取clk_fab_100m的频率
+    double clkFAB100MFreq = 100.0; // 默认100MHz
+    if (m_pllConfigs.contains("clk_fab_100m")) {
+        clkFAB100MFreq = m_pllConfigs["clk_fab_100m"].outputFreq;
+    }
+
+    // clk_fab_100m子节点频率 = clk_fab_100m频率 / 分频器
+    subNode.frequency = clkFAB100MFreq / subNode.divider;
+
+    // 更新显示
+    if (m_clkFAB100MSubNodeFreqLabels.contains(nodeName)) {
+        QString freqText = QString("%1 MHz").arg(subNode.frequency, 0, 'f', 1);
+        m_clkFAB100MSubNodeFreqLabels[nodeName]->setText(freqText);
+    }
+}
+
+void ClockConfigWidget::updateAllClkFAB100MSubNodeFrequencies()
+{
+    for (const QString& nodeName : CLK_FAB100M_SUB_NODES) {
+        updateClkFAB100MSubNodeFrequency(nodeName);
+    }
+}
+
 void ClockConfigWidget::updateFrequencies()
 {
     // 更新所有PLL频率
@@ -3493,6 +3687,11 @@ void ClockConfigWidget::updateFrequencies()
     // 更新所有clk_mpll子节点频率
     for (const QString& nodeName : CLK_MPLL_SUB_NODES) {
         updateClkMPLLSubNodeFrequency(nodeName);
+    }
+
+    // 更新所有clk_fab100m子节点频率
+    for (const QString& nodeName : CLK_FAB100M_SUB_NODES) {
+        updateClkFAB100MSubNodeFrequency(nodeName);
     }
 }
 
@@ -3875,6 +4074,20 @@ void ClockConfigWidget::drawConnectionLines(QPainter& painter)
                 // 使用深绿色来表示clk_mpll到子节点的连接
                 QColor lineColor = QColor(0, 128, 0);  // 深绿色
                 drawArrowLine(painter, mPLLPoint, subNodePoint, lineColor);
+            }
+        }
+    }
+
+    // 绘制clk_fab_100m到其子节点的连接线
+    if (m_clkFAB100MSubNodeWidget) {
+        QPoint fab100MPoint = getClkFAB100MConnectionPoint();
+
+        for (const QString& nodeName : CLK_FAB100M_SUB_NODES) {
+            QPoint subNodePoint = getClkFAB100MSubNodeConnectionPoint(nodeName);
+            if (!subNodePoint.isNull() && !fab100MPoint.isNull()) {
+                // 使用深粉色来表示clk_fab_100m到子节点的连接
+                QColor lineColor = QColor(255, 20, 147);  // 深粉色
+                drawArrowLine(painter, fab100MPoint, subNodePoint, lineColor);
             }
         }
     }
@@ -4946,6 +5159,80 @@ QPoint ClockConfigWidget::getClkMPLLSubNodeConnectionPoint(const QString& nodeNa
 
     // 获取clk_mpll子节点区域在flow widget中的位置
     QPoint subNodeAreaPos = m_clkMPLLSubNodeWidget->pos();
+
+    // 子节点连接点位于widget的左侧中央
+    QPoint subNodePoint = QPoint(
+        subNodeAreaPos.x() + subNodePos.x(),
+        subNodeAreaPos.y() + subNodePos.y() + subNodeRect.height() / 2
+    );
+
+    // 转换为相对于ClockConfigWidget的坐标
+    QPoint flowPos = m_flowWidget->pos();
+    QPoint scrollOffset = QPoint(
+        m_flowScrollArea->horizontalScrollBar()->value(),
+        m_flowScrollArea->verticalScrollBar()->value()
+    );
+
+    return QPoint(
+        flowPos.x() + subNodePoint.x() - scrollOffset.x(),
+        flowPos.y() + subNodePoint.y() - scrollOffset.y() + 60  // 加上标题高度
+    );
+}
+
+QPoint ClockConfigWidget::getClkFAB100MConnectionPoint() const
+{
+    if (!m_clkFPLLSubNodeWidget || !m_flowWidget || !m_clkFPLLSubNodeWidgets.contains("clk_fab_100M")) {
+        return QPoint();
+    }
+
+    QWidget* fab100MWidget = m_clkFPLLSubNodeWidgets["clk_fab_100M"];
+    if (!fab100MWidget) {
+        return QPoint();
+    }
+    
+    // 获取clk_fab100m widget在其父widget中的位置
+    QPoint fab100MPos = fab100MWidget->pos();
+    QRect fab100MRect = fab100MWidget->rect();
+    
+    // 获取子PLL区域在flow widget中的位置
+    QPoint subPllAreaPos = m_clkFPLLSubNodeWidget->pos();
+    
+    // clk_fab100m连接点位于widget的右侧中央
+    QPoint fab100MPoint = QPoint(
+        subPllAreaPos.x() + fab100MPos.x() + fab100MRect.width(),
+        subPllAreaPos.y() + fab100MPos.y() + fab100MRect.height() / 2
+    );
+    
+    // 转换为相对于ClockConfigWidget的坐标
+    QPoint flowPos = m_flowWidget->pos();
+    QPoint scrollOffset = QPoint(
+        m_flowScrollArea->horizontalScrollBar()->value(),
+        m_flowScrollArea->verticalScrollBar()->value()
+    );
+    
+    return QPoint(
+        flowPos.x() + fab100MPoint.x() - scrollOffset.x(),
+        flowPos.y() + fab100MPoint.y() - scrollOffset.y() + 60  // 加上标题高度
+    );
+}
+
+QPoint ClockConfigWidget::getClkFAB100MSubNodeConnectionPoint(const QString& nodeName) const
+{
+    if (!m_clkFAB100MSubNodeWidget || !m_flowWidget || !m_clkFAB100MSubNodeWidgets.contains(nodeName)) {
+        return QPoint();
+    }
+
+    QWidget* subNodeWidget = m_clkFAB100MSubNodeWidgets[nodeName];
+    if (!subNodeWidget) {
+        return QPoint();
+    }
+
+    // 获取子节点widget在其父widget中的位置
+    QPoint subNodePos = subNodeWidget->pos();
+    QRect subNodeRect = subNodeWidget->rect();
+
+    // 获取clk_fab100m子节点区域在flow widget中的位置
+    QPoint subNodeAreaPos = m_clkFAB100MSubNodeWidget->pos();
 
     // 子节点连接点位于widget的左侧中央
     QPoint subNodePoint = QPoint(
