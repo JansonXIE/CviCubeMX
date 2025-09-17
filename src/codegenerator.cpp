@@ -2,7 +2,11 @@
 #include <QRegularExpression>
 #include <QFile>
 #include <QTextStream>
-
+#include <QDebug>
+static bool isGpioMode(const QString &func);
+static QString generateEthSequence(const QMap<QString, QString>& pinFunctions);
+static QString generateMipiSequence(const QMap<QString, QString>& pinFunctions);
+static QString generateAudioSequence(const QMap<QString, QString>& pinFunctions);
 CodeGenerator::CodeGenerator()
 {
     initializeFunctionMacros();
@@ -11,7 +15,7 @@ CodeGenerator::CodeGenerator()
 QString CodeGenerator::generateCode(const ChipConfig& config)
 {
     // 检查是否存在默认的 cvi_board_init.c 文件
-    QString defaultFilePath = "C:\\Users\\jansonxie\\Desktop\\CviCubeMX\\boards\\cv184x\\cv1842hp_wevb_0014a_emmc\\u-boot\\cvi_board_init.c";
+    QString defaultFilePath = "C:\\Users\\situo.su\\CviCubeMX\\boards\\cv184x\\cv1842hp_wevb_0014a_emmc\\u-boot\\cvi_board_init.c";
     QFile defaultFile(defaultFilePath);
     
     if (defaultFile.exists()) {
@@ -41,11 +45,11 @@ QString CodeGenerator::updateExistingFile(const QString& filePath, const ChipCon
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
         return QString("Error: Cannot open file %1").arg(filePath);
     }
-    
+
     QTextStream in(&file);
     QString content = in.readAll();
     file.close();
-    
+
     // 查找现有的生成配置块并删除（包括前后的空行）
     QRegularExpression generatedRegex("\\n*\\s*// Generated PINMUX configurations\\n.*?(?=\\n*\\s*return\\s+0\\s*;)", 
                                      QRegularExpression::DotMatchesEverythingOption);
@@ -67,45 +71,62 @@ QString CodeGenerator::updateExistingFile(const QString& filePath, const ChipCon
     
     // 生成新的 PINMUX 配置
     QString pinmuxConfig = generatePinmuxConfig(config);
-    
+
+    // 也基于相同的 pinFunctions 生成 ETH / MIPI / Audio 的特殊寄存器序列，
+    // 因为 updateExistingFile 分支只插入 PINMUX_CONFIG，需要把这些序列追加
+    QMap<QString, QString> pinFunctions = config.getAllPinFunctions();
+    QString specialSeq;
+    specialSeq += generateEthSequence(pinFunctions);
+    specialSeq += generateMipiSequence(pinFunctions);
+    specialSeq += generateAudioSequence(pinFunctions);
+    if (!specialSeq.isEmpty()) {
+        // 保证特殊序列与 PINMUX_CONFIG 之间有空行
+        if (!pinmuxConfig.endsWith("\n")) pinmuxConfig += "\n";
+        // 将生成的行每行前加一个制表符进行对齐（写入到文件中时与其它行一致）
+        QStringList lines = specialSeq.split('\n', Qt::SkipEmptyParts);
+        for (const QString &ln : lines) {
+            pinmuxConfig += "\t" + ln + "\n";
+        }
+    }
+
     if (!pinmuxConfig.isEmpty()) {
         // 在 return 0; 之前插入新的配置
         QString newContent = content.left(returnPosition);
-        
+
         // 确保以换行结尾
         if (!newContent.endsWith("\n")) {
             newContent += "\n";
         }
-        
+
         // 始终使用制表符缩进，不依赖于当前return语句的缩进状态
         newContent += "\n\t// Generated PINMUX configurations\n";
         newContent += pinmuxConfig;
         newContent += "\n\treturn 0;\n";
         newContent += "}";
-        
+
         // 写回文件
         if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
             return QString("Error: Cannot write to file %1").arg(filePath);
         }
-        
+
         QTextStream out(&file);
         out << newContent;
         file.close();
-        
+
         return "File updated successfully";
     } else {
         // 如果没有配置要添加，确保删除任何现有的生成配置，并保持正确的return格式
         QRegularExpression returnFix("\\n*\\s*return\\s+0\\s*;");
         content.replace(returnFix, "\n\treturn 0;");
-        
+
         if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
             return QString("Error: Cannot write to file %1").arg(filePath);
         }
-        
+
         QTextStream out(&file);
         out << content;
         file.close();
-        
+
         return "Existing generated configurations removed";
     }
 }
@@ -124,7 +145,190 @@ QString CodeGenerator::generateHeader()
     
     return header;
 }
+// Helper: 判断某个功能字符串是否表示 GPIO 模式（包含或以 GPIO 相关前缀开头）
+static bool isGpioMode(const QString &func)
+{
+    if (func.isEmpty())
+        return false;
+    // 常见 GPIO 表示形式：直接包含 "GPIO"，或以 "XGPIO"/"PWR_GPIO" 等前缀
+    if (func.startsWith("XGPIO", Qt::CaseInsensitive) ||
+        func.startsWith("PWR_GPIO", Qt::CaseInsensitive) ||
+        func.contains("GPIO", Qt::CaseInsensitive))
+        return true;
+    return false;
+}
 
+// 帮助函数：为 ETH pads 生成特殊寄存器序列（当设置为 GPIO 时）
+static QString generateEthSequence(const QMap<QString, QString>& pinFunctions)
+{
+    QString seq;
+    QStringList specialEthPads = {
+        "PAD_ETH_RXM___EPHY_TXP",
+        "PAD_ETH_RXP___EPHY_TXN",
+        "PAD_ETH_TXM___EPHY_RXP",
+        "PAD_ETH_TXP___EPHY_RXN"
+    };
+
+    bool need = false;
+    for (const QString &pad : specialEthPads) {
+        if (isGpioMode(pinFunctions.value(pad))) {
+            need = true;
+            break;
+        }
+    }
+
+    if (!need)
+        return seq;
+
+    seq += "    /* Special sequence: configure EPHY for GPIO on ETH pads */\n";
+    seq += "    /* Note: requires mmio_read/mmio_write and udelay helpers */\n";
+    seq += "    /* enable apb interface */\n";
+    seq += "    mmio_write(0x03009804, mmio_read(0x03009804) | 0x1); // rg_ephy_apb_rw_sel = 1\n";
+    seq += "    /* set pll stable cnt = 1 (10us) */\n";
+    seq += "    mmio_write(0x03009808, (mmio_read(0x03009808) & ~0x1F) | 0x1);\n";
+    seq += "    /* release ephy reset */\n";
+    seq += "    mmio_write(0x03009800, mmio_read(0x03009800) | (1 << 2)); // rg_ephy_dig_rst_n = 1\n";
+    seq += "    udelay(10); /* wait 10us */\n";
+    seq += "    /* select page 5 */\n";
+    seq += "    mmio_write(0x0300907C, (mmio_read(0x0300907C) & ~(0x1F << 8)) | (5 << 8));\n";
+    seq += "    /* set to gpio from top */\n";
+    seq += "    mmio_write(0x03009078, (mmio_read(0x03009078) & ~0xFFF) | 0xF00);\n";
+    seq += "    /* enable ephy rxp&rxm input & output */\n";
+    seq += "    mmio_write(0x03009074, (mmio_read(0x03009074)| 0x606));\n";
+    seq += "    mmio_write(0x03009070, (mmio_read(0x03009070)| 0x606));\n";
+    seq += "    /* back to page 0 */\n";
+    seq += "    mmio_write(0x0300907C, 0x0);\n";
+    seq += "    /* set PHY MDI mode to Force MDIX (bits[1:0] = 01) */\n";
+    seq += "    mmio_write(0x0300904C, (mmio_read(0x0300904C) & ~0x3) | 0x1);\n";
+    seq += "\n";
+    seq += "\t/* PAD_ETH PINMUX GPIO extra config END */\n";
+    seq += "\n";
+    return seq;
+}
+
+// 帮助函数：为 MIPI pads 生成寄存器配置（TXM/TXP/RX -> 指定位写 0/1）
+static QString generateMipiSequence(const QMap<QString, QString>& pinFunctions)
+{
+    QString seq;
+
+    // TXM pads 对应 reg_pd_lptrx bit0..4 @ 0x0A098064 (低4位) 和 reg_pd_txdvr_ldo bit8..12 @ 0x0A098064 (高4位)
+    QStringList txm = { "PAD_MIPI_TXM0","PAD_MIPI_TXP0","PAD_MIPI_TXM1", "PAD_MIPI_TXP1","PAD_MIPI_TXM2","PAD_MIPI_TXP2", "PAD_MIPI_TXM3", "PAD_MIPI_TXP3", "PAD_MIPI_TXM4" ,"PAD_MIPI_TXP4"};
+    bool need = false;
+    unsigned int vallow = 0;
+    unsigned int valtop = 0;
+    unsigned int masklow =0;
+    unsigned int masktop =0;
+    //按照这个循环，当前没办法保留原有的的配置，只能bit全部重写，当前选gpio的就写1，非gpio的就写0
+    for (int i = 0; i < txm.size(); ++i) {
+        const QString func = pinFunctions.value(txm[i]);
+        if (isGpioMode(func)) {
+            vallow |= (1u << i/2);
+            valtop |= (1u << (i/2 + 8));
+            need = true;
+        } else {
+            masklow |= (1u << i/2);
+            masktop |= (1u << (i/2 + 8));
+        }
+    }
+    // MIPI RX: PAD_MIPIRX0N/0P/1N/1P/3N/3P -> bits16..21 @ 0x0A0A6000
+    QStringList rx = { "PAD_MIPIRX0N", "PAD_MIPIRX0P", "PAD_MIPIRX1N", "PAD_MIPIRX1P",  "PAD_MIPIRX2N", "PAD_MIPIRX2P","PAD_MIPIRX3N", "PAD_MIPIRX3P", "PAD_MIPIRX4N", "PAD_MIPIRX4P", "PAD_MIPIRX5N", "PAD_MIPIRX5P"};
+    unsigned int maskRX = 0;
+    unsigned int valRX = 0;
+    //按照这个循环，当前没办法保留原有的的配置，只能bit全部重写，当前选gpio的就写1，非gpio的就写0
+    for (int i = 0; i < rx.size(); ++i) {
+        const QString &pin = rx[i];
+        const QString func = pinFunctions.value(pin);
+        if (isGpioMode(func)) {
+            maskRX |= (1u << (16 + i/2));
+            valRX |= (1u << (16 + i/2));
+            need = true;
+        } else {
+            maskRX |= (1u << (16 + i/2));
+        }
+    }
+    if(!need)
+        return seq;
+    if(vallow){
+        seq += "    /* MIPI TX: set reg_pd_lptrx/reg_pd_txdvr_ldo according to GPIO/MIPI selection */\n";
+    
+        seq += QString("    mmio_write(0x0A098064, (mmio_read(0x0A098064) & ~0x%1) | 0x%2);\n")
+            .arg(QString::number(masklow, 16).toUpper())
+            .arg(QString::number(vallow, 16).toUpper());
+        
+    }
+    
+   if(valtop){
+    seq += QString("    mmio_write(0x0A098064, (mmio_read(0x0A098064) & ~0x%1) | 0x%2);\n")
+            .arg(QString::number(masktop, 16).toUpper())
+            .arg(QString::number(valtop, 16).toUpper());
+    
+    seq += "\n";
+    }
+    if(valRX){
+        seq += "    /* MIPI RX: reg_mipirx_pd_rxlp set for GPIO/MIPI */\n";
+        seq += QString("    mmio_write(0x0A0A6000, (mmio_read(0x0A0A6000) & ~0x%1) | 0x%2);\n")
+                .arg(QString::number(maskRX, 16).toUpper())
+                .arg(QString::number(valRX, 16).toUpper());
+        seq += "\n";
+    }
+    
+    seq += "\t/* PAD_MIPI PINMUX extra config set END */\n";
+    seq += "\n";
+    return seq;
+}
+
+// 帮助函数：为 Audio pads 生成寄存器配置（Analog(00) vs GPIO(non-00)）
+static QString generateAudioSequence(const QMap<QString, QString>& pinFunctions)
+{
+    QString seq;
+    bool need = false;
+    // PAD_AUD_AINL_MIC,PAD_AUD_AINR -> 0x03002204[23:22],0x0300212C[3:2]
+    QString p1 = "PAD_AUD_AINL_MIC";
+    QString p2 = "PAD_AUD_AINR";
+    QString pinValue1=pinFunctions.value(p1);
+    QString pinValue2=pinFunctions.value(p2);
+    if (pinFunctions.contains(p1)||pinFunctions.contains(p2)) {
+        unsigned int mask = (0x3u << 22);
+        unsigned int val = (isGpioMode(pinValue1)||isGpioMode(pinValue2)) ? (0x1u << 22) : 0;
+        seq += QString("    mmio_write(0x03002204, (mmio_read(0x03002204) & ~0x%1) | 0x%2);\n")
+                .arg(QString::number(mask, 16).toUpper())
+                .arg(QString::number(val, 16).toUpper());
+        mask = (0x3u << 2);
+        val = (isGpioMode(pinValue1)||isGpioMode(pinValue2)) ? (0x1u << 2) : 0;
+        seq += QString("    mmio_write(0x0300212C, (mmio_read(0x0300212C) & ~0x%1) | 0x%2);\n")
+                .arg(QString::number(mask, 16).toUpper())
+                .arg(QString::number(val, 16).toUpper());
+        need = true;
+    }
+
+
+    // PAD_AUD_AOUTL -> 0x03002204[25:24],PAD_AUD_AOUTR -> 0x03002100[1:0]
+    QString p3 = "PAD_AUD_AOUTL";
+    QString p4 = "PAD_AUD_AOUTR";
+    QString pinValue3=pinFunctions.value(p3);
+    QString pinValue4=pinFunctions.value(p4);
+    if (pinFunctions.contains(p3)||pinFunctions.contains(p4)) {
+        unsigned int mask = (0x3u << 24);
+        unsigned int val = (isGpioMode(pinValue3)||isGpioMode(pinValue4))? (0x1u << 24) : 0;
+        seq += QString("    mmio_write(0x03002204, (mmio_read(0x03002204) & ~0x%1) | 0x%2);\n")
+                .arg(QString::number(mask, 16).toUpper())
+                .arg(QString::number(val, 16).toUpper());
+        mask = 0x3u;
+        val =  (isGpioMode(pinValue3)||isGpioMode(pinValue4)) ? 0x1u : 0;
+        seq += QString("    mmio_write(0x03002100, (mmio_read(0x03002100) & ~0x%1) | 0x%2);\n")
+                .arg(QString::number(mask, 16).toUpper())
+                .arg(QString::number(val, 16).toUpper());
+        need = true;
+    }
+
+    if (!seq.isEmpty())
+        seq = "    /* Audio pad mode adjustments (analog=00, gpio!=00) */\n" + seq + "\n";
+    if (!need)
+        return seq;
+    seq += "\t/*PAD_AUD PINMUX extra config END*/\n";
+    seq += "\n";
+    return seq;
+}
 QString CodeGenerator::generatePinmuxFunction(const ChipConfig& config)
 {
     QString function;
@@ -165,6 +369,47 @@ QString CodeGenerator::generatePinmuxFunction(const ChipConfig& config)
             functionGroups[funcName].append(pinName);
         }
     }
+
+    // 精简调试：只打印计数和前若干条示例，避免控制台刷屏
+    qDebug() << "CodeGenerator::generatePinmuxFunction - pinFunctions size =" << pinFunctions.size();
+    if (!pinFunctions.isEmpty()) {
+        int shown = 0;
+        for (auto it = pinFunctions.constBegin(); it != pinFunctions.constEnd() && shown < 6; ++it, ++shown) {
+            qDebug() << "  sample pin:" << it.key() << "->" << it.value();
+        }
+        if (pinFunctions.size() > shown)
+            qDebug() << "  ...(+" << (pinFunctions.size() - shown) << " more pin entries)";
+    }
+    qDebug() << "CodeGenerator::generatePinmuxFunction - functionGroups size =" << functionGroups.size();
+    if (!functionGroups.isEmpty()) {
+        int shown = 0;
+        for (auto it = functionGroups.constBegin(); it != functionGroups.constEnd() && shown < 6; ++it, ++shown) {
+            qDebug() << "  sample func:" << it.key() << "->" << it.value().join(", ");
+        }
+        if (functionGroups.size() > shown)
+            qDebug() << "  ...(+" << (functionGroups.size() - shown) << " more function groups)";
+    }
+
+    // 将映射写入生成的 c 文件作为注释，便于在 cvi_board_init.c 中核对
+    function += "    /* Debug: pinFunctions mapping (key -> value)\n";
+    if (pinFunctions.isEmpty()) {
+        function += "     * <empty>\n";
+    } else {
+        for (auto it = pinFunctions.constBegin(); it != pinFunctions.constEnd(); ++it) {
+            function += QString("     * %1 -> %2\n").arg(it.key(), it.value());
+        }
+    }
+    function += "     */\n\n";
+
+    function += "    /* Debug: functionGroups (function -> pins)\n";
+    if (functionGroups.isEmpty()) {
+        function += "     * <empty>\n";
+    } else {
+        for (auto it = functionGroups.constBegin(); it != functionGroups.constEnd(); ++it) {
+            function += QString("     * %1 -> %2\n").arg(it.key(), it.value().join(", "));
+        }
+    }
+    function += "     */\n\n";
     
     // 生成每个功能组的配置
     for (auto it = functionGroups.begin(); it != functionGroups.end(); ++it) {
@@ -179,6 +424,11 @@ QString CodeGenerator::generatePinmuxFunction(const ChipConfig& config)
         }
         function += "\n";
     }
+    
+    // 调用封装的特殊序列生成函数（ETH / MIPI / Audio）
+    function += generateEthSequence(pinFunctions);
+    function += generateMipiSequence(pinFunctions);
+    function += generateAudioSequence(pinFunctions);
     
     // 如果没有配置任何引脚，添加默认注释
     if (functionGroups.isEmpty()) {
