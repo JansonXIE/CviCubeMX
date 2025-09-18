@@ -60,11 +60,11 @@ void PinFunction::initializePinFunctions()
 
     // A6 引脚功能定义（Pin name: PAD_MIPIRX3P
     // 引脚名称使用实际的PAD名称
-    m_pinFunctions["PAD_MIPIRX3P"] = QStringList() << "CR_2WTCK" << "VI0_D_2" << "VI1_D_16" 
+    m_pinFunctions["PAD_MIPIRX3P"] = QStringList() << "CV_4WTCK_CR_2WTCK" << "VI0_D_2" << "VI1_D_16" 
                                         << "XGPIOC_5" << "MUX_SPI1_MOSI";
     m_defaultFunctions["PAD_MIPIRX3P"] = "XGPIOC_5";  // 默认功能 (function select 3)
     // 功能宏映射
-    m_functionMacros["CR_2WTCK"] = "CR_2WTCK";
+    m_functionMacros["CV_4WTCK_CR_2WTCK"] = "CV_4WTCK_CR_2WTCK";
     m_functionMacros["VI0_D_2"] = "VI0_D_2";
     m_functionMacros["VI1_D_16"] = "VI1_D_16";
     m_functionMacros["XGPIOC_5"] = "XGPIOC_5";
@@ -72,12 +72,12 @@ void PinFunction::initializePinFunctions()
 
     // A7 引脚功能定义（Pin name: PAD_MIPIRX4P
     // 引脚名称使用实际的PAD名称
-    m_pinFunctions["PAD_MIPIRX4P"] = QStringList() << "CR_SDA0" << "VI0_D_0" << "VI1_D_14" 
+    m_pinFunctions["PAD_MIPIRX4P"] = QStringList() << "CV_4WTMS_CR_SDA0" << "VI0_D_0" << "VI1_D_14" 
                                         << "XGPIOC_3" << "IIC1_SCL" << "CAM_MCLK1" 
                                         << "KEY_ROW1"<< "MUX_SPI1_CS";
-    m_defaultFunctions["PAD_MIPIRX4P"] = "CR_SDA0";  // 默认功能 (function select 3)
+    m_defaultFunctions["PAD_MIPIRX4P"] = "CV_4WTMS_CR_SDA0";  // 默认功能 (function select 0)
     // 功能宏映射
-    m_functionMacros["CR_SDA0"] = "CR_SDA0";
+    m_functionMacros["CV_4WTMS_CR_SDA0"] = "CV_4WTMS_CR_SDA0";
     m_functionMacros["VI0_D_0"] = "VI0_D_0";
     m_functionMacros["VI1_D_14"] = "VI1_D_14";
     m_functionMacros["XGPIOC_3"] = "XGPIOC_3";
@@ -89,7 +89,7 @@ void PinFunction::initializePinFunctions()
    // A9 引脚功能定义（Pin name: VIVO_D2
     // 引脚名称使用实际的PAD名称
     m_pinFunctions["VIVO_D2"] = QStringList() << "VI2_D_2" << "VI1_D_2" << "VO_D_15" 
-                                        << "XGPIOB_19" << "RMII0_TXD01" << "CAM_MCLK1" 
+                                        << "XGPIOB_19" << "RMII0_TXD1" << "CAM_MCLK1" 
                                         << "PWM_2" << "UART2_TX";
     m_defaultFunctions["VIVO_D2"] = "XGPIOB_19";  // 默认功能 (function select 3)
     // 功能宏映射
@@ -97,7 +97,7 @@ void PinFunction::initializePinFunctions()
     m_functionMacros["VI1_D_2"] = "VI1_D_2";
     m_functionMacros["VO_D_15"] = "VO_D_15";
     m_functionMacros["XGPIOB_19"] = "XGPIOB_19";
-    m_functionMacros["RMII0_TXD01"] = "RMII0_TXD01";
+    m_functionMacros["RMII0_TXD1"] = "RMII0_TXD1";
     m_functionMacros["CAM_MCLK1"] = "CAM_MCLK1";
     m_functionMacros["PWM_2"] = "PWM_2";
     m_functionMacros["UART2_TX"] = "UART2_TX";
@@ -138,7 +138,7 @@ void PinFunction::initializePinFunctions()
     // A13 引脚功能定义（Pin name: USB_VBUS_DET）
     // 引脚名称使用实际的PAD名称
     m_pinFunctions["USB_VBUS_DET"] = QStringList() << "USB_VBUS_DET" << "XGPIOB_6" << "CAM_MCLK0"  << "CAM_MCLK1";
-    m_defaultFunctions["USB_VBUS_DET"] = "USB_VBUS_DET";  // 默认功能 (function select 3)
+    m_defaultFunctions["USB_VBUS_DET"] = "USB_VBUS_DET";  // 默认功能 (function select 0)
     // 功能宏映射
     m_functionMacros["XGPIOB_6"] = "XGPIOB_6";
     m_functionMacros["VO_D_6"] = "VO_D_6";
@@ -209,7 +209,7 @@ void PinFunction::initializePinFunctions()
     // 引脚名称使用实际的PAD名称
     m_pinFunctions["PAD_MIPIRX1N"] = QStringList() << "VI0_D_5" << "VO_D_8" << "XGPIOC_8" 
                                         << "KEY_ROW3" << "DBG_8";
-    m_defaultFunctions["PAD_MIPIRX1N"] = "XGPIOC_21";  // 默认功能 (function select 3)
+    m_defaultFunctions["PAD_MIPIRX1N"] = "XGPIOC_8";  // 默认功能 (function select 3)
     // 功能宏映射
     m_functionMacros["VI0_D_5"] = "VI0_D_5";
     m_functionMacros["VO_D_8"] = "VO_D_8";
@@ -232,12 +232,12 @@ void PinFunction::initializePinFunctions()
 
     // B7 引脚功能定义 Pin name: PAD_MIPIRX4N
     // 引脚名称使用实际的PAD名称
-    m_pinFunctions["PAD_MIPIRX4N"] = QStringList() << "CR_SCL0" << "VI0_CLK" << "VI1_D_13" 
+    m_pinFunctions["PAD_MIPIRX4N"] = QStringList() << "CV_4WTDI_CR_SCL0" << "VI0_CLK" << "VI1_D_13" 
                                         << "XGPIOC_2" << "IIC1_SDA" << "CAM_MCLK0"
                                         << "KEY_ROW0" << "MUX_SPI1_SCK";
-    m_defaultFunctions["PAD_MIPIRX4N"] = "CR_SCL0";  // 默认功能 (function select 3)
+    m_defaultFunctions["PAD_MIPIRX4N"] = "CV_4WTDI_CR_SCL0";  // 默认功能 (function select 0)
     // 功能宏映射
-    m_functionMacros["CR_SCL0"] = "CR_SCL0";
+    m_functionMacros["CV_4WTDI_CR_SCL0"] = "CV_4WTDI_CR_SCL0";
     m_functionMacros["VI0_CLK"] = "VI0_CLK";
     m_functionMacros["VI1_D_13"] = "VI1_D_13";
     m_functionMacros["XGPIOC_2"] = "XGPIOC_2";
@@ -280,7 +280,7 @@ void PinFunction::initializePinFunctions()
     m_pinFunctions["VIVO_D5"] = QStringList() << "VI2_D_5" << "VI1_D_5" << "VO_D_18" 
                                         << "XGPIOB_16" << "RMII0_RXD0" << "SPI3_CS_X" 
                                         << "UART2_RX" << "CAM_HS0";
-    m_defaultFunctions["VIVO_D5"] = "XGPIOC_21";  // 默认功能 (function select 3)
+    m_defaultFunctions["VIVO_D5"] = "XGPIOB_16";  // 默认功能 (function select 3)
     // 功能宏映射
     m_functionMacros["VI2_D_5"] = "VI2_D_5";
     m_functionMacros["VI1_D_5"] = "VI1_D_5";
@@ -343,11 +343,11 @@ void PinFunction::initializePinFunctions()
 
 
     // C1 引脚功能定义 Pin name: PAD_MIPI_TXP2
-    m_pinFunctions["PAD_MIPI_TXP2"] = QStringList() << "CR_SCL0" << "VI0_D_14" << "VO_CLK0" 
+    m_pinFunctions["PAD_MIPI_TXP2"] = QStringList() << "CV_4WTDI_CR_SCL0" << "VI0_D_14" << "VO_CLK0" 
                                          << "XGPIOC_17" << "IIC1_SCL" << "PWM_9" << "SPI0_CS_X" 
                                          << "SD1_D3";
     m_defaultFunctions["PAD_MIPI_TXP2"] = "XGPIOC_17";
-    m_functionMacros["CR_SCL0"] = "CR_SCL0";
+    m_functionMacros["CV_4WTDI_CR_SCL0"] = "CV_4WTDI_CR_SCL0";
     m_functionMacros["VI0_D_14"] = "VI0_D_14";
     m_functionMacros["VO_CLK0"] = "VO_CLK0";
     m_functionMacros["XGPIOC_17"] = "XGPIOC_17";
@@ -357,11 +357,11 @@ void PinFunction::initializePinFunctions()
     m_functionMacros["SD1_D3"] = "SD1_D3";
 
     // C2 引脚功能定义 Pin name: PAD_MIPI_TXM2
-    m_pinFunctions["PAD_MIPI_TXM2"] = QStringList() << "CR_SDA0" << "VI0_D_13" << "VO_D_0" 
+    m_pinFunctions["PAD_MIPI_TXM2"] = QStringList() << "CV_4WTMS_CR_SDA0" << "VI0_D_13" << "VO_D_0" 
                                          << "XGPIOC_16" << "IIC1_SDA" << "PWM_8" << "SPI0_SCK" 
                                          << "SD1_D2";
-    m_defaultFunctions["PAD_MIPI_TXM2"] = "XGPIOC_17";
-    m_functionMacros["CR_SDA0"] = "CR_SDA0";
+    m_defaultFunctions["PAD_MIPI_TXM2"] = "XGPIOC_16";
+    m_functionMacros["CV_4WTMS_CR_SDA0"] = "CV_4WTMS_CR_SDA0";
     m_functionMacros["VI0_D_13"] = "VI0_D_13";
     m_functionMacros["VO_D_0"] = "VO_D_0";
     m_functionMacros["XGPIOC_16"] = "XGPIOC_16";
@@ -409,10 +409,10 @@ void PinFunction::initializePinFunctions()
     m_functionMacros["DBG_7"] = "DBG_7";
 
     // C7 引脚功能定义 Pin name: PAD_MIPIRX3N
-    m_pinFunctions["PAD_MIPIRX3N"] = QStringList() << "CR_2WTMS" << "VI0_D_1" << "VI1_D_15" 
+    m_pinFunctions["PAD_MIPIRX3N"] = QStringList() << "CV_4WTDO_CR_2WTMS" << "VI0_D_1" << "VI1_D_15" 
                                       << "XGPIOC_4" << "CAM_MCLK0" << "MUX_SPI1_MISO";
     m_defaultFunctions["PAD_MIPIRX3N"] = "XGPIOC_4";
-    m_functionMacros["CR_2WTMS"] = "CR_2WTMS";
+    m_functionMacros["CV_4WTDO_CR_2WTMS"] = "CV_4WTDO_CR_2WTMS";
     m_functionMacros["VI0_D_1"] = "VI0_D_1";
     m_functionMacros["VI1_D_15"] = "VI1_D_15";
     m_functionMacros["XGPIOC_4"] = "XGPIOC_4";
@@ -499,11 +499,11 @@ void PinFunction::initializePinFunctions()
     m_functionMacros["CAM_MCLK0"] = "CAM_MCLK0";
 
     // D1 引脚功能定义 Pin name: PAD_MIPI_TXP1
-    m_pinFunctions["PAD_MIPI_TXP1"] = QStringList() << "CR_2WTCK" << "VI0_D_12" << "VO_D_1"
+    m_pinFunctions["PAD_MIPI_TXP1"] = QStringList() << "CV_4WTCK_CR_2WTCK" << "VI0_D_12" << "VO_D_1"
                                     << "XGPIOC_15" << "IIC2_SCL" << "PWM_11"
                                     << "SPI0_SDI" << "DBG_15";
     m_defaultFunctions["PAD_MIPI_TXP1"] = "XGPIOC_15";  // 默认功能 (function select 3)
-    m_functionMacros["CR_2WTCK"] = "CR_2WTCK";
+    m_functionMacros["CV_4WTCK_CR_2WTCK"] = "CV_4WTCK_CR_2WTCK";
     m_functionMacros["VI0_D_12"] = "VI0_D_12";
     m_functionMacros["VO_D_1"] = "VO_D_1";
     m_functionMacros["XGPIOC_15"] = "XGPIOC_15";
@@ -641,14 +641,14 @@ void PinFunction::initializePinFunctions()
     m_pinFunctions["ADC3"] = QStringList() << "CAM_MCLK0" << "IIC4_SCL"<<" XGPIOB_1" 
                                     << "PWM_12" << "EPHY_LNK_LED"<<"WG2_D0" 
                                     << "UART3_TX";
-    m_defaultFunctions["ADC3"] = "XXGPIOB_1";  // 默认功能 (function select 3)
+    m_defaultFunctions["ADC3"] = "XGPIOB_1";  // 默认功能 (function select 3)
     m_functionMacros["CAM_MCLK0"] = "CAM_MCLK0";
     m_functionMacros["CAM_VS0"] = "CAM_VS0";
     m_functionMacros["IIC4_SCL"] = "IIC4_SCL";
     m_functionMacros["XGPIOB_1"] = "XGPIOB_1";
     m_functionMacros["PWM_12"] = "PWM_12";
     m_functionMacros["EPHY_LNK_LED"] = "EPHY_LNK_LED";
-    m_functionMacros["WG2_D0"] = "WG2_D0L";
+    m_functionMacros["WG2_D0"] = "WG2_D0";
     m_functionMacros["UART3_TX"] = "UART3_TX";
 
     // F2 引脚功能定义 Pin name: PAD_AUD_AOUTL
@@ -667,7 +667,7 @@ void PinFunction::initializePinFunctions()
     m_pinFunctions["SD1_D2"] = QStringList() << "PWR_SD1_D2_VO33" << "IIC1_SCL"<< "UART2_TX"
                                     << "PWR_GPIO_19"<< "CAM_MCLK0"<< "UART3_TX"
                                     << "PWR_SPINOR1_HOLD_X"<< "PWM_5";
-    m_defaultFunctions["SD1_D2"] = "PWR_SPINOR1_HOLD_X";  // 默认功能 (function select 3)
+    m_defaultFunctions["SD1_D2"] = "PWR_SPINOR1_HOLD_X";  // 默认功能 (function select 6)
     m_functionMacros["PWR_SD1_D2_VO33"] = "PWR_SD1_D2_VO33";
     m_functionMacros["IIC1_SCL"] = "IIC1_SCL";
     m_functionMacros["UART2_TX"] = "UART2_TX";
@@ -807,16 +807,16 @@ void PinFunction::initializePinFunctions()
 
     // K2 引脚功能定义 Pin name: SD0_CD
     m_pinFunctions["SD0_CD"] = QStringList() << "SD0_CD " << "SDIO0_CD" << "XGPIOA—13";
-    m_defaultFunctions["SD0_CD"] = "SDIO0_CD";  // 默认功能 (function select 3)
+    m_defaultFunctions["SD0_CD"] = "SDIO0_CD";  // 默认功能 (function select 0)
     m_functionMacros["XGPIOA—13"] = "XGPIOA—13";
 
     
     // K3 引脚功能定义 Pin name: SD0_D1
-    m_pinFunctions["SD0_D1"] = QStringList()  << "SDIO0_D—1 "<< "IIC1_SDA " << "AUX0" 
+    m_pinFunctions["SD0_D1"] = QStringList()  << "SDIO0_D_1 "<< "IIC1_SDA " << "AUX0" 
                                       << "XGPIOA—10"  << "UART1_TX"<< "PWM_12" 
                                       << "WG0_D1" << "DBG_3" ;
-    m_defaultFunctions["SD0_D1"] = "SDIO0_D—1";  // 默认功能 (function select 3)
-    m_functionMacros["SDIO0_D—1"] = "SDIO0_D—1";
+    m_defaultFunctions["SD0_D1"] = "SDIO0_D_1";  // 默认功能 (function select 0)
+    m_functionMacros["SDIO0_D_1"] = "SDIO0_D_1";
     m_functionMacros["IIC1_SDA"] = "IIC1_SDA ";
     m_functionMacros["AUX0"] = "AUX0";
     m_functionMacros["XGPIOA—10"] = "XGPIOA—10";
@@ -873,7 +873,7 @@ void PinFunction::initializePinFunctions()
     m_pinFunctions["SD0_CLK"] = QStringList() << "SDIO0_CLK" << "IIC1_SDA" << "SPI0_SCK" 
                                        << "XGPIOA_7" << "PWM_15" << "EPHY_LNK_LED" 
                                        << "DBG_0" ;
-    m_defaultFunctions["SD0_CLK"] = "SDIO0_CLK";  // 默认功能 (function select 3)
+    m_defaultFunctions["SD0_CLK"] = "SDIO0_CLK";  // 默认功能 (function select 0)
     m_functionMacros["IIC1_SDA"] = "IIC1_SDA";
     m_functionMacros["SPI0_SCK"] = "SPI0_SCK";
     m_functionMacros["XGPIOA_7"] = "XGPIOA_7";
@@ -885,7 +885,7 @@ void PinFunction::initializePinFunctions()
     m_pinFunctions["SD0_D0"] = QStringList() << "SD0_D0" << "SDIO0_D_0"<<"CAM_MCLK1" 
                                       << "SPI0_SDI"<< "XGPIOA_9" << "UART3_TX" 
                                       << "PWM_13" << "WG0_D0" << "DBG_2" ;
-    m_defaultFunctions["SD0_D0"] = "SDIO0_D_0";  // 默认功能 (function select 3)
+    m_defaultFunctions["SD0_D0"] = "SDIO0_D_0";  // 默认功能 (function select 0)
     m_functionMacros["SDIO0_CLK"] = "SDIO0_CLK";
     m_functionMacros["SDIO0_D_0"] = "SDIO0_D_0";
     m_functionMacros["CAM_MCLK1"] = "CAM_MCLK1";
@@ -911,14 +911,14 @@ void PinFunction::initializePinFunctions()
     m_functionMacros["DBG_1"] = "DBG_1";
 
     // L14 引脚功能定义 Pin name: CLK32K
-    m_pinFunctions["CLK32K"] = QStringList() << "CLK32K" << "AUX0" << "CR_SCL0" 
+    m_pinFunctions["CLK32K"] = QStringList() << "CLK32K" << "AUX0" << "CV_4WTDI_CR_SCL0" 
                                         << "PWR_GPIO_10" << "PWM2" << "KEY_COL0" 
                                         << "CAM_MCLK0" << "DBG_0";
-    m_defaultFunctions["CLK32K"] = "CLK32K";  // 默认功能 (function select 3)
+    m_defaultFunctions["CLK32K"] = "CLK32K";  // 默认功能 (function select 0)
     // 功能宏映射
     m_functionMacros["CLK32K"] = "CLK32K";
     m_functionMacros["AUX0"] = "AUX0";
-    m_functionMacros["CR_SCL0"] = "CR_SCL0";
+    m_functionMacros["CV_4WTDI_CR_SCL0"] = "CV_4WTDI_CR_SCL0";
     m_functionMacros["PWR_GPIO_10"] = "PWR_GPIO_10";
     m_functionMacros["PWM_2"] = "PWM_2";
     m_functionMacros["KEY_COL0"] = "KEY_COL0";
@@ -944,7 +944,7 @@ void PinFunction::initializePinFunctions()
     m_pinFunctions["SD0_D3"] = QStringList()  << "SDIO0_D_3" << "IIC1_SCLCAM_MCLK0" 
                                        << "SPI0_CS_X" << "XGPIOA_12" << "UART3_RX" << "PWM_10"
                                        << "WG1_D1" << "DBG_5";
-    m_defaultFunctions["SD0_D3"] = "SSD0_D3";  // 默认功能 (function select 3)
+    m_defaultFunctions["SD0_D3"] = "SDIO0_D_3";  // 默认功能 (function select 0)
     m_functionMacros["SDIO0_D_3"] = "SDIO0_D_3";
     m_functionMacros["IIC1_SCLCAM_MCLK0"] = "IIC1_SCLCAM_MCLK0";
     m_functionMacros["SPI0_SDO"] = "SPI0_CS_X";
@@ -956,11 +956,11 @@ void PinFunction::initializePinFunctions()
     m_functionMacros["DBG_5"] = "DBG_5";
 
     // M2 引脚功能定义 Pin name:SD0_D2
-    m_pinFunctions["SD0_D2"] = QStringList()  << "SDIO0_D—2 " << "IIC1_SCL" << "AUX1"
+    m_pinFunctions["SD0_D2"] = QStringList()  << "SDIO0_D_2 " << "IIC1_SCL" << "AUX1"
                                       << "XGPIOA_11"  << "UART1_RX" << "PWM_11"
                                       << "WG1_D0" << "DBG_4" ;
-    m_defaultFunctions["SD0_D2"] = "SDIO0_D—2";  // 默认功能 (function select 3)
-    m_functionMacros["SDIO0_D—2"] = "SDIO0_D—2";
+    m_defaultFunctions["SD0_D2"] = "SDIO0_D_2";  // 默认功能 (function select 0)
+    m_functionMacros["SDIO0_D_2"] = "SDIO0_D_2";
     m_functionMacros["IIC1_SCL"] = "IIC1_SCL";
     m_functionMacros["AUX1"] = "AUX1";
     m_functionMacros["XGPIOA_11"] = "XGPIOA_11";
@@ -1004,7 +1004,7 @@ void PinFunction::initializePinFunctions()
     // M11 引脚功能定义 Pin name:PWR_ON
     m_pinFunctions["PWR_ON"] = QStringList() <<"PWR_ON" << "PWR_GPIO_9" << "VUART1_RX" 
                                       << "IIC4_SDA" << "EPHY_SPD_LED" << "WG0_D1";
-    m_defaultFunctions["PWR_ON"] = "PWR_ON";  // 默认功能 (function select 3)
+    m_defaultFunctions["PWR_ON"] = "PWR_ON";  // 默认功能 (function select 0)
     m_functionMacros["PWR_ON"] = "PWR_ON";
     m_functionMacros["PWR_GPIO_9"] = "PWR_GPIO_9";
     m_functionMacros["VUART1_RX"] = "VUART1_RX";
@@ -1014,7 +1014,7 @@ void PinFunction::initializePinFunctions()
 
     // M12 引脚功能定义 Pin name:PWR_GPIO2
     m_pinFunctions["PWR_GPIO2"] = QStringList() <<"PWR_GPIO_2" << "PWR_SECTICK" << "EPHY_SPD_LED"
-                                         << "PWM_10"  << "PWR_IIC_SDA " << "IIC2_SDA" <<  "CR_2WTCK";
+                                         << "PWM_10"  << "PWR_IIC_SDA " << "IIC2_SDA" <<  "CV_4WTCK_CR_2WTCK";
     m_defaultFunctions["PWR_GPIO2"] = "PWR_GPIO_2";  // 默认功能 (function select 3)
     m_functionMacros["PWR_GPIO_2"] = "PWR_GPIO_2";
     m_functionMacros["PWR_SECTICK"] = "PWR_SECTICK";
@@ -1022,7 +1022,7 @@ void PinFunction::initializePinFunctions()
     m_functionMacros["PWM_10"] = "PWM_10";
     m_functionMacros["PWR_IIC_SDA "] = "PWR_IIC_SDA ";
     m_functionMacros["IIC2_SDA"] = "IIC2_SDA";
-    m_functionMacros["CR_2WTCK"] = "CR_2WTCK";
+    m_functionMacros["CV_4WTCK_CR_2WTCK"] = "CV_4WTCK_CR_2WTCK";
 
     // M13 引脚功能定义 Pin name:PWR_GPIO0
     m_pinFunctions["PWR_GPIO0"] = QStringList() <<"PWR_GPIO_0" << "UART2_TX" << "PWR_UART0_RX"
@@ -1035,12 +1035,12 @@ void PinFunction::initializePinFunctions()
 
     
     // M14 引脚功能定义 Pin name:CLK25M
-    m_pinFunctions["CLK25M"] = QStringList() <<"CLK25M" << "AUX1" << "CR_2WTMS"
+    m_pinFunctions["CLK25M"] = QStringList() <<"CLK25M" << "AUX1" << "CV_4WTDO_CR_2WTMS"
                                          << "PWR_GPIO_11"  << "PWM_3" << "KEY_COL1" << "CAM_MCLK1"<< "DBG_1";
     m_defaultFunctions["CLK25M"] = "CLK25M";  // 默认功能 (function select 3)
     m_functionMacros["CLK25M"] = "CLK25M";
     m_functionMacros["AUX1"] = "AUX1";
-    m_functionMacros["CR_2WTMS"] = "CR_2WTMS";
+    m_functionMacros["CV_4WTDO_CR_2WTMS"] = "CV_4WTDO_CR_2WTMS";
     m_functionMacros["PWR_GPIO_11"] = "PWR_GPIO_11";
     m_functionMacros["PWM_3"] = "PWM_3";
     m_functionMacros["KEY_COL1"] = "KEY_COL1";
@@ -1060,11 +1060,11 @@ void PinFunction::initializePinFunctions()
     m_functionMacros["XGPIOA_15"] = "XGPIOA_15";
 
     // N4 引脚功能定义 Pin name:JTAG_CPU_TCK
-    m_pinFunctions["JTAG_CPU_TCK"] = QStringList() <<"CR_4WTCK" << "CAM_MCLK1" << "PWM_6" 
+    m_pinFunctions["JTAG_CPU_TCK"] = QStringList() <<"CV_2WTCK_CR_4WTCK" << "CAM_MCLK1" << "PWM_6" 
                                             << "XGPIOA_18"<< "UART1_CTS"<< "AUX1"
                                             << "UART1_RX"<< "VO_D_29";
-    m_defaultFunctions["JTAG_CPU_TCK"] = "CR_4WTCK";  // 默认功能 (function select 3)
-    m_functionMacros["CR_4WTCK"] = "CR_4WTCK";
+    m_defaultFunctions["JTAG_CPU_TCK"] = "CV_2WTCK_CR_4WTCK";  // 默认功能 (function select 0)
+    m_functionMacros["CV_2WTCK_CR_4WTCK"] = "CV_2WTCK_CR_4WTCK";
     m_functionMacros["CAM_MCLK1"] = "CAM_MCLK1";
     m_functionMacros["PWM_6"] = "PWM_6";
     m_functionMacros["XGPIOA_18"] = "XGPIOA_18";
@@ -1074,11 +1074,11 @@ void PinFunction::initializePinFunctions()
     m_functionMacros["VO_D_29"] = "VO_D_29";
     
     // N6 引脚功能定义 Pin name:JTAG_CPU_TMS
-    m_pinFunctions["JTAG_CPU_TMS"] = QStringList() << "CR_4WTMS" << "CAM_MCLK0" << "PWM_7"
+    m_pinFunctions["JTAG_CPU_TMS"] = QStringList() << "CV_2WTMS_CR_4WTMS" << "CAM_MCLK0" << "PWM_7"
                                             << "XGPIOA_19"<< "UART1_RTS" << "AUX0"
                                             << "UART1_T"<< "VO_D_28";
-    m_defaultFunctions["JTAG_CPU_TMS"] = "CR_4WTMS";  // 默认功能 (function select 3)
-    m_functionMacros["CR_4WTMS"] = "CR_4WTMS";
+    m_defaultFunctions["JTAG_CPU_TMS"] = "CV_2WTMS_CR_4WTMS";  // 默认功能 (function select 0)
+    m_functionMacros["CV_2WTMS_CR_4WTMS"] = "CV_2WTMS_CR_4WTMS";
     m_functionMacros["CAM_MCLK0"] = "CAM_MCLK0";
     m_functionMacros["PWM_7"] = "PWM_7";
     m_functionMacros["XGPIOA_19"] = "XGPIOA_19";
@@ -1116,14 +1116,14 @@ void PinFunction::initializePinFunctions()
 
     // N13 引脚功能定义 Pin name:PWR_GPIO1
     m_pinFunctions["PWR_GPIO1"] = QStringList() << "PWR_GPIO_1" << "UART2_RX" << "EPHY_LNK_LED" 
-                                         << "PWM_9" << "PWR_IIC_SCL"<< "IIC2_SCL"<< "CR_SDA0";
+                                         << "PWM_9" << "PWR_IIC_SCL"<< "IIC2_SCL"<< "CV_4WTMS_CR_SDA0";
     m_defaultFunctions["PWR_GPIO1"] = "PWR_GPIO_1";  // 默认功能 (function select 3)
     m_functionMacros["PWR_GPIO_1"] = "PWR_GPIO_1";
     m_functionMacros["UART2_RX"] = "UART2_RX";
     m_functionMacros["EPHY_LNK_LED"] = "EPHY_LNK_LED";
     m_functionMacros["PWR_IIC_SCL"] = "PWR_IIC_SCL";
     m_functionMacros["IIC2_SCL"] = "IIC2_SCL";
-    m_functionMacros["CR_SDA0"] = "CR_SDA0";
+    m_functionMacros["CV_4WTMS_CR_SDA0"] = "CV_4WTMS_CR_SDA0";
 
     // P1 引脚功能定义 Pin name:EMMC_DAT3
     m_pinFunctions["EMMC_DAT3"] = QStringList() << "EMMC_DAT_3" << "SPINOR_WP_X" << "SPINAND_WP"
@@ -1155,8 +1155,8 @@ void PinFunction::initializePinFunctions()
 
     
     // P4 引脚功能定义 Pin name:EMMC_RSTN
-    m_pinFunctions["EMMC_RSTN"] = QStringList() << "XGPIOA_21" << "AUX2";
-    m_defaultFunctions["EMMC_RSTN"] = "EEMMC_RSTN";  // 默认功能 (function select 3)
+    m_pinFunctions["EMMC_RSTN"] = QStringList() << "EMMC_RSTN" << "XGPIOA_21" << "AUX2";
+    m_defaultFunctions["EMMC_RSTN"] = "EMMC_RSTN";  // 默认功能 (function select 0)
     m_functionMacros["EMMC_RSTN"] = "EMMC_RSTN";
     m_functionMacros["XGPIOA_21"] = "XGPIOA_21";
     m_functionMacros["AUX2"] = "AUX2";
@@ -1175,7 +1175,7 @@ void PinFunction::initializePinFunctions()
     // P6 引脚功能定义 Pin name:IIC0_SDA
     m_pinFunctions["IIC0_SDA"] = QStringList() << "CV_SDA" <<"UART1_RX" << "UART2_RX"
                                         << " XGPIOA_29" << "WG0_D1"<< "WG1_D0"<< "DBG_11";
-    m_defaultFunctions["IIC0_SDA"] = "CV_SDA";  // 默认功能 (function select 3)
+    m_defaultFunctions["IIC0_SDA"] = "CV_SDA";  // 默认功能 (function select 0)
     m_functionMacros["CV_SDA"] = "CV_SDA";
     m_functionMacros["UART1_RX"] = "UART1_RX";
     m_functionMacros["UART2_RX"] = "UART2_RX";
@@ -1197,7 +1197,7 @@ void PinFunction::initializePinFunctions()
 
     // P12 引脚功能定义 Pin name:PWR_SEQ1
     m_pinFunctions["PWR_SEQ1"] = QStringList() << "PWR_SEQ1"<< "PWR_GPIO_3";
-    m_defaultFunctions["PWR_SEQ1"] = "PPWR_SEQ1";  // 默认功能 (function select 3)
+    m_defaultFunctions["PWR_SEQ1"] = "PWR_SEQ1";  // 默认功能 (function select 3)
     m_functionMacros["WR_SEQ1"] = "WR_SEQ1";
     m_functionMacros["PWR_GPIO_3"] = "PWR_GPIO_3";
 
@@ -1214,7 +1214,7 @@ void PinFunction::initializePinFunctions()
     // R2 引脚功能定义 Pin name:EMMC_DAT1
     m_pinFunctions["EMMC_DAT1"] = QStringList() << "EMMC_DAT_1" << "SPINOR_CS_X" << "SPINAND_CS"
                                          << "XGPIOA_24";
-    m_defaultFunctions["EEMMC_DAT1"] = "SPINOR_CS_X";  // 默认功能 (function select 3)
+    m_defaultFunctions["EMMC_DAT1"] = "SPINOR_CS_X";  // 默认功能 (function select 1)
     m_functionMacros["EMMC_DAT_1"] = "EMMC_DAT_1";
     m_functionMacros["SPINOR_CS_X"] = "SPINOR_CS_X";
     m_functionMacros["SPINAND_CS"] = "SPINAND_CS";
@@ -1241,7 +1241,7 @@ void PinFunction::initializePinFunctions()
     // R6 引脚功能定义 Pin name:IIC0_SCL
     m_pinFunctions["IIC0_SCL"] = QStringList() << "CV_SCL" <<"UART1_TX" << "UART2_TX" 
                                         << "XGPIOA_28" << "WG0_D0" << "DBG_10";
-    m_defaultFunctions["IIC0_SCL"] = "CV_SCL";  // 默认功能 (function select 3)
+    m_defaultFunctions["IIC0_SCL"] = "CV_SCL";  // 默认功能 (function select 0)
     m_functionMacros["CV_SCL"] = "CV_SCL";
     m_functionMacros["UART1_TX"] = "UART1_TX";
     m_functionMacros["UART2_TX"] = "UART2_TX";
