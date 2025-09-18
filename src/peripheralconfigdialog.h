@@ -8,6 +8,7 @@
 #include <QLabel>
 #include <QComboBox>
 #include <QLineEdit>
+#include <QDoubleSpinBox>
 #include <QPushButton>
 #include <QGroupBox>
 #include <QCheckBox>
@@ -43,35 +44,29 @@ private:
 private:
     QString m_peripheralType;
     DtsConfig *m_dtsConfig;
-    
     // UI组件
     QVBoxLayout *m_mainLayout;
     QGroupBox *m_peripheralGroup;
     QGridLayout *m_peripheralLayout;
-    
     QLabel *m_peripheralLabel;
     QComboBox *m_peripheralComboBox;
-    
     QLabel *m_statusLabel;
     QComboBox *m_statusComboBox;
-    
     QLabel *m_clockLabel;
     QLineEdit *m_clockLineEdit;
-    
     QLabel *m_freqLabel;
     QSpinBox *m_freqSpinBox;
+    QDoubleSpinBox *m_freqDoubleSpinBox; // 新增：UART 使用
     QLabel *m_freqUnitLabel;
-    
     QLabel *m_pwmCellsLabel;
     QSpinBox *m_pwmCellsSpinBox;
-    
     QLabel *m_currentSpeedLabel;
     QSpinBox *m_currentSpeedSpinBox;
-    
+    QComboBox *m_baudRateComboBox;       // 新增：波特率下拉
+    QLineEdit *m_customBaudLineEdit;     // 新增：自定义波特率输入
     QHBoxLayout *m_buttonLayout;
     QPushButton *m_applyButton;
     QPushButton *m_cancelButton;
-    
     // 当前选中的外设信息
     QString m_currentPeripheral;
     PeripheralInfo m_currentInfo;
