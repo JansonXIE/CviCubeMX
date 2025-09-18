@@ -24,6 +24,7 @@
 #include "codegenerator.h"
 #include "dtsconfig.h"
 #include "clockconfig.h"
+#include "memoryconfig.h"
 
 QT_BEGIN_NAMESPACE
 QT_END_NAMESPACE
@@ -46,6 +47,7 @@ private slots:
     void onPeripheralItemClicked(QTreeWidgetItem* item, int column);
     void onPeripheralCheckBoxChanged(const QString& peripheral, bool enabled);
     void onClockConfigChanged();
+    void onMemoryConfigChanged();
     void onConfigTabChanged(int index);
 
 private:
@@ -53,6 +55,7 @@ private:
     void setupPinoutTab();
     void setupPinoutConfigPanel();
     void setupClockTab();
+    void setupMemoryTab();
     void setupChipView();
     void createQFNLayout();
     void createBGALayout();
@@ -86,6 +89,7 @@ private:
     QTabWidget *m_configTabWidget;
     QWidget *m_pinoutTab;
     QWidget *m_clockTab;
+    QWidget *m_memoryTab;
     
     // Pinout配置页面的分隔器和布局
     QSplitter *m_pinoutSplitter;
@@ -110,6 +114,9 @@ private:
     
     // 时钟配置页面
     ClockConfigWidget *m_clockConfigPage;
+    
+    // 内存配置页面
+    MemoryConfigWidget *m_memoryConfigPage;
     
     // 搜索功能组件
     QHBoxLayout *m_searchLayout;

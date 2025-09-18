@@ -41,6 +41,7 @@ MainWindow::MainWindow(QWidget *parent)
     , m_chipContainer(nullptr)
     , m_pinLayout(nullptr)
     , m_clockConfigPage(nullptr)
+    , m_memoryConfigPage(nullptr)
     , m_searchLayout(nullptr)
     , m_searchLabel(nullptr)
     , m_searchLineEdit(nullptr)
@@ -121,9 +122,13 @@ void MainWindow::setupUI()
     // 创建时钟配置标签页
     setupClockTab();
     
+    // 创建内存配置标签页
+    setupMemoryTab();
+    
     // 添加标签页
     m_configTabWidget->addTab(m_pinoutTab, "芯片引脚配置");
     m_configTabWidget->addTab(m_clockTab, "时钟配置");
+    m_configTabWidget->addTab(m_memoryTab, "内存配置");
     
     // 添加到主布局
     m_mainLayout->addWidget(m_titleLabel);
@@ -140,6 +145,9 @@ void MainWindow::setupUI()
     
     // 连接时钟配置信号
     connect(m_clockConfigPage, &ClockConfigWidget::configChanged, this, &MainWindow::onClockConfigChanged);
+    
+    // 连接内存配置信号
+    connect(m_memoryConfigPage, &MemoryConfigWidget::configChanged, this, &MainWindow::onMemoryConfigChanged);
 }
 
 void MainWindow::setupPinoutTab()
@@ -361,6 +369,20 @@ void MainWindow::setupClockTab()
     QVBoxLayout* clockLayout = new QVBoxLayout(m_clockTab);
     clockLayout->setContentsMargins(0, 0, 0, 0);
     clockLayout->addWidget(m_clockConfigPage);
+}
+
+void MainWindow::setupMemoryTab()
+{
+    // 创建内存配置标签页
+    m_memoryTab = new QWidget();
+    
+    // 创建内存配置页面
+    m_memoryConfigPage = new MemoryConfigWidget();
+    
+    // 设置内存标签页布局
+    QVBoxLayout* memoryLayout = new QVBoxLayout(m_memoryTab);
+    memoryLayout->setContentsMargins(0, 0, 0, 0);
+    memoryLayout->addWidget(m_memoryConfigPage);
 }
 
 void MainWindow::setupSearchBox()
@@ -1325,6 +1347,16 @@ void MainWindow::onClockConfigChanged()
     // m_clockConfigPage->saveConfig("clock_config.json");
 }
 
+void MainWindow::onMemoryConfigChanged()
+{
+    // 内存配置更改时的处理
+    qDebug() << "内存配置已更改";
+    
+    // 可以在这里添加保存配置或其他处理逻辑
+    // 比如自动保存内存配置到文件
+    // m_memoryConfigPage->exportToJson("memory_config.json");
+}
+
 void MainWindow::onConfigTabChanged(int index)
 {
     // 标签页切换时的处理
@@ -1334,5 +1366,8 @@ void MainWindow::onConfigTabChanged(int index)
     } else if (index == 1) {
         // 切换到时钟配置标签页
         qDebug() << "切换到时钟配置页面";
+    } else if (index == 2) {
+        // 切换到内存配置标签页
+        qDebug() << "切换到内存配置页面";
     }
 }

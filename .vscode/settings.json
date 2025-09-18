@@ -5,6 +5,8 @@
         "initializer_list": "cpp",
         "xstring": "cpp",
         "xutility": "cpp",
-        "xiosbase": "cpp"
+        "xiosbase": "cpp",
+        "type_traits": "cpp",
+        "xtr1common": "cpp"
     }
 }
