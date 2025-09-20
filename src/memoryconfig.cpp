@@ -49,6 +49,8 @@ MemoryConfigWidget::MemoryConfigWidget(QWidget *parent)
     , m_visualizationGroup(nullptr)
     , m_visualizationLayout(nullptr)
     , m_memoryMapText(nullptr)
+    , m_sourcePath("")
+    , m_chipType("")
 {
     setupUI();
     initializeMemoryRegions();
@@ -706,17 +708,21 @@ void MemoryConfigWidget::onResetRegions()
 
 void MemoryConfigWidget::onExportConfig()
 {
-    QString fileName = QFileDialog::getSaveFileName(this, 
-        "导出内存配置", 
-        "memory_config.json", 
-        "JSON Files (*.json);;All Files (*)");
+    // 检查是否设置了源代码路径和芯片类型
+    if (m_sourcePath.isEmpty() || m_chipType.isEmpty()) {
+        QMessageBox::warning(this, "警告", 
+                           "请先选择芯片类型和源代码路径！");
+        return;
+    }
     
-    if (!fileName.isEmpty()) {
-        if (exportToJson(fileName)) {
-            QMessageBox::information(this, "成功", "内存配置已导出到: " + fileName);
-        } else {
-            QMessageBox::critical(this, "错误", "导出内存配置失败！");
-        }
+    // 导出到defconfig文件
+    if (exportToDefconfig(m_sourcePath, m_chipType)) {
+        QString defconfigPath = QString("build/boards/cv184x/%1_wevb_0014a_emmc/%1_wevb_0014a_emmc_defconfig")
+                               .arg(m_chipType);
+        QMessageBox::information(this, "成功", 
+                               QString("内存配置已导出到: %1").arg(defconfigPath));
+    } else {
+        QMessageBox::critical(this, "错误", "导出内存配置失败！");
     }
 }
 
@@ -1194,6 +1200,101 @@ bool MemoryConfigWidget::importFromJson(const QString& filePath)
         
         m_memoryRegions[region.name] = region;
     }
+    
+    return true;
+}
+
+void MemoryConfigWidget::setSourcePath(const QString& sourcePath)
+{
+    m_sourcePath = sourcePath;
+}
+
+void MemoryConfigWidget::setChipType(const QString& chipType)
+{
+    m_chipType = chipType;
+}
+
+bool MemoryConfigWidget::exportToDefconfig(const QString& sourcePath, const QString& chipType)
+{
+    // 构建defconfig文件路径
+    QString defconfigPath = QString("%1/build/boards/cv184x/%2_wevb_0014a_emmc/%2_wevb_0014a_emmc_defconfig")
+                           .arg(sourcePath)
+                           .arg(chipType);
+    
+    // 检查文件是否存在
+    QFile defconfigFile(defconfigPath);
+    if (!defconfigFile.exists()) {
+        QMessageBox::critical(nullptr, "错误", 
+                            QString("Defconfig文件不存在: %1").arg(defconfigPath));
+        return false;
+    }
+    
+    // 读取现有文件内容
+    if (!defconfigFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        QMessageBox::critical(nullptr, "错误", 
+                            QString("无法读取defconfig文件: %1").arg(defconfigPath));
+        return false;
+    }
+    
+    QTextStream in(&defconfigFile);
+    QStringList lines;
+    while (!in.atEnd()) {
+        lines.append(in.readLine());
+    }
+    defconfigFile.close();
+    
+    // 获取相关内存区域的大小
+    quint64 ionSize = 0;
+    quint64 rtosIonSize = 0;
+    
+    // 从内存区域映射中获取大小
+    if (m_memoryRegions.contains("ION")) {
+        ionSize = m_memoryRegions["ION"].size;
+    }
+    if (m_memoryRegions.contains("RTOS_ION")) {
+        rtosIonSize = m_memoryRegions["RTOS_ION"].size;
+    }
+    
+    // 转换为十六进制字符串（不包含0x前缀）
+    QString ionSizeHex = QString("%1").arg(ionSize, 0, 16);
+    QString rtosIonSizeHex = QString("%1").arg(rtosIonSize, 0, 16);
+    
+    // 更新配置行
+    bool foundIonSize = false;
+    bool foundRtosIonSize = false;
+    
+    for (int i = 0; i < lines.size(); ++i) {
+        QString& line = lines[i];
+        
+        if (line.startsWith("CONFIG_ION_SIZE=")) {
+            line = QString("CONFIG_ION_SIZE=0x%1").arg(ionSizeHex);
+            foundIonSize = true;
+        } else if (line.startsWith("CONFIG_RTOS_ION_SIZE=")) {
+            line = QString("CONFIG_RTOS_ION_SIZE=0x%1").arg(rtosIonSizeHex);
+            foundRtosIonSize = true;
+        }
+    }
+    
+    // 如果没有找到配置项，则添加到文件末尾
+    if (!foundIonSize) {
+        lines.append(QString("CONFIG_ION_SIZE=0x%1").arg(ionSizeHex));
+    }
+    if (!foundRtosIonSize) {
+        lines.append(QString("CONFIG_RTOS_ION_SIZE=0x%1").arg(rtosIonSizeHex));
+    }
+    
+    // 写回文件
+    if (!defconfigFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        QMessageBox::critical(nullptr, "错误", 
+                            QString("无法写入defconfig文件: %1").arg(defconfigPath));
+        return false;
+    }
+    
+    QTextStream out(&defconfigFile);
+    for (const QString& line : lines) {
+        out << line << "\n";
+    }
+    defconfigFile.close();
     
     return true;
 }

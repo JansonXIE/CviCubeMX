@@ -59,6 +59,13 @@ public:
     // 导入导出功能
     bool exportToJson(const QString& filePath);
     bool importFromJson(const QString& filePath);
+    
+    // 导出到defconfig文件
+    bool exportToDefconfig(const QString& sourcePath, const QString& chipType);
+    
+    // 设置源代码路径和芯片类型
+    void setSourcePath(const QString& sourcePath);
+    void setChipType(const QString& chipType);
 
 signals:
     void configChanged();
@@ -147,6 +154,10 @@ private:
     // 数据存储
     QMap<QString, MemoryRegion> m_memoryRegions;
     QStringList m_regionOrder;  // 用于保持原始顺序
+    
+    // 源代码路径和芯片类型
+    QString m_sourcePath;
+    QString m_chipType;
     
     // 常量
     static const quint64 TOTAL_MEMORY_SIZE;  // 总内存大小 (256MB)

@@ -414,6 +414,14 @@ void MainWindow::setupMemoryTab()
     // 创建内存配置页面
     m_memoryConfigPage = new MemoryConfigWidget();
     
+    // 如果已经有源代码路径和芯片类型，设置到内存配置页面
+    if (!m_sourcePath.isEmpty()) {
+        m_memoryConfigPage->setSourcePath(m_sourcePath);
+    }
+    if (!m_selectedChip.isEmpty() && m_selectedChip != "请选择芯片型号") {
+        m_memoryConfigPage->setChipType(m_selectedChip);
+    }
+    
     // 设置内存标签页布局
     QVBoxLayout* memoryLayout = new QVBoxLayout(m_memoryTab);
     memoryLayout->setContentsMargins(0, 0, 0, 0);
@@ -461,6 +469,11 @@ void MainWindow::onChipSelectionChanged()
     QString selectedChip = m_chipComboBox->currentText();
     m_startProjectButton->setEnabled(selectedChip != "请选择芯片型号");
     m_selectedChip = selectedChip;
+    
+    // 更新内存配置页面的芯片类型
+    if (m_memoryConfigPage && selectedChip != "请选择芯片型号") {
+        m_memoryConfigPage->setChipType(selectedChip);
+    }
 }
 
 void MainWindow::onStartProject()
@@ -1446,6 +1459,11 @@ void MainWindow::showPathSelectionDialog()
         
         // 更新CodeGenerator的路径
         m_codeGenerator.setSourcePath(m_sourcePath);
+        
+        // 更新内存配置页面的源代码路径
+        if (m_memoryConfigPage) {
+            m_memoryConfigPage->setSourcePath(m_sourcePath);
+        }
         
         QMessageBox::information(this, "成功", 
             QString("源代码路径设置成功：\n%1").arg(m_sourcePath));
