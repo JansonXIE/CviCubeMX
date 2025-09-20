@@ -66,6 +66,7 @@ signals:
 
 private slots:
     void onTableItemChanged(QTableWidgetItem* item);
+    void onTableItemDoubleClicked(QTableWidgetItem* item);
     void onAddRegion();
     void onRemoveRegion();
     void onResetRegions();

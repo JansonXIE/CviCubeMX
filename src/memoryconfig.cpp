@@ -158,9 +158,13 @@ void MemoryConfigWidget::setupMemoryTable()
     header->resizeSection(COL_SIZE_HEX, 100);
     header->resizeSection(COL_SIZE_FORMATTED, 100);
     
-    // 连接信号
-    connect(m_memoryTable, &QTableWidget::itemChanged, 
-            this, &MemoryConfigWidget::onTableItemChanged);
+    // 连接信号 - 移除itemChanged信号连接，因为表格现在不可编辑
+    // connect(m_memoryTable, &QTableWidget::itemChanged, 
+    //         this, &MemoryConfigWidget::onTableItemChanged);
+    
+    // 连接双击信号，用于展开配置面板
+    connect(m_memoryTable, &QTableWidget::itemDoubleClicked, 
+            this, &MemoryConfigWidget::onTableItemDoubleClicked);
     
     // 添加到布局
     m_tableLayout->addWidget(m_tableTitle);
@@ -479,31 +483,19 @@ void MemoryConfigWidget::populateTable()
         
         m_memoryTable->insertRow(i);
         
-        // 名称列
+        // 名称列 - 设置为只读，只能通过配置面板修改
         QTableWidgetItem* nameItem = new QTableWidgetItem(region.name);
-        nameItem->setFlags(region.isEditable ? Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable
-                                             : Qt::ItemIsEnabled | Qt::ItemIsSelectable);
-        if (!region.isEditable) {
-            nameItem->setBackground(QBrush(QColor("#ecf0f1")));
-        }
+        nameItem->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable);  // 移除 ItemIsEditable 标志
         m_memoryTable->setItem(i, COL_NAME, nameItem);
         
-        // 起始地址列
+        // 起始地址列 - 设置为只读，只能通过配置面板修改
         QTableWidgetItem* startItem = new QTableWidgetItem(formatAddress(region.startAddress));
-        startItem->setFlags(region.isEditable ? Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable
-                                              : Qt::ItemIsEnabled | Qt::ItemIsSelectable);
-        if (!region.isEditable) {
-            startItem->setBackground(QBrush(QColor("#ecf0f1")));
-        }
+        startItem->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable);  // 移除 ItemIsEditable 标志
         m_memoryTable->setItem(i, COL_START_ADDRESS, startItem);
         
-        // 结束地址列
+        // 结束地址列 - 设置为只读，只能通过配置面板修改
         QTableWidgetItem* endItem = new QTableWidgetItem(formatAddress(region.endAddress));
-        endItem->setFlags(region.isEditable ? Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable
-                                            : Qt::ItemIsEnabled | Qt::ItemIsSelectable);
-        if (!region.isEditable) {
-            endItem->setBackground(QBrush(QColor("#ecf0f1")));
-        }
+        endItem->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable);  // 移除 ItemIsEditable 标志
         m_memoryTable->setItem(i, COL_END_ADDRESS, endItem);
         
         // 大小（十六进制）列
@@ -585,6 +577,32 @@ void MemoryConfigWidget::onTableItemChanged(QTableWidgetItem* item)
     // 发送信号
     emit configChanged();
     emit memoryRegionChanged(region.name);
+}
+
+void MemoryConfigWidget::onTableItemDoubleClicked(QTableWidgetItem* item)
+{
+    if (!item) return;
+    
+    int row = item->row();
+    
+    // 确保行号在有效范围内
+    if (row < 0 || row >= m_regionOrder.size()) return;
+    
+    // 选择整行
+    m_memoryTable->selectRow(row);
+    m_memoryTable->setCurrentItem(item);
+    
+    // 展开配置面板
+    setConfigPanelExpanded(true);
+    
+    // 启用配置字段
+    m_nameEdit->setEnabled(true);
+    m_startAddressEdit->setEnabled(true);
+    m_sizeEdit->setEnabled(true);
+    m_sizeUnitCombo->setEnabled(true);
+    
+    // 更新配置字段内容
+    onTableSelectionChanged();
 }
 
 void MemoryConfigWidget::updateSizeString(int row)
