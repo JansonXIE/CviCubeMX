@@ -49,6 +49,7 @@ private slots:
     void onClockConfigChanged();
     void onMemoryConfigChanged();
     void onConfigTabChanged(int index);
+    void onSelectSourcePath();
 
 private:
     void setupUI();
@@ -78,6 +79,11 @@ private:
     // 设备树配置处理
     void initializeDtsConfig();
     void showPeripheralConfig(const QString& peripheralType);
+    
+    // 路径选择和验证
+    bool selectSourcePath();
+    bool validateSourcePath(const QString& path);
+    void showPathSelectionDialog();
 
     // UI Components
     QWidget *m_centralWidget;
@@ -143,6 +149,9 @@ private:
     
     // 设备树配置管理器
     DtsConfig *m_dtsConfig;
+    
+    // 源代码路径
+    QString m_sourcePath;
 };
 
 #endif // MAINWINDOW_H

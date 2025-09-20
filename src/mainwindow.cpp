@@ -14,6 +14,8 @@
 #include <QTextStream>
 #include <QDir>
 #include <QDebug>
+#include <QMessageBox>
+#include <QFileDialog>
 #include <cmath>
 
 MainWindow::MainWindow(QWidget *parent)
@@ -50,6 +52,13 @@ MainWindow::MainWindow(QWidget *parent)
     , m_blinkState(false)
     , m_dtsConfig(nullptr)
 {
+    // 首先显示路径选择对话框
+    if (!selectSourcePath()) {
+        // 如果用户取消选择路径，关闭应用程序
+        QTimer::singleShot(0, this, &QWidget::close);
+        return;
+    }
+    
     setupUI();
     
     // 初始化引脚名称映射
@@ -225,6 +234,32 @@ void MainWindow::setupPinoutTab()
     m_controlLayout->addWidget(m_chipComboBox);
     m_controlLayout->addWidget(m_startProjectButton);
     m_controlLayout->addWidget(m_generateCodeButton);
+    
+    // // 添加选择路径按钮
+    // QPushButton *selectPathButton = new QPushButton("选择源码路径", m_pinoutTab);
+    // selectPathButton->setMaximumHeight(28);
+    // selectPathButton->setStyleSheet(
+    //     "QPushButton { "
+    //     "background-color: #e67e22; "
+    //     "color: white; "
+    //     "border: none; "
+    //     "padding: 8px 16px; "
+    //     "font-size: 12px; "
+    //     "border-radius: 4px; "
+    //     "} "
+    //     "QPushButton:hover { "
+    //     "background-color: #d35400; "
+    //     "}"
+    // );
+    // connect(selectPathButton, &QPushButton::clicked, this, &MainWindow::onSelectSourcePath);
+    // m_controlLayout->addWidget(selectPathButton);
+    
+    // // 显示当前路径的标签
+    // QLabel *pathLabel = new QLabel(QString("当前路径: %1").arg(m_sourcePath), m_pinoutTab);
+    // pathLabel->setStyleSheet("font-size: 10px; color: #666; max-width: 300px;");
+    // pathLabel->setWordWrap(true);
+    // m_controlLayout->addWidget(pathLabel);
+    
     m_controlLayout->addStretch();
     
     // 创建左侧配置面板
@@ -1187,11 +1222,11 @@ QString MainWindow::getDefconfigPath() const
         chipType = "cv1842hp"; // 默认使用cv1842hp
     }
     
-    QString defconfigPath = QString("boards/cv184x/%1_wevb_0014a_emmc/linux/cvitek_%1_wevb_0014a_emmc_defconfig")
+    QString defconfigPath = QString("build/boards/cv184x/%1_wevb_0014a_emmc/linux/cvitek_%1_wevb_0014a_emmc_defconfig")
                            .arg(chipType);
     
-    // 转换为绝对路径
-    QDir workspaceDir("D:\\Users\\jianxing.xie\\Desktop\\CviCubeMX");
+    // 使用用户选择的源代码路径
+    QDir workspaceDir(m_sourcePath);
     return workspaceDir.absoluteFilePath(defconfigPath);
 }
 
@@ -1319,10 +1354,11 @@ void MainWindow::initializeDtsConfig()
 {
     m_dtsConfig = new DtsConfig(this);
     
-    // 加载设备树文件
-    QString dtsFilePath = "D:\\Users\\jianxing.xie\\Desktop\\CviCubeMX\\boards\\default\\dts\\cv184x\\cv184x_base.dtsi";
+    // 使用用户选择的源代码路径加载设备树文件
+    QString dtsFilePath = QDir(m_sourcePath).absoluteFilePath("build/boards/default/dts/cv184x/cv184x_base.dtsi");
     if (!m_dtsConfig->loadDtsFile(dtsFilePath)) {
         qDebug() << "警告：无法加载设备树文件，外设配置功能将不可用";
+        qDebug() << "尝试加载的路径：" << dtsFilePath;
     }
 }
 
@@ -1369,5 +1405,111 @@ void MainWindow::onConfigTabChanged(int index)
     } else if (index == 2) {
         // 切换到内存配置标签页
         qDebug() << "切换到内存配置页面";
+    }
+}
+
+bool MainWindow::selectSourcePath()
+{
+    showPathSelectionDialog();
+    return !m_sourcePath.isEmpty();
+}
+
+void MainWindow::showPathSelectionDialog()
+{
+    QMessageBox msgBox;
+    msgBox.setWindowTitle("CviCubeMX - 源代码路径选择");
+    msgBox.setText("欢迎使用 CviCubeMX!");
+    msgBox.setInformativeText("请选择包含设备树dts文件、defconfig 和 cvi_board_init.c 的源代码根目录。\n\n"
+                             "该目录应包含以下结构：\n"
+                             "- build/");
+    msgBox.setStandardButtons(QMessageBox::Ok | QMessageBox::Cancel);
+    msgBox.setDefaultButton(QMessageBox::Ok);
+    
+    int ret = msgBox.exec();
+    if (ret == QMessageBox::Cancel) {
+        return;
+    }
+    
+    QString selectedPath = QFileDialog::getExistingDirectory(
+        this,
+        "选择源代码根目录",
+        QDir::homePath(),
+        QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks
+    );
+    
+    if (selectedPath.isEmpty()) {
+        return;
+    }
+    
+    if (validateSourcePath(selectedPath)) {
+        m_sourcePath = selectedPath;
+        
+        // 更新CodeGenerator的路径
+        m_codeGenerator.setSourcePath(m_sourcePath);
+        
+        QMessageBox::information(this, "成功", 
+            QString("源代码路径设置成功：\n%1").arg(m_sourcePath));
+    } else {
+        QMessageBox::StandardButton reply = QMessageBox::question(
+            this,
+            "路径验证失败",
+            QString("所选目录缺少必要的文件结构：\n%1\n\n"
+                   "是否要重新选择路径？").arg(selectedPath),
+            QMessageBox::Yes | QMessageBox::No
+        );
+        
+        if (reply == QMessageBox::Yes) {
+            showPathSelectionDialog(); // 递归调用重新选择
+        }
+    }
+}
+
+bool MainWindow::validateSourcePath(const QString& path)
+{
+    QDir dir(path);
+    
+    // 检查必要的目录结构
+    QStringList requiredDirs = {"build"};
+    
+    for (const QString& reqDir : requiredDirs) {
+        if (!dir.exists(reqDir)) {
+            qDebug() << "缺少目录：" << reqDir;
+            return false;
+        }
+    }
+    
+    // 检查关键文件是否存在
+    QStringList criticalPaths = {
+        "build/boards/cv184x",
+        "build/boards/default/dts/cv184x"
+    };
+    
+    for (const QString& criticalPath : criticalPaths) {
+        if (!dir.exists(criticalPath)) {
+            qDebug() << "缺少关键路径：" << criticalPath;
+            return false;
+        }
+    }
+    
+    return true;
+}
+
+void MainWindow::onSelectSourcePath()
+{
+    showPathSelectionDialog();
+    
+    // 更新UI中的路径显示
+    if (!m_sourcePath.isEmpty()) {
+        // 查找并更新路径标签
+        QLabel *pathLabel = m_pinoutTab->findChild<QLabel*>();
+        if (pathLabel) {
+            QList<QLabel*> labels = m_pinoutTab->findChildren<QLabel*>();
+            for (QLabel* label : labels) {
+                if (label->text().startsWith("当前路径:")) {
+                    label->setText(QString("当前路径: %1").arg(m_sourcePath));
+                    break;
+                }
+            }
+        }
     }
 }
