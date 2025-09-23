@@ -4319,7 +4319,7 @@ void ClockConfigWidget::drawConnectionLines(QPainter& painter)
     // 需要连接的PLL列表（根据需求：FPLL、MIPIMPLL、MPLL、TPLL、APPLL和RVPLL）
     QStringList targetPLLs = {"clk_fpll", "clk_mipimpll", "clk_mpll", "clk_tpll", "clk_appll", "clk_rvpll"};
     
-    // 为每个目标PLL绘制从OSC的连接线
+    // 为每个目标PLL绘制从OSC的连接线（使用肘形箭头）
     for (const QString& pllName : targetPLLs) {
         QPoint pllPoint = getPLLConnectionPoint(pllName);
         if (!pllPoint.isNull() && !oscPoint.isNull()) {
@@ -4332,7 +4332,15 @@ void ClockConfigWidget::drawConnectionLines(QPainter& painter)
             else if (pllName == "clk_appll") lineColor = QColor(102, 16, 242);    // 紫色
             else if (pllName == "clk_rvpll") lineColor = QColor(255, 102, 0);     // 橙色
             
-            drawArrowLine(painter, oscPoint, pllPoint, lineColor);
+            // 计算肘形箭头的拐点
+            // 第一个拐点：从起点向右延伸一定距离
+            int horizontalOffset = 40;  // 水平延伸距离
+            QPoint elbow1(oscPoint.x() + horizontalOffset, oscPoint.y());
+            
+            // 第二个拐点：垂直对齐到目标点
+            QPoint elbow2(elbow1.x(), pllPoint.y());
+            
+            drawElbowArrowLine(painter, oscPoint, elbow1, elbow2, pllPoint, lineColor);
         }
     }
     
@@ -4594,6 +4602,40 @@ void ClockConfigWidget::drawArrowLine(QPainter& painter, const QPoint& start, co
     
     QPoint arrow1 = (arrowP1 + perpendicular * (arrowSize / 2)).toPoint();
     QPoint arrow2 = (arrowP1 - perpendicular * (arrowSize / 2)).toPoint();
+    
+    // 绘制箭头
+    QPolygon arrowHead;
+    arrowHead << end << arrow1 << arrow2;
+    painter.drawPolygon(arrowHead);
+}
+
+void ClockConfigWidget::drawElbowArrowLine(QPainter& painter, const QPoint& start, const QPoint& elbow1, const QPoint& elbow2, const QPoint& end, const QColor& color)
+{
+    painter.setPen(QPen(color, 2));
+    
+    // 绘制肘形连接线
+    // 第一段：从起点到第一个拐点
+    painter.drawLine(start, elbow1);
+    // 第二段：从第一个拐点到第二个拐点
+    painter.drawLine(elbow1, elbow2);
+    // 第三段：从第二个拐点到终点
+    painter.drawLine(elbow2, end);
+    
+    // 绘制箭头（在最后一段线上）
+    painter.setBrush(QBrush(color));
+    
+    // 计算箭头方向和大小
+    int arrowSize = 10;
+    QVector2D direction(end - elbow2);
+    direction.normalize();
+    
+    // 计算箭头的两个边点
+    QVector2D perpendicular(-direction.y(), direction.x());
+    QVector2D arrowBase = QVector2D(end) - direction * arrowSize;
+    
+    QPoint arrowP1 = (arrowBase + perpendicular * (arrowSize / 2)).toPoint();
+    QPoint arrow1 = (arrowBase + perpendicular * (arrowSize / 2)).toPoint();
+    QPoint arrow2 = (arrowBase - perpendicular * (arrowSize / 2)).toPoint();
     
     // 绘制箭头
     QPolygon arrowHead;

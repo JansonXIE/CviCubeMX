@@ -190,6 +190,7 @@ private:
     // 连接线绘制相关方法
     void drawConnectionLines(QPainter& painter);
     void drawArrowLine(QPainter& painter, const QPoint& start, const QPoint& end, const QColor& color = Qt::blue);
+    void drawElbowArrowLine(QPainter& painter, const QPoint& start, const QPoint& elbow1, const QPoint& elbow2, const QPoint& end, const QColor& color = Qt::blue);
     QPoint getOSCConnectionPoint() const;
     QPoint getPLLConnectionPoint(const QString& pllName) const;
     QPoint getSubPLLConnectionPoint(const QString& pllName) const;  // 新增：获取子PLL连接点
