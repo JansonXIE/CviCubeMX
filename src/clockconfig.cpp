@@ -2967,115 +2967,115 @@ void ClockConfigWidget::applyModulePositions()
     if (m_modulePositions.contains("输入源") && m_inputWidget) {
         ModulePosition pos = m_modulePositions["输入源"];
         m_inputWidget->move(pos.x, pos.y);
-        m_inputWidget->resize(pos.width, pos.height);
+        m_inputWidget->setFixedSize(pos.width, pos.height);
     }
     
     if (m_modulePositions.contains("锁相环") && m_pllWidget) {
         ModulePosition pos = m_modulePositions["锁相环"];
         m_pllWidget->move(pos.x, pos.y);
-        m_pllWidget->resize(pos.width, pos.height);
+        m_pllWidget->setFixedSize(pos.width, pos.height);
     }
     
     if (m_modulePositions.contains("子锁相环") && m_subPllWidget) {
         ModulePosition pos = m_modulePositions["子锁相环"];
         m_subPllWidget->move(pos.x, pos.y);
-        m_subPllWidget->resize(pos.width, pos.height);
+        m_subPllWidget->setFixedSize(pos.width, pos.height);
     }
     
     if (m_modulePositions.contains("OSC输出") && m_outputWidget) {
         ModulePosition pos = m_modulePositions["OSC输出"];
         m_outputWidget->move(pos.x, pos.y);
-        m_outputWidget->resize(pos.width, pos.height);
+        m_outputWidget->setFixedSize(pos.width, pos.height);
     }
     
     if (m_modulePositions.contains("clk_1M子节点") && m_clk1MSubNodeWidget) {
         ModulePosition pos = m_modulePositions["clk_1M子节点"];
         m_clk1MSubNodeWidget->move(pos.x, pos.y);
-        m_clk1MSubNodeWidget->resize(pos.width, pos.height);
+        m_clk1MSubNodeWidget->setFixedSize(pos.width, pos.height);
     }
     
     if (m_modulePositions.contains("clk_cam1pll子节点") && m_clkCam1PLLSubNodeWidget) {
         ModulePosition pos = m_modulePositions["clk_cam1pll子节点"];
         m_clkCam1PLLSubNodeWidget->move(pos.x, pos.y);
-        m_clkCam1PLLSubNodeWidget->resize(pos.width, pos.height);
+        m_clkCam1PLLSubNodeWidget->setFixedSize(pos.width, pos.height);
     }
     
     if (m_modulePositions.contains("clk_raw_axi子节点") && m_clkRawAxiSubNodeWidget) {
         ModulePosition pos = m_modulePositions["clk_raw_axi子节点"];
         m_clkRawAxiSubNodeWidget->move(pos.x, pos.y);
-        m_clkRawAxiSubNodeWidget->resize(pos.width, pos.height);
+        m_clkRawAxiSubNodeWidget->setFixedSize(pos.width, pos.height);
     }
     
     if (m_modulePositions.contains("clk_cam0pll子节点") && m_clkCam0PLLSubNodeWidget) {
         ModulePosition pos = m_modulePositions["clk_cam0pll子节点"];
         m_clkCam0PLLSubNodeWidget->move(pos.x, pos.y);
-        m_clkCam0PLLSubNodeWidget->resize(pos.width, pos.height);
+        m_clkCam0PLLSubNodeWidget->setFixedSize(pos.width, pos.height);
     }
     
     if (m_modulePositions.contains("clk_disppll子节点") && m_clkDispPLLSubNodeWidget) {
         ModulePosition pos = m_modulePositions["clk_disppll子节点"];
         m_clkDispPLLSubNodeWidget->move(pos.x, pos.y);
-        m_clkDispPLLSubNodeWidget->resize(pos.width, pos.height);
+        m_clkDispPLLSubNodeWidget->setFixedSize(pos.width, pos.height);
     }
     
     if (m_modulePositions.contains("clk_sys_disp子节点") && m_clkSysDispSubNodeWidget) {
         ModulePosition pos = m_modulePositions["clk_sys_disp子节点"];
         m_clkSysDispSubNodeWidget->move(pos.x, pos.y);
-        m_clkSysDispSubNodeWidget->resize(pos.width, pos.height);
+        m_clkSysDispSubNodeWidget->setFixedSize(pos.width, pos.height);
     }
     
     if (m_modulePositions.contains("clk_a0pll子节点") && m_clkA0PLLSubNodeWidget) {
         ModulePosition pos = m_modulePositions["clk_a0pll子节点"];
         m_clkA0PLLSubNodeWidget->move(pos.x, pos.y);
-        m_clkA0PLLSubNodeWidget->resize(pos.width, pos.height);
+        m_clkA0PLLSubNodeWidget->setFixedSize(pos.width, pos.height);
     }
 
     if (m_modulePositions.contains("clk_rvpll子节点") && m_clkRVPLLSubNodeWidget) {
         ModulePosition pos = m_modulePositions["clk_rvpll子节点"];
         m_clkRVPLLSubNodeWidget->move(pos.x, pos.y);
-        m_clkRVPLLSubNodeWidget->resize(pos.width, pos.height);
+        m_clkRVPLLSubNodeWidget->setFixedSize(pos.width, pos.height);
     }
 
     if (m_modulePositions.contains("clk_appll子节点") && m_clkAPPLLSubNodeWidget) {
         ModulePosition pos = m_modulePositions["clk_appll子节点"];
         m_clkAPPLLSubNodeWidget->move(pos.x, pos.y);
-        m_clkAPPLLSubNodeWidget->resize(pos.width, pos.height);
+        m_clkAPPLLSubNodeWidget->setFixedSize(pos.width, pos.height);
     }
 
     if (m_modulePositions.contains("clk_fpll子节点") && m_clkFPLLSubNodeWidget) {
         ModulePosition pos = m_modulePositions["clk_fpll子节点"];
         m_clkFPLLSubNodeWidget->move(pos.x, pos.y);
-        m_clkFPLLSubNodeWidget->resize(pos.width, pos.height);
+        m_clkFPLLSubNodeWidget->setFixedSize(pos.width, pos.height);
     }
 
     if (m_modulePositions.contains("clk_tpu子节点") && m_clkTPLLSubNodeWidget) {
         ModulePosition pos = m_modulePositions["clk_tpu子节点"];
         m_clkTPLLSubNodeWidget->move(pos.x, pos.y);
-        m_clkTPLLSubNodeWidget->resize(pos.width, pos.height);
+        m_clkTPLLSubNodeWidget->setFixedSize(pos.width, pos.height);
     }
 
     if (m_modulePositions.contains("clk_mpll子节点") && m_clkMPLLSubNodeWidget) {
         ModulePosition pos = m_modulePositions["clk_mpll子节点"];
         m_clkMPLLSubNodeWidget->move(pos.x, pos.y);
-        m_clkMPLLSubNodeWidget->resize(pos.width, pos.height);
+        m_clkMPLLSubNodeWidget->setFixedSize(pos.width, pos.height);
     }
 
     if (m_modulePositions.contains("clk_fab100m子节点") && m_clkFAB100MSubNodeWidget) {
         ModulePosition pos = m_modulePositions["clk_fab100m子节点"];
         m_clkFAB100MSubNodeWidget->move(pos.x, pos.y);
-        m_clkFAB100MSubNodeWidget->resize(pos.width, pos.height);
+        m_clkFAB100MSubNodeWidget->setFixedSize(pos.width, pos.height);
     }
 
     if (m_modulePositions.contains("clk_spi_nand子节点") && m_clkSPINANDSubNodeWidget) {
         ModulePosition pos = m_modulePositions["clk_spi_nand子节点"];
         m_clkSPINANDSubNodeWidget->move(pos.x, pos.y);
-        m_clkSPINANDSubNodeWidget->resize(pos.width, pos.height);
+        m_clkSPINANDSubNodeWidget->setFixedSize(pos.width, pos.height);
     }
 
     if (m_modulePositions.contains("clk_hspi子节点") && m_clkHSPeriSubNodeWidget) {
         ModulePosition pos = m_modulePositions["clk_hspi子节点"];
         m_clkHSPeriSubNodeWidget->move(pos.x, pos.y);
-        m_clkHSPeriSubNodeWidget->resize(pos.width, pos.height);
+        m_clkHSPeriSubNodeWidget->setFixedSize(pos.width, pos.height);
     }
     
     // 重绘连接线
@@ -3087,11 +3087,18 @@ void ClockConfigWidget::showPositionConfigDialog()
     QDialog dialog(this);
     dialog.setWindowTitle("模块位置配置");
     dialog.setModal(true);
-    dialog.resize(400, 350);
+    dialog.resize(600, 800); // 增加宽度和高度以容纳更多模块
     
     QVBoxLayout* mainLayout = new QVBoxLayout(&dialog);
     
-    QFormLayout* formLayout = new QFormLayout();
+    // 创建滚动区域
+    QScrollArea* scrollArea = new QScrollArea();
+    scrollArea->setWidgetResizable(true);
+    scrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    scrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    
+    QWidget* scrollWidget = new QWidget();
+    QFormLayout* formLayout = new QFormLayout(scrollWidget);
     
     // 为每个模块创建位置配置控件
     QMap<QString, QSpinBox*> xSpinBoxes;
@@ -3099,7 +3106,13 @@ void ClockConfigWidget::showPositionConfigDialog()
     QMap<QString, QSpinBox*> widthSpinBoxes;
     QMap<QString, QSpinBox*> heightSpinBoxes;
     
-    QStringList moduleNames = {"输入源", "锁相环", "子锁相环", "OSC输出", "clk_1M子节点", "clk_cam1pll子节点", "clk_raw_axi子节点", "clk_cam0pll子节点"};
+    QStringList moduleNames = {
+        "输入源", "锁相环", "子锁相环", "OSC输出", 
+        "clk_1M子节点", "clk_cam1pll子节点", "clk_raw_axi子节点", "clk_cam0pll子节点",
+        "clk_disppll子节点", "clk_sys_disp子节点", "clk_a0pll子节点", "clk_rvpll子节点",
+        "clk_appll子节点", "clk_fpll子节点", "clk_tpu子节点", "clk_mpll子节点",
+        "clk_fab100m子节点", "clk_spi_nand子节点", "clk_hspi子节点"
+    };
     
     for (const QString& moduleName : moduleNames) {
         QGroupBox* moduleGroup = new QGroupBox(moduleName);
@@ -3126,7 +3139,7 @@ void ClockConfigWidget::showPositionConfigDialog()
         // 宽度
         QLabel* widthLabel = new QLabel("宽度:");
         QSpinBox* widthSpinBox = new QSpinBox();
-        widthSpinBox->setRange(50, 500);
+        widthSpinBox->setRange(50, 2000); // 增加最大值以支持更大的模块
         if (m_modulePositions.contains(moduleName)) {
             widthSpinBox->setValue(m_modulePositions[moduleName].width);
         }
@@ -3135,7 +3148,7 @@ void ClockConfigWidget::showPositionConfigDialog()
         // 高度
         QLabel* heightLabel = new QLabel("高度:");
         QSpinBox* heightSpinBox = new QSpinBox();
-        heightSpinBox->setRange(50, 800);
+        heightSpinBox->setRange(50, 5000); // 增加最大值以支持更高的模块
         if (m_modulePositions.contains(moduleName)) {
             heightSpinBox->setValue(m_modulePositions[moduleName].height);
         }
@@ -3153,7 +3166,8 @@ void ClockConfigWidget::showPositionConfigDialog()
         formLayout->addRow(moduleGroup);
     }
     
-    mainLayout->addLayout(formLayout);
+    scrollArea->setWidget(scrollWidget);
+    mainLayout->addWidget(scrollArea);
     
     // 添加按钮
     QDialogButtonBox* buttonBox = new QDialogButtonBox(
