@@ -21,6 +21,7 @@
 #include <QString>
 #include <QPainter>
 #include <QPaintEvent>
+#include <QMouseEvent>
 #include <QPolygon>
 
 // 前向声明
@@ -55,6 +56,19 @@ struct ModulePosition {
     int height;         // 高度
 };
 
+// 缩放方向枚举
+enum ResizeDirection {
+    None = 0,
+    TopLeft = 1,
+    Top = 2,
+    TopRight = 3,
+    Right = 4,
+    BottomRight = 5,
+    Bottom = 6,
+    BottomLeft = 7,
+    Left = 8
+};
+
 class ClockConfigWidget : public QWidget
 {
     Q_OBJECT
@@ -82,6 +96,9 @@ protected:
     void paintEvent(QPaintEvent* event) override;
     void resizeEvent(QResizeEvent* event) override;
     bool eventFilter(QObject* obj, QEvent* event) override;
+    void mousePressEvent(QMouseEvent* event) override;
+    void mouseMoveEvent(QMouseEvent* event) override;
+    void mouseReleaseEvent(QMouseEvent* event) override;
 
 signals:
     void configChanged();
@@ -227,6 +244,15 @@ private:
     QPoint getClkHSPeriConnectionPoint() const;  // 新增：获取clk_hsperi连接点
     QPoint getClkHSPeriSubNodeConnectionPoint(const QString& nodeName) const;  // 新增：获取clk_hsperi子节点连接点
     void updateConnectionOverlay();
+    
+    // 拖拽和缩放辅助方法
+    QWidget* getWidgetAt(const QPoint& pos);
+    ResizeDirection getResizeDirection(const QPoint& pos, const QRect& widgetRect);
+    void updateCursor(const QPoint& pos);
+    void updateWidgetGeometry(QWidget* widget, const QRect& newGeometry);
+    QString getWidgetModuleName(QWidget* widget);
+    void drawResizeHandles(QPainter& painter, const QRect& rect);
+    QRect getResizeHandleRect(const QRect& widgetRect, ResizeDirection direction);
     
     // UI组件
     QVBoxLayout* m_mainLayout;
@@ -431,6 +457,16 @@ private:
     static const QStringList CLK_FAB_100M_SUB_NODES;  // 新增：clk_fab_100M子节点列表
     static const QStringList CLK_SPI_NAND_SUB_NODES;  // 新增：clk_spi_nand子节点列表
     static const QStringList CLK_HSPERI_SUB_NODES;  // 新增：clk_hsperi子节点列表
+    
+    // 拖拽和缩放相关的成员变量
+    bool m_isDragging;              // 是否正在拖拽
+    bool m_isResizing;              // 是否正在缩放
+    QWidget* m_selectedWidget;      // 当前选中的widget
+    QPoint m_lastMousePos;          // 上次鼠标位置
+    QPoint m_dragStartPos;          // 拖拽开始位置
+    QRect m_originalGeometry;       // 原始几何形状
+    ResizeDirection m_resizeDirection;  // 缩放方向
+    int m_handleSize;               // 缩放手柄大小
     
     // 连接线覆盖层
     QWidget* m_connectionOverlay;

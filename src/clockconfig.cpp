@@ -136,6 +136,14 @@ ClockConfigWidget::ClockConfigWidget(QWidget *parent)
     , m_resetButton(nullptr)
     , m_applyButton(nullptr)
     , m_positionConfigButton(nullptr)
+    , m_isDragging(false)
+    , m_isResizing(false)
+    , m_selectedWidget(nullptr)
+    , m_lastMousePos()
+    , m_dragStartPos()
+    , m_originalGeometry()
+    , m_resizeDirection(None)
+    , m_handleSize(8)
     , m_connectionOverlay(nullptr)
 {
     setupUI();
@@ -185,6 +193,9 @@ ClockConfigWidget::~ClockConfigWidget()
 
 void ClockConfigWidget::setupUI()
 {
+    // 启用鼠标追踪以接收鼠标移动事件
+    setMouseTracking(true);
+    
     // 创建主布局（垂直）
     m_mainLayout = new QVBoxLayout(this);
     m_mainLayout->setContentsMargins(10, 10, 10, 10);
@@ -4280,7 +4291,20 @@ bool ClockConfigWidget::loadConfig(const QString& filePath)
 void ClockConfigWidget::paintEvent(QPaintEvent* event)
 {
     QWidget::paintEvent(event);
-    // 连接线现在由覆盖层绘制，这里不再需要绘制
+    
+    // 如果有选中的widget，绘制选中边框和缩放手柄
+    if (m_selectedWidget) {
+        QPainter painter(this);
+        painter.setRenderHint(QPainter::Antialiasing, true);
+        
+        // 绘制选中边框
+        QRect widgetRect = m_selectedWidget->geometry();
+        painter.setPen(QPen(Qt::blue, 3, Qt::DashLine));
+        painter.drawRect(widgetRect);
+        
+        // 绘制缩放手柄
+        drawResizeHandles(painter, widgetRect);
+    }
 }
 
 void ClockConfigWidget::resizeEvent(QResizeEvent* event)
@@ -4304,6 +4328,138 @@ bool ClockConfigWidget::eventFilter(QObject* obj, QEvent* event)
     }
     
     return QWidget::eventFilter(obj, event);
+}
+
+void ClockConfigWidget::mousePressEvent(QMouseEvent* event)
+{
+    if (event->button() == Qt::LeftButton) {
+        QPoint pos = event->pos();
+        
+        // 检查是否点击了某个模块widget
+        QWidget* clickedWidget = getWidgetAt(pos);
+        if (clickedWidget) {
+            m_selectedWidget = clickedWidget;
+            m_lastMousePos = pos;
+            m_dragStartPos = pos;
+            m_originalGeometry = clickedWidget->geometry();
+            
+            // 检查是否点击了缩放手柄
+            QRect widgetRect = clickedWidget->geometry();
+            ResizeDirection resizeDir = getResizeDirection(pos, widgetRect);
+            
+            if (resizeDir != None) {
+                m_isResizing = true;
+                m_resizeDirection = resizeDir;
+            } else {
+                m_isDragging = true;
+            }
+            
+            // 重绘以显示选中状态
+            update();
+        } else {
+            // 点击空白区域，取消选中
+            m_selectedWidget = nullptr;
+            update();
+        }
+    }
+    
+    QWidget::mousePressEvent(event);
+}
+
+void ClockConfigWidget::mouseMoveEvent(QMouseEvent* event)
+{
+    QPoint pos = event->pos();
+    
+    if (m_isDragging && m_selectedWidget) {
+        // 拖拽模式
+        QPoint delta = pos - m_lastMousePos;
+        QRect newGeometry = m_selectedWidget->geometry();
+        newGeometry.translate(delta);
+        
+        updateWidgetGeometry(m_selectedWidget, newGeometry);
+        m_lastMousePos = pos;
+        
+        // 更新连接线
+        m_connectionOverlay->update();
+    } else if (m_isResizing && m_selectedWidget) {
+        // 缩放模式
+        QRect newGeometry = m_originalGeometry;
+        QPoint delta = pos - m_dragStartPos;
+        
+        switch (m_resizeDirection) {
+            case TopLeft:
+                newGeometry.setTopLeft(newGeometry.topLeft() + delta);
+                break;
+            case Top:
+                newGeometry.setTop(newGeometry.top() + delta.y());
+                break;
+            case TopRight:
+                newGeometry.setTopRight(newGeometry.topRight() + QPoint(delta.x(), delta.y()));
+                break;
+            case Right:
+                newGeometry.setRight(newGeometry.right() + delta.x());
+                break;
+            case BottomRight:
+                newGeometry.setBottomRight(newGeometry.bottomRight() + delta);
+                break;
+            case Bottom:
+                newGeometry.setBottom(newGeometry.bottom() + delta.y());
+                break;
+            case BottomLeft:
+                newGeometry.setBottomLeft(newGeometry.bottomLeft() + QPoint(delta.x(), delta.y()));
+                break;
+            case Left:
+                newGeometry.setLeft(newGeometry.left() + delta.x());
+                break;
+            default:
+                break;
+        }
+        
+        // 确保最小尺寸
+        if (newGeometry.width() < 100) newGeometry.setWidth(100);
+        if (newGeometry.height() < 50) newGeometry.setHeight(50);
+        
+        updateWidgetGeometry(m_selectedWidget, newGeometry);
+        
+        // 更新连接线
+        m_connectionOverlay->update();
+    } else {
+        // 更新鼠标光标
+        updateCursor(pos);
+    }
+    
+    QWidget::mouseMoveEvent(event);
+}
+
+void ClockConfigWidget::mouseReleaseEvent(QMouseEvent* event)
+{
+    if (event->button() == Qt::LeftButton) {
+        if (m_isDragging || m_isResizing) {
+            // 完成拖拽或缩放，更新模块位置配置
+            if (m_selectedWidget) {
+                QString moduleName = getWidgetModuleName(m_selectedWidget);
+                if (!moduleName.isEmpty()) {
+                    QRect geometry = m_selectedWidget->geometry();
+                    ModulePosition pos;
+                    pos.moduleName = moduleName;
+                    pos.x = geometry.x();
+                    pos.y = geometry.y();
+                    pos.width = geometry.width();
+                    pos.height = geometry.height();
+                    m_modulePositions[moduleName] = pos;
+                }
+            }
+        }
+        
+        m_isDragging = false;
+        m_isResizing = false;
+        m_resizeDirection = None;
+        
+        // 恢复默认光标
+        setCursor(Qt::ArrowCursor);
+    }
+    
+    QWidget::mouseReleaseEvent(event);
 }
 
 void ClockConfigWidget::drawConnectionLines(QPainter& painter)
@@ -5933,4 +6089,157 @@ void ClockConfigWidget::updateConnectionOverlay()
     m_connectionOverlay->setGeometry(rect());
     m_connectionOverlay->raise();  // 确保覆盖层在最上层
     m_connectionOverlay->update(); // 重绘覆盖层
+}
+
+QWidget* ClockConfigWidget::getWidgetAt(const QPoint& pos)
+{
+    // 检查所有模块widget是否包含该点
+    QList<QWidget*> allWidgets;
+    allWidgets << m_inputWidget << m_pllWidget << m_subPllWidget << m_outputWidget 
+               << m_clk1MSubNodeWidget << m_clkCam1PLLSubNodeWidget << m_clkRawAxiSubNodeWidget
+               << m_clkCam0PLLSubNodeWidget << m_clkDispPLLSubNodeWidget << m_clkSysDispSubNodeWidget
+               << m_clkA0PLLSubNodeWidget << m_clkRVPLLSubNodeWidget << m_clkAPPLLSubNodeWidget
+               << m_clkFPLLSubNodeWidget << m_clkTPLLSubNodeWidget << m_clkMPLLSubNodeWidget
+               << m_clkFAB100MSubNodeWidget << m_clkSPINANDSubNodeWidget << m_clkHSPeriSubNodeWidget;
+    
+    for (QWidget* widget : allWidgets) {
+        if (widget && widget->geometry().contains(pos)) {
+            return widget;
+        }
+    }
+    
+    return nullptr;
+}
+
+ResizeDirection ClockConfigWidget::getResizeDirection(const QPoint& pos, const QRect& widgetRect)
+{
+    int margin = m_handleSize;
+    
+    // 检查各个缩放手柄区域
+    if (getResizeHandleRect(widgetRect, TopLeft).contains(pos)) return TopLeft;
+    if (getResizeHandleRect(widgetRect, Top).contains(pos)) return Top;
+    if (getResizeHandleRect(widgetRect, TopRight).contains(pos)) return TopRight;
+    if (getResizeHandleRect(widgetRect, Right).contains(pos)) return Right;
+    if (getResizeHandleRect(widgetRect, BottomRight).contains(pos)) return BottomRight;
+    if (getResizeHandleRect(widgetRect, Bottom).contains(pos)) return Bottom;
+    if (getResizeHandleRect(widgetRect, BottomLeft).contains(pos)) return BottomLeft;
+    if (getResizeHandleRect(widgetRect, Left).contains(pos)) return Left;
+    
+    return None;
+}
+
+void ClockConfigWidget::updateCursor(const QPoint& pos)
+{
+    QWidget* widget = getWidgetAt(pos);
+    if (widget) {
+        ResizeDirection dir = getResizeDirection(pos, widget->geometry());
+        
+        switch (dir) {
+            case TopLeft:
+            case BottomRight:
+                setCursor(Qt::SizeFDiagCursor);
+                break;
+            case Top:
+            case Bottom:
+                setCursor(Qt::SizeVerCursor);
+                break;
+            case TopRight:
+            case BottomLeft:
+                setCursor(Qt::SizeBDiagCursor);
+                break;
+            case Left:
+            case Right:
+                setCursor(Qt::SizeHorCursor);
+                break;
+            default:
+                setCursor(Qt::SizeAllCursor);  // 拖拽光标
+                break;
+        }
+    } else {
+        setCursor(Qt::ArrowCursor);
+    }
+}
+
+void ClockConfigWidget::updateWidgetGeometry(QWidget* widget, const QRect& newGeometry)
+{
+    if (!widget) return;
+    
+    widget->setGeometry(newGeometry);
+    
+    // 更新模块位置配置
+    QString moduleName = getWidgetModuleName(widget);
+    if (!moduleName.isEmpty()) {
+        ModulePosition pos;
+        pos.moduleName = moduleName;
+        pos.x = newGeometry.x();
+        pos.y = newGeometry.y();
+        pos.width = newGeometry.width();
+        pos.height = newGeometry.height();
+        m_modulePositions[moduleName] = pos;
+    }
+}
+
+QString ClockConfigWidget::getWidgetModuleName(QWidget* widget)
+{
+    if (widget == m_inputWidget) return "input";
+    if (widget == m_pllWidget) return "pll";
+    if (widget == m_subPllWidget) return "subpll";
+    if (widget == m_outputWidget) return "output";
+    if (widget == m_clk1MSubNodeWidget) return "clk_1M";
+    if (widget == m_clkCam1PLLSubNodeWidget) return "clk_cam1pll";
+    if (widget == m_clkRawAxiSubNodeWidget) return "clk_raw_axi";
+    if (widget == m_clkCam0PLLSubNodeWidget) return "clk_cam0pll";
+    if (widget == m_clkDispPLLSubNodeWidget) return "clk_disppll";
+    if (widget == m_clkSysDispSubNodeWidget) return "clk_sys_disp";
+    if (widget == m_clkA0PLLSubNodeWidget) return "clk_a0pll";
+    if (widget == m_clkRVPLLSubNodeWidget) return "clk_rvpll";
+    if (widget == m_clkAPPLLSubNodeWidget) return "clk_appll";
+    if (widget == m_clkFPLLSubNodeWidget) return "clk_fpll";
+    if (widget == m_clkTPLLSubNodeWidget) return "clk_tpll";
+    if (widget == m_clkMPLLSubNodeWidget) return "clk_mpll";
+    if (widget == m_clkFAB100MSubNodeWidget) return "clk_fab_100M";
+    if (widget == m_clkSPINANDSubNodeWidget) return "clk_spi_nand";
+    if (widget == m_clkHSPeriSubNodeWidget) return "clk_hsperi";
+    
+    return QString();
+}
+
+void ClockConfigWidget::drawResizeHandles(QPainter& painter, const QRect& rect)
+{
+    painter.setPen(QPen(Qt::blue, 2));
+    painter.setBrush(QBrush(Qt::blue));
+    
+    // 绘制8个缩放手柄
+    QList<ResizeDirection> directions = {TopLeft, Top, TopRight, Right, BottomRight, Bottom, BottomLeft, Left};
+    
+    for (ResizeDirection dir : directions) {
+        QRect handleRect = getResizeHandleRect(rect, dir);
+        painter.drawRect(handleRect);
+    }
+}
+
+QRect ClockConfigWidget::getResizeHandleRect(const QRect& widgetRect, ResizeDirection direction)
+{
+    int size = m_handleSize;
+    
+    switch (direction) {
+        case TopLeft:
+            return QRect(widgetRect.left() - size/2, widgetRect.top() - size/2, size, size);
+        case Top:
+            return QRect(widgetRect.left() + widgetRect.width()/2 - size/2, widgetRect.top() - size/2, size, size);
+        case TopRight:
+            return QRect(widgetRect.right() - size/2, widgetRect.top() - size/2, size, size);
+        case Right:
+            return QRect(widgetRect.right() - size/2, widgetRect.top() + widgetRect.height()/2 - size/2, size, size);
+        case BottomRight:
+            return QRect(widgetRect.right() - size/2, widgetRect.bottom() - size/2, size, size);
+        case Bottom:
+            return QRect(widgetRect.left() + widgetRect.width()/2 - size/2, widgetRect.bottom() - size/2, size, size);
+        case BottomLeft:
+            return QRect(widgetRect.left() - size/2, widgetRect.bottom() - size/2, size, size);
+        case Left:
+            return QRect(widgetRect.left() - size/2, widgetRect.top() + widgetRect.height()/2 - size/2, size, size);
+        default:
+            return QRect();
+    }
 }
