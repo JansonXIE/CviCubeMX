@@ -40,11 +40,16 @@ set(UI_FILES
 
 qt_add_executable(CviCubeMX ${SOURCES} ${HEADERS})
 qt_add_resources(CviCubeMX "resources" FILES resources/style.qss)
+qt_add_resources(CviCubeMX "icons" FILES
+    resources/icons/check_black.svg
+    resources/icons/check_white.svg
+    resources/icons/blank_20.svg
+)
 
 target_include_directories(CviCubeMX PRIVATE include)
-target_link_libraries(CviCubeMX 
-    PRIVATE 
-        Qt6::Core 
+target_link_libraries(CviCubeMX
+    PRIVATE
+        Qt6::Core
         Qt6::Widgets
 )
 
