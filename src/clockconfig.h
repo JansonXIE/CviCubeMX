@@ -208,6 +208,7 @@ private:
     void drawConnectionLines(QPainter& painter);
     void drawArrowLine(QPainter& painter, const QPoint& start, const QPoint& end, const QColor& color = Qt::blue);
     void drawElbowArrowLine(QPainter& painter, const QPoint& start, const QPoint& elbow1, const QPoint& elbow2, const QPoint& end, const QColor& color = Qt::blue);
+    void calculateElbowPoints(const QPoint& start, const QPoint& end, QPoint& elbow1, QPoint& elbow2) const;  // 新增：计算肘形拐点
     QPoint getOSCConnectionPoint() const;
     QPoint getPLLConnectionPoint(const QString& pllName) const;
     QPoint getSubPLLConnectionPoint(const QString& pllName) const;  // 新增：获取子PLL连接点
@@ -253,6 +254,7 @@ private:
     QString getWidgetModuleName(QWidget* widget);
     void drawResizeHandles(QPainter& painter, const QRect& rect);
     QRect getResizeHandleRect(const QRect& widgetRect, ResizeDirection direction);
+    QPoint convertToFlowWidgetCoordinate(const QPoint& pos) const;  // 新增：坐标转换方法
     
     // UI组件
     QVBoxLayout* m_mainLayout;

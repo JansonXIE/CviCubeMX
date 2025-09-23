@@ -169,20 +169,6 @@ ClockConfigWidget::ClockConfigWidget(QWidget *parent)
     connectSignals();
     updateFrequencies();
     
-    // 创建连接线覆盖层
-    m_connectionOverlay = new QWidget(this);
-    m_connectionOverlay->setAttribute(Qt::WA_TransparentForMouseEvents);
-    m_connectionOverlay->setAttribute(Qt::WA_NoSystemBackground);
-    m_connectionOverlay->setStyleSheet("background: transparent;");
-    
-    // 重写覆盖层的paintEvent
-    m_connectionOverlay->installEventFilter(this);
-    
-    // 延迟重绘以确保布局完成
-    QTimer::singleShot(100, this, [this]() {
-        updateConnectionOverlay();
-    });
-    
     // 初始化模块位置
     initializeModulePositions();
 }
@@ -234,7 +220,20 @@ void ClockConfigWidget::setupUI()
     );
     
     m_flowScrollArea->setWidget(m_flowWidget);
+    
+    // 创建连接线覆盖层（作为flowWidget的子部件）
+    m_connectionOverlay = new QWidget(m_flowWidget);
+    m_connectionOverlay->setAttribute(Qt::WA_TransparentForMouseEvents);
+    m_connectionOverlay->setAttribute(Qt::WA_NoSystemBackground);
+    m_connectionOverlay->setStyleSheet("background: transparent;");
+    m_connectionOverlay->installEventFilter(this);
+    
     m_mainLayout->addWidget(m_flowScrollArea);
+    
+    // 延迟重绘以确保布局完成
+    QTimer::singleShot(100, this, [this]() {
+        updateConnectionOverlay();
+    });
     
     // 创建控制按钮区域
     m_buttonLayout = new QHBoxLayout();
@@ -4321,6 +4320,15 @@ bool ClockConfigWidget::eventFilter(QObject* obj, QEvent* event)
         QPainter painter(m_connectionOverlay);
         painter.setRenderHint(QPainter::Antialiasing, true);
         
+        // 获取滚动偏移量，用于调整绘制坐标
+        QPoint scrollOffset = QPoint(
+            m_flowScrollArea->horizontalScrollBar()->value(),
+            m_flowScrollArea->verticalScrollBar()->value()
+        );
+        
+        // 将坐标系平移，使得flowWidget坐标对应到覆盖层坐标
+        painter.translate(-scrollOffset);
+        
         // 绘制连接线
         drawConnectionLines(painter);
         
@@ -4335,17 +4343,20 @@ void ClockConfigWidget::mousePressEvent(QMouseEvent* event)
     if (event->button() == Qt::LeftButton) {
         QPoint pos = event->pos();
         
+        // 转换鼠标位置到flowWidget坐标系
+        QPoint flowPos = convertToFlowWidgetCoordinate(pos);
+        
         // 检查是否点击了某个模块widget
-        QWidget* clickedWidget = getWidgetAt(pos);
+        QWidget* clickedWidget = getWidgetAt(flowPos);
         if (clickedWidget) {
             m_selectedWidget = clickedWidget;
-            m_lastMousePos = pos;
-            m_dragStartPos = pos;
+            m_lastMousePos = pos;  // 保持原始坐标用于计算delta
+            m_dragStartPos = pos;  // 保持原始坐标用于计算delta
             m_originalGeometry = clickedWidget->geometry();
             
             // 检查是否点击了缩放手柄
             QRect widgetRect = clickedWidget->geometry();
-            ResizeDirection resizeDir = getResizeDirection(pos, widgetRect);
+            ResizeDirection resizeDir = getResizeDirection(flowPos, widgetRect);
             
             if (resizeDir != None) {
                 m_isResizing = true;
@@ -4424,8 +4435,9 @@ void ClockConfigWidget::mouseMoveEvent(QMouseEvent* event)
         // 更新连接线
         m_connectionOverlay->update();
     } else {
-        // 更新鼠标光标
-        updateCursor(pos);
+        // 更新鼠标光标 - 转换坐标到flowWidget坐标系
+        QPoint flowPos = convertToFlowWidgetCoordinate(pos);
+        updateCursor(flowPos);
     }
     
     QWidget::mouseMoveEvent(event);
@@ -4509,7 +4521,11 @@ void ClockConfigWidget::drawConnectionLines(QPainter& painter)
             if (!subPllPoint.isNull() && !mipimpllPoint.isNull()) {
                 // 使用橙色来表示MIPIMPLL到子PLL的连接
                 QColor lineColor = QColor(255, 165, 0);  // 橙色
-                drawArrowLine(painter, mipimpllPoint, subPllPoint, lineColor);
+                
+                // 计算肘形拐点
+                QPoint elbow1, elbow2;
+                calculateElbowPoints(mipimpllPoint, subPllPoint, elbow1, elbow2);
+                drawElbowArrowLine(painter, mipimpllPoint, elbow1, elbow2, subPllPoint, lineColor);
             }
         }
     }
@@ -4522,7 +4538,11 @@ void ClockConfigWidget::drawConnectionLines(QPainter& painter)
         if (!oscOutputPoint.isNull() && !outputAreaPoint.isNull()) {
             // 使用绿色来表示OSC到输出的连接
             QColor lineColor = QColor(40, 167, 69);  // 绿色
-            drawArrowLine(painter, oscOutputPoint, outputAreaPoint, lineColor);
+            
+            // 计算肘形拐点
+            QPoint elbow1, elbow2;
+            calculateElbowPoints(oscOutputPoint, outputAreaPoint, elbow1, elbow2);
+            drawElbowArrowLine(painter, oscOutputPoint, elbow1, elbow2, outputAreaPoint, lineColor);
         }
     }
     
@@ -4535,7 +4555,11 @@ void ClockConfigWidget::drawConnectionLines(QPainter& painter)
             if (!subNodePoint.isNull() && !clk1MPoint.isNull()) {
                 // 使用紫色来表示clk_1M到子节点的连接
                 QColor lineColor = QColor(102, 16, 242);  // 紫色
-                drawArrowLine(painter, clk1MPoint, subNodePoint, lineColor);
+                
+                // 计算肘形拐点
+                QPoint elbow1, elbow2;
+                calculateElbowPoints(clk1MPoint, subNodePoint, elbow1, elbow2);
+                drawElbowArrowLine(painter, clk1MPoint, elbow1, elbow2, subNodePoint, lineColor);
             }
         }
     }
@@ -4549,7 +4573,11 @@ void ClockConfigWidget::drawConnectionLines(QPainter& painter)
             if (!subNodePoint.isNull() && !cam1PLLPoint.isNull()) {
                 // 使用橙色来表示clk_cam1pll到子节点的连接
                 QColor lineColor = QColor(255, 165, 0);  // 橙色
-                drawArrowLine(painter, cam1PLLPoint, subNodePoint, lineColor);
+                
+                // 计算肘形拐点
+                QPoint elbow1, elbow2;
+                calculateElbowPoints(cam1PLLPoint, subNodePoint, elbow1, elbow2);
+                drawElbowArrowLine(painter, cam1PLLPoint, elbow1, elbow2, subNodePoint, lineColor);
             }
         }
     }
@@ -4563,7 +4591,11 @@ void ClockConfigWidget::drawConnectionLines(QPainter& painter)
             if (!subNodePoint.isNull() && !rawAxiPoint.isNull()) {
                 // 使用绿色来表示clk_raw_axi到子节点的连接
                 QColor lineColor = QColor(34, 139, 34);  // 森林绿
-                drawArrowLine(painter, rawAxiPoint, subNodePoint, lineColor);
+                
+                // 计算肘形拐点
+                QPoint elbow1, elbow2;
+                calculateElbowPoints(rawAxiPoint, subNodePoint, elbow1, elbow2);
+                drawElbowArrowLine(painter, rawAxiPoint, elbow1, elbow2, subNodePoint, lineColor);
             }
         }
     }
@@ -4577,7 +4609,11 @@ void ClockConfigWidget::drawConnectionLines(QPainter& painter)
             if (!subNodePoint.isNull() && !cam0PLLPoint.isNull()) {
                 // 使用深蓝色来表示clk_cam0pll到子节点的连接
                 QColor lineColor = QColor(25, 25, 112);  // 午夜蓝
-                drawArrowLine(painter, cam0PLLPoint, subNodePoint, lineColor);
+                
+                // 计算肘形拐点
+                QPoint elbow1, elbow2;
+                calculateElbowPoints(cam0PLLPoint, subNodePoint, elbow1, elbow2);
+                drawElbowArrowLine(painter, cam0PLLPoint, elbow1, elbow2, subNodePoint, lineColor);
             }
         }
     }
@@ -4591,7 +4627,11 @@ void ClockConfigWidget::drawConnectionLines(QPainter& painter)
             if (!subNodePoint.isNull() && !dispPLLPoint.isNull()) {
                 // 使用深紫色来表示clk_disppll到子节点的连接
                 QColor lineColor = QColor(75, 0, 130);  // 靛蓝色
-                drawArrowLine(painter, dispPLLPoint, subNodePoint, lineColor);
+                
+                // 计算肘形拐点
+                QPoint elbow1, elbow2;
+                calculateElbowPoints(dispPLLPoint, subNodePoint, elbow1, elbow2);
+                drawElbowArrowLine(painter, dispPLLPoint, elbow1, elbow2, subNodePoint, lineColor);
             }
         }
     }
@@ -4605,7 +4645,11 @@ void ClockConfigWidget::drawConnectionLines(QPainter& painter)
             if (!subNodePoint.isNull() && !sysDispPoint.isNull()) {
                 // 使用青绿色来表示clk_sys_disp到子节点的连接
                 QColor lineColor = QColor(0, 150, 136);  // 青绿色
-                drawArrowLine(painter, sysDispPoint, subNodePoint, lineColor);
+                
+                // 计算肘形拐点
+                QPoint elbow1, elbow2;
+                calculateElbowPoints(sysDispPoint, subNodePoint, elbow1, elbow2);
+                drawElbowArrowLine(painter, sysDispPoint, elbow1, elbow2, subNodePoint, lineColor);
             }
         }
     }
@@ -4619,7 +4663,11 @@ void ClockConfigWidget::drawConnectionLines(QPainter& painter)
             if (!subNodePoint.isNull() && !a0PLLPoint.isNull()) {
                 // 使用深红色来表示clk_a0pll到子节点的连接
                 QColor lineColor = QColor(139, 0, 0);  // 深红色
-                drawArrowLine(painter, a0PLLPoint, subNodePoint, lineColor);
+                
+                // 计算肘形拐点
+                QPoint elbow1, elbow2;
+                calculateElbowPoints(a0PLLPoint, subNodePoint, elbow1, elbow2);
+                drawElbowArrowLine(painter, a0PLLPoint, elbow1, elbow2, subNodePoint, lineColor);
             }
         }
     }
@@ -4633,7 +4681,11 @@ void ClockConfigWidget::drawConnectionLines(QPainter& painter)
             if (!subNodePoint.isNull() && !rvPLLPoint.isNull()) {
                 // 使用深橙色来表示clk_rvpll到子节点的连接
                 QColor lineColor = QColor(255, 140, 0);  // 深橙色
-                drawArrowLine(painter, rvPLLPoint, subNodePoint, lineColor);
+                
+                // 计算肘形拐点
+                QPoint elbow1, elbow2;
+                calculateElbowPoints(rvPLLPoint, subNodePoint, elbow1, elbow2);
+                drawElbowArrowLine(painter, rvPLLPoint, elbow1, elbow2, subNodePoint, lineColor);
             }
         }
     }
@@ -4647,7 +4699,11 @@ void ClockConfigWidget::drawConnectionLines(QPainter& painter)
             if (!subNodePoint.isNull() && !apPLLPoint.isNull()) {
                 // 使用深紫色来表示clk_appll到子节点的连接
                 QColor lineColor = QColor(128, 0, 128);  // 深紫色
-                drawArrowLine(painter, apPLLPoint, subNodePoint, lineColor);
+                
+                // 计算肘形拐点
+                QPoint elbow1, elbow2;
+                calculateElbowPoints(apPLLPoint, subNodePoint, elbow1, elbow2);
+                drawElbowArrowLine(painter, apPLLPoint, elbow1, elbow2, subNodePoint, lineColor);
             }
         }
     }
@@ -4661,7 +4717,11 @@ void ClockConfigWidget::drawConnectionLines(QPainter& painter)
             if (!subNodePoint.isNull() && !fPLLPoint.isNull()) {
                 // 使用深蓝色来表示clk_fpll到子节点的连接
                 QColor lineColor = QColor(0, 0, 139);  // 深蓝色
-                drawArrowLine(painter, fPLLPoint, subNodePoint, lineColor);
+                
+                // 计算肘形拐点
+                QPoint elbow1, elbow2;
+                calculateElbowPoints(fPLLPoint, subNodePoint, elbow1, elbow2);
+                drawElbowArrowLine(painter, fPLLPoint, elbow1, elbow2, subNodePoint, lineColor);
             }
         }
     }
@@ -4675,7 +4735,11 @@ void ClockConfigWidget::drawConnectionLines(QPainter& painter)
             if (!subNodePoint.isNull() && !tPLLPoint.isNull()) {
                 // 使用深青色来表示clk_tpll到子节点的连接
                 QColor lineColor = QColor(0, 139, 139);  // 深青色
-                drawArrowLine(painter, tPLLPoint, subNodePoint, lineColor);
+                
+                // 计算肘形拐点
+                QPoint elbow1, elbow2;
+                calculateElbowPoints(tPLLPoint, subNodePoint, elbow1, elbow2);
+                drawElbowArrowLine(painter, tPLLPoint, elbow1, elbow2, subNodePoint, lineColor);
             }
         }
     }
@@ -4689,7 +4753,11 @@ void ClockConfigWidget::drawConnectionLines(QPainter& painter)
             if (!subNodePoint.isNull() && !mPLLPoint.isNull()) {
                 // 使用深绿色来表示clk_mpll到子节点的连接
                 QColor lineColor = QColor(0, 128, 0);  // 深绿色
-                drawArrowLine(painter, mPLLPoint, subNodePoint, lineColor);
+                
+                // 计算肘形拐点
+                QPoint elbow1, elbow2;
+                calculateElbowPoints(mPLLPoint, subNodePoint, elbow1, elbow2);
+                drawElbowArrowLine(painter, mPLLPoint, elbow1, elbow2, subNodePoint, lineColor);
             }
         }
     }
@@ -4703,7 +4771,11 @@ void ClockConfigWidget::drawConnectionLines(QPainter& painter)
             if (!subNodePoint.isNull() && !fab100MPoint.isNull()) {
                 // 使用深粉色来表示clk_fab_100m到子节点的连接
                 QColor lineColor = QColor(255, 20, 147);  // 深粉色
-                drawArrowLine(painter, fab100MPoint, subNodePoint, lineColor);
+                
+                // 计算肘形拐点
+                QPoint elbow1, elbow2;
+                calculateElbowPoints(fab100MPoint, subNodePoint, elbow1, elbow2);
+                drawElbowArrowLine(painter, fab100MPoint, elbow1, elbow2, subNodePoint, lineColor);
             }
         }
     }
@@ -4717,7 +4789,11 @@ void ClockConfigWidget::drawConnectionLines(QPainter& painter)
             if (!subNodePoint.isNull() && !spinandPoint.isNull()) {
                 // 使用深灰色来表示clk_spinand到子节点的连接
                 QColor lineColor = QColor(105, 105, 105);  // 深灰色
-                drawArrowLine(painter, spinandPoint, subNodePoint, lineColor);
+                
+                // 计算肘形拐点
+                QPoint elbow1, elbow2;
+                calculateElbowPoints(spinandPoint, subNodePoint, elbow1, elbow2);
+                drawElbowArrowLine(painter, spinandPoint, elbow1, elbow2, subNodePoint, lineColor);
             }
         }
     }
@@ -4731,7 +4807,11 @@ void ClockConfigWidget::drawConnectionLines(QPainter& painter)
             if (!subNodePoint.isNull() && !hsperiPoint.isNull()) {
                 // 使用深青绿色来表示clk_hsperi到子节点的连接
                 QColor lineColor = QColor(0, 100, 0);  // 深青绿色
-                drawArrowLine(painter, hsperiPoint, subNodePoint, lineColor);
+                
+                // 计算肘形拐点
+                QPoint elbow1, elbow2;
+                calculateElbowPoints(hsperiPoint, subNodePoint, elbow1, elbow2);
+                drawElbowArrowLine(painter, hsperiPoint, elbow1, elbow2, subNodePoint, lineColor);
             }
         }
     }
@@ -4799,6 +4879,25 @@ void ClockConfigWidget::drawElbowArrowLine(QPainter& painter, const QPoint& star
     painter.drawPolygon(arrowHead);
 }
 
+void ClockConfigWidget::calculateElbowPoints(const QPoint& start, const QPoint& end, QPoint& elbow1, QPoint& elbow2) const
+{
+    // 计算肘形连接的两个拐点
+    int horizontalOffset = 40;  // 水平延伸距离
+    
+    // 如果起点在终点左侧，向右延伸；否则向左延伸
+    if (start.x() < end.x()) {
+        // 第一个拐点：从起点向右延伸
+        elbow1 = QPoint(start.x() + horizontalOffset, start.y());
+        // 第二个拐点：垂直对齐到目标点
+        elbow2 = QPoint(elbow1.x(), end.y());
+    } else {
+        // 第一个拐点：从起点向左延伸
+        elbow1 = QPoint(start.x() - horizontalOffset, start.y());
+        // 第二个拐点：垂直对齐到目标点
+        elbow2 = QPoint(elbow1.x(), end.y());
+    }
+}
+
 QPoint ClockConfigWidget::getOSCConnectionPoint() const
 {
     if (!m_inputWidget || !m_flowWidget) {
@@ -4815,17 +4914,7 @@ QPoint ClockConfigWidget::getOSCConnectionPoint() const
         inputPos.y() + inputRect.height() / 3 * 2 + 30  // OSC位置调整
     );
     
-    // 转换为相对于ClockConfigWidget的坐标
-    QPoint flowPos = m_flowWidget->pos();
-    QPoint scrollOffset = QPoint(
-        m_flowScrollArea->horizontalScrollBar()->value(),
-        m_flowScrollArea->verticalScrollBar()->value()
-    );
-    
-    return QPoint(
-        flowPos.x() + oscPoint.x() - scrollOffset.x(),
-        flowPos.y() + oscPoint.y() - scrollOffset.y() + 60  // 加上标题高度
-    );
+    return oscPoint;
 }
 
 QPoint ClockConfigWidget::getPLLConnectionPoint(const QString& pllName) const
@@ -4852,17 +4941,7 @@ QPoint ClockConfigWidget::getPLLConnectionPoint(const QString& pllName) const
         pllAreaPos.y() + pllPos.y() + pllRect.height() / 2
     );
     
-    // 转换为相对于ClockConfigWidget的坐标
-    QPoint flowPos = m_flowWidget->pos();
-    QPoint scrollOffset = QPoint(
-        m_flowScrollArea->horizontalScrollBar()->value(),
-        m_flowScrollArea->verticalScrollBar()->value()
-    );
-    
-    return QPoint(
-        flowPos.x() + pllPoint.x() - scrollOffset.x(),
-        flowPos.y() + pllPoint.y() - scrollOffset.y() + 60  // 加上标题高度
-    );
+    return pllPoint;
 }
 
 QPoint ClockConfigWidget::getMIPIMPLLConnectionPoint() const
@@ -4885,21 +4964,9 @@ QPoint ClockConfigWidget::getMIPIMPLLConnectionPoint() const
     QPoint pllAreaPos = m_pllWidget->pos();
     
     // MIPIMPLL输出连接点位于widget的右侧中央
-    QPoint mipimpllPoint = QPoint(
+    return QPoint(
         pllAreaPos.x() + pllPos.x() + pllRect.width(),
         pllAreaPos.y() + pllPos.y() + pllRect.height() / 2
-    );
-    
-    // 转换为相对于ClockConfigWidget的坐标
-    QPoint flowPos = m_flowWidget->pos();
-    QPoint scrollOffset = QPoint(
-        m_flowScrollArea->horizontalScrollBar()->value(),
-        m_flowScrollArea->verticalScrollBar()->value()
-    );
-    
-    return QPoint(
-        flowPos.x() + mipimpllPoint.x() - scrollOffset.x(),
-        flowPos.y() + mipimpllPoint.y() - scrollOffset.y() + 60  // 加上标题高度
     );
 }
 
@@ -4922,21 +4989,9 @@ QPoint ClockConfigWidget::getSubPLLConnectionPoint(const QString& pllName) const
     QPoint subPllAreaPos = m_subPllWidget->pos();
     
     // 子PLL连接点位于widget的左侧中央
-    QPoint subPllPoint = QPoint(
+    return QPoint(
         subPllAreaPos.x() + pllPos.x(),
         subPllAreaPos.y() + pllPos.y() + pllRect.height() / 2
-    );
-    
-    // 转换为相对于ClockConfigWidget的坐标
-    QPoint flowPos = m_flowWidget->pos();
-    QPoint scrollOffset = QPoint(
-        m_flowScrollArea->horizontalScrollBar()->value(),
-        m_flowScrollArea->verticalScrollBar()->value()
-    );
-    
-    return QPoint(
-        flowPos.x() + subPllPoint.x() - scrollOffset.x(),
-        flowPos.y() + subPllPoint.y() - scrollOffset.y() + 60  // 加上标题高度
     );
 }
 
@@ -4951,21 +5006,9 @@ QPoint ClockConfigWidget::getOutputAreaConnectionPoint() const
     QRect outputRect = m_outputWidget->rect();
     
     // 输出区域连接点位于左侧中央
-    QPoint outputPoint = QPoint(
+    return QPoint(
         outputAreaPos.x(),
         outputAreaPos.y() + outputRect.height() / 2
-    );
-    
-    // 转换为相对于ClockConfigWidget的坐标
-    QPoint flowPos = m_flowWidget->pos();
-    QPoint scrollOffset = QPoint(
-        m_flowScrollArea->horizontalScrollBar()->value(),
-        m_flowScrollArea->verticalScrollBar()->value()
-    );
-    
-    return QPoint(
-        flowPos.x() + outputPoint.x() - scrollOffset.x(),
-        flowPos.y() + outputPoint.y() - scrollOffset.y() + 60  // 加上标题高度
     );
 }
 
@@ -4988,21 +5031,9 @@ QPoint ClockConfigWidget::getClk1MConnectionPoint() const
     QPoint outputAreaPos = m_outputWidget->pos();
     
     // clk_1M连接点位于widget的右侧中央
-    QPoint clk1MPoint = QPoint(
+    return QPoint(
         outputAreaPos.x() + clk1MPos.x() + clk1MRect.width(),
         outputAreaPos.y() + clk1MPos.y() + clk1MRect.height() / 2
-    );
-    
-    // 转换为相对于ClockConfigWidget的坐标
-    QPoint flowPos = m_flowWidget->pos();
-    QPoint scrollOffset = QPoint(
-        m_flowScrollArea->horizontalScrollBar()->value(),
-        m_flowScrollArea->verticalScrollBar()->value()
-    );
-    
-    return QPoint(
-        flowPos.x() + clk1MPoint.x() - scrollOffset.x(),
-        flowPos.y() + clk1MPoint.y() - scrollOffset.y() + 60  // 加上标题高度
     );
 }
 
@@ -6081,12 +6112,22 @@ QPoint ClockConfigWidget::getClkHSPeriSubNodeConnectionPoint(const QString& node
 
 void ClockConfigWidget::updateConnectionOverlay()
 {
-    if (!m_connectionOverlay) {
+    if (!m_connectionOverlay || !m_flowWidget || !m_flowScrollArea) {
         return;
     }
     
-    // 设置覆盖层的大小和位置覆盖整个widget
-    m_connectionOverlay->setGeometry(rect());
+    // 获取滚动区域的视口大小
+    QSize viewportSize = m_flowScrollArea->viewport()->size();
+    
+    // 获取滚动偏移量
+    QPoint scrollOffset = QPoint(
+        m_flowScrollArea->horizontalScrollBar()->value(),
+        m_flowScrollArea->verticalScrollBar()->value()
+    );
+    
+    // 设置覆盖层的位置和大小，覆盖从滚动偏移开始的视口区域
+    m_connectionOverlay->setGeometry(scrollOffset.x(), scrollOffset.y(), 
+                                   viewportSize.width(), viewportSize.height());
     m_connectionOverlay->raise();  // 确保覆盖层在最上层
     m_connectionOverlay->update(); // 重绘覆盖层
 }
@@ -6177,6 +6218,23 @@ void ClockConfigWidget::updateWidgetGeometry(QWidget* widget, const QRect& newGe
         pos.height = newGeometry.height();
         m_modulePositions[moduleName] = pos;
     }
+}
+
+QPoint ClockConfigWidget::convertToFlowWidgetCoordinate(const QPoint& pos) const
+{
+    // 获取flowScrollArea在ClockConfigWidget中的位置
+    QPoint scrollAreaPos = m_flowScrollArea->pos();
+    
+    // 获取滚动偏移量
+    QPoint scrollOffset = QPoint(
+        m_flowScrollArea->horizontalScrollBar()->value(),
+        m_flowScrollArea->verticalScrollBar()->value()
+    );
+    
+    // 转换坐标：从ClockConfigWidget坐标系转换到flowWidget坐标系
+    QPoint flowPos = pos - scrollAreaPos + scrollOffset;
+    
+    return flowPos;
 }
 
 QString ClockConfigWidget::getWidgetModuleName(QWidget* widget)
