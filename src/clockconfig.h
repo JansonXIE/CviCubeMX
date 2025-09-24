@@ -252,6 +252,7 @@ private:
     void updateCursor(const QPoint& pos);
     void updateWidgetGeometry(QWidget* widget, const QRect& newGeometry);
     QString getWidgetModuleName(QWidget* widget);
+    QWidget* getWidgetByModuleName(const QString& moduleName);  // 新增：根据模块名称获取widget
     void drawResizeHandles(QPainter& painter, const QRect& rect);
     QRect getResizeHandleRect(const QRect& widgetRect, ResizeDirection direction);
     QPoint convertToFlowWidgetCoordinate(const QPoint& pos) const;  // 新增：坐标转换方法

@@ -2931,7 +2931,7 @@ void ClockConfigWidget::initializeModulePositions()
     ModulePosition inputPos = {"输入源", 20, 50, 150, 400};
     ModulePosition pllPos = {"锁相环", 190, 50, 200, 700};
     ModulePosition subPllPos = {"子锁相环", 410, 50, 180, 780};
-    ModulePosition outputPos = {"OSC输出", 610, 50, 200, 1800}; // 调整高度以容纳所有输出节点
+    ModulePosition outputPos = {"OSC输出", 610, 50, 200, 3500}; // 调整高度以容纳所有输出节点
     ModulePosition clk1MSubPos = {"clk_1M子节点", 830, 50, 150, 350};
     ModulePosition clkCam1PLLSubPos = {"clk_cam1pll子节点", 1000, 50, 150, 450}; // 新增clk_cam1pll子节点位置
     ModulePosition clkRawAxiSubPos = {"clk_raw_axi子节点", 1170, 50, 180, 550}; // 新增clk_raw_axi子节点位置
@@ -2946,7 +2946,7 @@ void ClockConfigWidget::initializeModulePositions()
     ModulePosition clkMPLLSubPos = {"clk_mpll子节点", 1540, 520, 150, 1600}; // 新增clk_mpll子节点位置
     ModulePosition clkFAB100MSubPos = {"clk_fab100m子节点", 1880, 770, 150, 300}; // 新增clk_fab100m子节点位置
     ModulePosition clkSPINANDSubPos = {"clk_spi_nand子节点", 1710, 1010, 150, 120}; // 新增clk_spi_nand子节点位置
-    ModulePosition clkHSPISubPos = {"clk_hspi子节点", 1710, 1140, 150, 120}; // 新增clk_hspi子节点位置
+    ModulePosition clkHSPISubPos = {"clk_hspi子节点", 1710, 1140, 150, 210}; // 新增clk_hspi子节点位置
 
     m_modulePositions["输入源"] = inputPos;
     m_modulePositions["锁相环"] = pllPos;
@@ -3116,23 +3116,46 @@ void ClockConfigWidget::showPositionConfigDialog()
     QMap<QString, QSpinBox*> widthSpinBoxes;
     QMap<QString, QSpinBox*> heightSpinBoxes;
     
-    QStringList moduleNames = {
-        "输入源", "锁相环", "子锁相环", "OSC输出", 
-        "clk_1M子节点", "clk_cam1pll子节点", "clk_raw_axi子节点", "clk_cam0pll子节点",
-        "clk_disppll子节点", "clk_sys_disp子节点", "clk_a0pll子节点", "clk_rvpll子节点",
-        "clk_appll子节点", "clk_fpll子节点", "clk_tpu子节点", "clk_mpll子节点",
-        "clk_fab100m子节点", "clk_spi_nand子节点", "clk_hspi子节点"
+    // 建立显示名称和内部模块key的映射关系
+    QMap<QString, QString> displayNameToModuleKey = {
+        {"输入源", "input"},
+        {"锁相环", "pll"},
+        {"子锁相环", "subpll"},
+        {"OSC输出", "output"},
+        {"clk_1M子节点", "clk_1M"},
+        {"clk_cam1pll子节点", "clk_cam1pll"},
+        {"clk_raw_axi子节点", "clk_raw_axi"},
+        {"clk_cam0pll子节点", "clk_cam0pll"},
+        {"clk_disppll子节点", "clk_disppll"},
+        {"clk_sys_disp子节点", "clk_sys_disp"},
+        {"clk_a0pll子节点", "clk_a0pll"},
+        {"clk_rvpll子节点", "clk_rvpll"},
+        {"clk_appll子节点", "clk_appll"},
+        {"clk_fpll子节点", "clk_fpll"},
+        {"clk_tpu子节点", "clk_tpll"},
+        {"clk_mpll子节点", "clk_mpll"},
+        {"clk_fab100m子节点", "clk_fab_100M"},
+        {"clk_spi_nand子节点", "clk_spi_nand"},
+        {"clk_hspi子节点", "clk_hsperi"}
     };
+    
+    QStringList moduleNames = displayNameToModuleKey.keys();
     
     for (const QString& moduleName : moduleNames) {
         QGroupBox* moduleGroup = new QGroupBox(moduleName);
         QGridLayout* moduleLayout = new QGridLayout(moduleGroup);
         
+        // 获取对应的widget来读取当前实际位置
+        QString moduleKey = displayNameToModuleKey.value(moduleName);
+        QWidget* widget = getWidgetByModuleName(moduleKey);
+        
         // X坐标
         QLabel* xLabel = new QLabel("X坐标:");
         QSpinBox* xSpinBox = new QSpinBox();
         xSpinBox->setRange(0, 2000);
-        if (m_modulePositions.contains(moduleName)) {
+        if (widget) {
+            xSpinBox->setValue(widget->x());
+        } else if (m_modulePositions.contains(moduleName)) {
             xSpinBox->setValue(m_modulePositions[moduleName].x);
         }
         xSpinBoxes[moduleName] = xSpinBox;
@@ -3141,7 +3164,9 @@ void ClockConfigWidget::showPositionConfigDialog()
         QLabel* yLabel = new QLabel("Y坐标:");
         QSpinBox* ySpinBox = new QSpinBox();
         ySpinBox->setRange(0, 2000);
-        if (m_modulePositions.contains(moduleName)) {
+        if (widget) {
+            ySpinBox->setValue(widget->y());
+        } else if (m_modulePositions.contains(moduleName)) {
             ySpinBox->setValue(m_modulePositions[moduleName].y);
         }
         ySpinBoxes[moduleName] = ySpinBox;
@@ -3150,7 +3175,9 @@ void ClockConfigWidget::showPositionConfigDialog()
         QLabel* widthLabel = new QLabel("宽度:");
         QSpinBox* widthSpinBox = new QSpinBox();
         widthSpinBox->setRange(50, 2000); // 增加最大值以支持更大的模块
-        if (m_modulePositions.contains(moduleName)) {
+        if (widget) {
+            widthSpinBox->setValue(widget->width());
+        } else if (m_modulePositions.contains(moduleName)) {
             widthSpinBox->setValue(m_modulePositions[moduleName].width);
         }
         widthSpinBoxes[moduleName] = widthSpinBox;
@@ -3159,7 +3186,9 @@ void ClockConfigWidget::showPositionConfigDialog()
         QLabel* heightLabel = new QLabel("高度:");
         QSpinBox* heightSpinBox = new QSpinBox();
         heightSpinBox->setRange(50, 5000); // 增加最大值以支持更高的模块
-        if (m_modulePositions.contains(moduleName)) {
+        if (widget) {
+            heightSpinBox->setValue(widget->height());
+        } else if (m_modulePositions.contains(moduleName)) {
             heightSpinBox->setValue(m_modulePositions[moduleName].height);
         }
         heightSpinBoxes[moduleName] = heightSpinBox;
@@ -3189,7 +3218,17 @@ void ClockConfigWidget::showPositionConfigDialog()
         // 恢复默认值
         initializeModulePositions();
         for (const QString& moduleName : moduleNames) {
-            if (m_modulePositions.contains(moduleName)) {
+            QString moduleKey = displayNameToModuleKey.value(moduleName);
+            QWidget* widget = getWidgetByModuleName(moduleKey);
+            
+            if (widget) {
+                // 使用当前widget的实际位置
+                xSpinBoxes[moduleName]->setValue(widget->x());
+                ySpinBoxes[moduleName]->setValue(widget->y());
+                widthSpinBoxes[moduleName]->setValue(widget->width());
+                heightSpinBoxes[moduleName]->setValue(widget->height());
+            } else if (m_modulePositions.contains(moduleName)) {
+                // 回退到存储的位置
                 ModulePosition pos = m_modulePositions[moduleName];
                 xSpinBoxes[moduleName]->setValue(pos.x);
                 ySpinBoxes[moduleName]->setValue(pos.y);
@@ -5056,21 +5095,9 @@ QPoint ClockConfigWidget::getClk1MSubNodeConnectionPoint(const QString& nodeName
     QPoint subNodeAreaPos = m_clk1MSubNodeWidget->pos();
     
     // 子节点连接点位于widget的左侧中央
-    QPoint subNodePoint = QPoint(
+    return QPoint(
         subNodeAreaPos.x() + subNodePos.x(),
         subNodeAreaPos.y() + subNodePos.y() + subNodeRect.height() / 2
-    );
-    
-    // 转换为相对于ClockConfigWidget的坐标
-    QPoint flowPos = m_flowWidget->pos();
-    QPoint scrollOffset = QPoint(
-        m_flowScrollArea->horizontalScrollBar()->value(),
-        m_flowScrollArea->verticalScrollBar()->value()
-    );
-    
-    return QPoint(
-        flowPos.x() + subNodePoint.x() - scrollOffset.x(),
-        flowPos.y() + subNodePoint.y() - scrollOffset.y() + 60  // 加上标题高度
     );
 }
 
@@ -5093,21 +5120,9 @@ QPoint ClockConfigWidget::getClkCam1PLLConnectionPoint() const
     QPoint subPllAreaPos = m_subPllWidget->pos();
     
     // clk_cam1pll连接点位于widget的右侧中央
-    QPoint cam1PLLPoint = QPoint(
+    return QPoint(
         subPllAreaPos.x() + cam1PLLPos.x() + cam1PLLRect.width(),
         subPllAreaPos.y() + cam1PLLPos.y() + cam1PLLRect.height() / 2
-    );
-    
-    // 转换为相对于ClockConfigWidget的坐标
-    QPoint flowPos = m_flowWidget->pos();
-    QPoint scrollOffset = QPoint(
-        m_flowScrollArea->horizontalScrollBar()->value(),
-        m_flowScrollArea->verticalScrollBar()->value()
-    );
-    
-    return QPoint(
-        flowPos.x() + cam1PLLPoint.x() - scrollOffset.x(),
-        flowPos.y() + cam1PLLPoint.y() - scrollOffset.y() + 60  // 加上标题高度
     );
 }
 
@@ -5130,21 +5145,9 @@ QPoint ClockConfigWidget::getClkCam1PLLSubNodeConnectionPoint(const QString& nod
     QPoint subNodeAreaPos = m_clkCam1PLLSubNodeWidget->pos();
     
     // 子节点连接点位于widget的左侧中央
-    QPoint subNodePoint = QPoint(
+    return QPoint(
         subNodeAreaPos.x() + subNodePos.x(),
         subNodeAreaPos.y() + subNodePos.y() + subNodeRect.height() / 2
-    );
-    
-    // 转换为相对于ClockConfigWidget的坐标
-    QPoint flowPos = m_flowWidget->pos();
-    QPoint scrollOffset = QPoint(
-        m_flowScrollArea->horizontalScrollBar()->value(),
-        m_flowScrollArea->verticalScrollBar()->value()
-    );
-    
-    return QPoint(
-        flowPos.x() + subNodePoint.x() - scrollOffset.x(),
-        flowPos.y() + subNodePoint.y() - scrollOffset.y() + 60  // 加上标题高度
     );
 }
 
@@ -5167,21 +5170,9 @@ QPoint ClockConfigWidget::getClkRawAxiConnectionPoint() const
     QPoint cam1PLLSubAreaPos = m_clkCam1PLLSubNodeWidget->pos();
     
     // clk_raw_axi连接点位于widget的右侧中央
-    QPoint rawAxiPoint = QPoint(
+    return QPoint(
         cam1PLLSubAreaPos.x() + rawAxiPos.x() + rawAxiRect.width(),
         cam1PLLSubAreaPos.y() + rawAxiPos.y() + rawAxiRect.height() / 2
-    );
-    
-    // 转换为相对于ClockConfigWidget的坐标
-    QPoint flowPos = m_flowWidget->pos();
-    QPoint scrollOffset = QPoint(
-        m_flowScrollArea->horizontalScrollBar()->value(),
-        m_flowScrollArea->verticalScrollBar()->value()
-    );
-    
-    return QPoint(
-        flowPos.x() + rawAxiPoint.x() - scrollOffset.x(),
-        flowPos.y() + rawAxiPoint.y() - scrollOffset.y() + 60  // 加上标题高度
     );
 }
 
@@ -5204,21 +5195,9 @@ QPoint ClockConfigWidget::getClkRawAxiSubNodeConnectionPoint(const QString& node
     QPoint subNodeAreaPos = m_clkRawAxiSubNodeWidget->pos();
     
     // 子节点连接点位于widget的左侧中央
-    QPoint subNodePoint = QPoint(
+    return QPoint(
         subNodeAreaPos.x() + subNodePos.x(),
         subNodeAreaPos.y() + subNodePos.y() + subNodeRect.height() / 2
-    );
-    
-    // 转换为相对于ClockConfigWidget的坐标
-    QPoint flowPos = m_flowWidget->pos();
-    QPoint scrollOffset = QPoint(
-        m_flowScrollArea->horizontalScrollBar()->value(),
-        m_flowScrollArea->verticalScrollBar()->value()
-    );
-    
-    return QPoint(
-        flowPos.x() + subNodePoint.x() - scrollOffset.x(),
-        flowPos.y() + subNodePoint.y() - scrollOffset.y() + 60  // 加上标题高度
     );
 }
 
@@ -5246,17 +5225,7 @@ QPoint ClockConfigWidget::getClkCam0PLLConnectionPoint() const
         subPllAreaPos.y() + cam0PLLPos.y() + cam0PLLRect.height() / 2
     );
     
-    // 转换为相对于ClockConfigWidget的坐标
-    QPoint flowPos = m_flowWidget->pos();
-    QPoint scrollOffset = QPoint(
-        m_flowScrollArea->horizontalScrollBar()->value(),
-        m_flowScrollArea->verticalScrollBar()->value()
-    );
-    
-    return QPoint(
-        flowPos.x() + cam0PLLPoint.x() - scrollOffset.x(),
-        flowPos.y() + cam0PLLPoint.y() - scrollOffset.y() + 60  // 加上标题高度
-    );
+    return cam0PLLPoint;
 }
 
 QPoint ClockConfigWidget::getClkCam0PLLSubNodeConnectionPoint(const QString& nodeName) const
@@ -5283,17 +5252,7 @@ QPoint ClockConfigWidget::getClkCam0PLLSubNodeConnectionPoint(const QString& nod
         subNodeAreaPos.y() + subNodePos.y() + subNodeRect.height() / 2
     );
     
-    // 转换为相对于ClockConfigWidget的坐标
-    QPoint flowPos = m_flowWidget->pos();
-    QPoint scrollOffset = QPoint(
-        m_flowScrollArea->horizontalScrollBar()->value(),
-        m_flowScrollArea->verticalScrollBar()->value()
-    );
-    
-    return QPoint(
-        flowPos.x() + subNodePoint.x() - scrollOffset.x(),
-        flowPos.y() + subNodePoint.y() - scrollOffset.y() + 60  // 加上标题高度
-    );
+    return subNodePoint;
 }
 
 QPoint ClockConfigWidget::getClkDispPLLConnectionPoint() const
@@ -5320,17 +5279,7 @@ QPoint ClockConfigWidget::getClkDispPLLConnectionPoint() const
         subPllAreaPos.y() + dispPLLPos.y() + dispPLLRect.height() / 2
     );
     
-    // 转换为相对于ClockConfigWidget的坐标
-    QPoint flowPos = m_flowWidget->pos();
-    QPoint scrollOffset = QPoint(
-        m_flowScrollArea->horizontalScrollBar()->value(),
-        m_flowScrollArea->verticalScrollBar()->value()
-    );
-    
-    return QPoint(
-        flowPos.x() + dispPLLPoint.x() - scrollOffset.x(),
-        flowPos.y() + dispPLLPoint.y() - scrollOffset.y() + 60  // 加上标题高度
-    );
+    return dispPLLPoint;
 }
 
 QPoint ClockConfigWidget::getClkDispPLLSubNodeConnectionPoint(const QString& nodeName) const
@@ -5357,17 +5306,7 @@ QPoint ClockConfigWidget::getClkDispPLLSubNodeConnectionPoint(const QString& nod
         subNodeAreaPos.y() + subNodePos.y() + subNodeRect.height() / 2
     );
     
-    // 转换为相对于ClockConfigWidget的坐标
-    QPoint flowPos = m_flowWidget->pos();
-    QPoint scrollOffset = QPoint(
-        m_flowScrollArea->horizontalScrollBar()->value(),
-        m_flowScrollArea->verticalScrollBar()->value()
-    );
-    
-    return QPoint(
-        flowPos.x() + subNodePoint.x() - scrollOffset.x(),
-        flowPos.y() + subNodePoint.y() - scrollOffset.y() + 60  // 加上标题高度
-    );
+    return subNodePoint;
 }
 
 QPoint ClockConfigWidget::getClkSysDispConnectionPoint() const
@@ -5394,17 +5333,7 @@ QPoint ClockConfigWidget::getClkSysDispConnectionPoint() const
         subNodeAreaPos.y() + sysDispPos.y() + sysDispRect.height() / 2
     );
     
-    // 转换为相对于ClockConfigWidget的坐标
-    QPoint flowPos = m_flowWidget->pos();
-    QPoint scrollOffset = QPoint(
-        m_flowScrollArea->horizontalScrollBar()->value(),
-        m_flowScrollArea->verticalScrollBar()->value()
-    );
-    
-    return QPoint(
-        flowPos.x() + sysDispPoint.x() - scrollOffset.x(),
-        flowPos.y() + sysDispPoint.y() - scrollOffset.y() + 60  // 加上标题高度
-    );
+    return sysDispPoint;
 }
 
 QPoint ClockConfigWidget::getClkSysDispSubNodeConnectionPoint(const QString& nodeName) const
@@ -5431,17 +5360,7 @@ QPoint ClockConfigWidget::getClkSysDispSubNodeConnectionPoint(const QString& nod
         subNodeAreaPos.y() + subNodePos.y() + subNodeRect.height() / 2
     );
     
-    // 转换为相对于ClockConfigWidget的坐标
-    QPoint flowPos = m_flowWidget->pos();
-    QPoint scrollOffset = QPoint(
-        m_flowScrollArea->horizontalScrollBar()->value(),
-        m_flowScrollArea->verticalScrollBar()->value()
-    );
-    
-    return QPoint(
-        flowPos.x() + subNodePoint.x() - scrollOffset.x(),
-        flowPos.y() + subNodePoint.y() - scrollOffset.y() + 60  // 加上标题高度
-    );
+    return subNodePoint;
 }
 
 QPoint ClockConfigWidget::getClkA0PLLConnectionPoint() const
@@ -5468,17 +5387,7 @@ QPoint ClockConfigWidget::getClkA0PLLConnectionPoint() const
         subPllAreaPos.y() + a0pllPos.y() + a0pllRect.height() / 2
     );
     
-    // 转换为相对于ClockConfigWidget的坐标
-    QPoint flowPos = m_flowWidget->pos();
-    QPoint scrollOffset = QPoint(
-        m_flowScrollArea->horizontalScrollBar()->value(),
-        m_flowScrollArea->verticalScrollBar()->value()
-    );
-    
-    return QPoint(
-        flowPos.x() + a0pllPoint.x() - scrollOffset.x(),
-        flowPos.y() + a0pllPoint.y() - scrollOffset.y() + 60  // 加上标题高度
-    );
+    return a0pllPoint;
 }
 
 QPoint ClockConfigWidget::getClkA0PLLSubNodeConnectionPoint(const QString& nodeName) const
@@ -5505,17 +5414,7 @@ QPoint ClockConfigWidget::getClkA0PLLSubNodeConnectionPoint(const QString& nodeN
         subNodeAreaPos.y() + subNodePos.y() + subNodeRect.height() / 2
     );
     
-    // 转换为相对于ClockConfigWidget的坐标
-    QPoint flowPos = m_flowWidget->pos();
-    QPoint scrollOffset = QPoint(
-        m_flowScrollArea->horizontalScrollBar()->value(),
-        m_flowScrollArea->verticalScrollBar()->value()
-    );
-    
-    return QPoint(
-        flowPos.x() + subNodePoint.x() - scrollOffset.x(),
-        flowPos.y() + subNodePoint.y() - scrollOffset.y() + 60  // 加上标题高度
-    );
+    return subNodePoint;
 }
 
 QPoint ClockConfigWidget::getClkRVPLLConnectionPoint() const
@@ -5542,17 +5441,7 @@ QPoint ClockConfigWidget::getClkRVPLLConnectionPoint() const
         subPllAreaPos.y() + rvpllPos.y() + rvpllRect.height() / 2
     );
     
-    // 转换为相对于ClockConfigWidget的坐标
-    QPoint flowPos = m_flowWidget->pos();
-    QPoint scrollOffset = QPoint(
-        m_flowScrollArea->horizontalScrollBar()->value(),
-        m_flowScrollArea->verticalScrollBar()->value()
-    );
-    
-    return QPoint(
-        flowPos.x() + rvpllPoint.x() - scrollOffset.x(),
-        flowPos.y() + rvpllPoint.y() - scrollOffset.y() + 60  // 加上标题高度
-    );
+    return rvpllPoint;
 }
 
 QPoint ClockConfigWidget::getClkRVPLLSubNodeConnectionPoint(const QString& nodeName) const
@@ -5579,17 +5468,7 @@ QPoint ClockConfigWidget::getClkRVPLLSubNodeConnectionPoint(const QString& nodeN
         subNodeAreaPos.y() + subNodePos.y() + subNodeRect.height() / 2
     );
     
-    // 转换为相对于ClockConfigWidget的坐标
-    QPoint flowPos = m_flowWidget->pos();
-    QPoint scrollOffset = QPoint(
-        m_flowScrollArea->horizontalScrollBar()->value(),
-        m_flowScrollArea->verticalScrollBar()->value()
-    );
-    
-    return QPoint(
-        flowPos.x() + subNodePoint.x() - scrollOffset.x(),
-        flowPos.y() + subNodePoint.y() - scrollOffset.y() + 60  // 加上标题高度
-    );
+    return subNodePoint;
 }
 
 QPoint ClockConfigWidget::getClkAPPLLConnectionPoint() const
@@ -5616,17 +5495,7 @@ QPoint ClockConfigWidget::getClkAPPLLConnectionPoint() const
         subPllAreaPos.y() + apllPos.y() + apllRect.height() / 2
     );
     
-    // 转换为相对于ClockConfigWidget的坐标
-    QPoint flowPos = m_flowWidget->pos();
-    QPoint scrollOffset = QPoint(
-        m_flowScrollArea->horizontalScrollBar()->value(),
-        m_flowScrollArea->verticalScrollBar()->value()
-    );
-    
-    return QPoint(
-        flowPos.x() + apllPoint.x() - scrollOffset.x(),
-        flowPos.y() + apllPoint.y() - scrollOffset.y() + 60  // 加上标题高度
-    );
+    return apllPoint;
 }
 
 QPoint ClockConfigWidget::getClkAPPLLSubNodeConnectionPoint(const QString& nodeName) const
@@ -5653,17 +5522,7 @@ QPoint ClockConfigWidget::getClkAPPLLSubNodeConnectionPoint(const QString& nodeN
         subNodeAreaPos.y() + subNodePos.y() + subNodeRect.height() / 2
     );
     
-    // 转换为相对于ClockConfigWidget的坐标
-    QPoint flowPos = m_flowWidget->pos();
-    QPoint scrollOffset = QPoint(
-        m_flowScrollArea->horizontalScrollBar()->value(),
-        m_flowScrollArea->verticalScrollBar()->value()
-    );
-    
-    return QPoint(
-        flowPos.x() + subNodePoint.x() - scrollOffset.x(),
-        flowPos.y() + subNodePoint.y() - scrollOffset.y() + 60  // 加上标题高度
-    );
+    return subNodePoint;
 }
 
 QPoint ClockConfigWidget::getClkFPLLConnectionPoint() const
@@ -5690,17 +5549,7 @@ QPoint ClockConfigWidget::getClkFPLLConnectionPoint() const
         subPllAreaPos.y() + fpllPos.y() + fpllRect.height() / 2
     );
     
-    // 转换为相对于ClockConfigWidget的坐标
-    QPoint flowPos = m_flowWidget->pos();
-    QPoint scrollOffset = QPoint(
-        m_flowScrollArea->horizontalScrollBar()->value(),
-        m_flowScrollArea->verticalScrollBar()->value()
-    );
-    
-    return QPoint(
-        flowPos.x() + fpllPoint.x() - scrollOffset.x(),
-        flowPos.y() + fpllPoint.y() - scrollOffset.y() + 60  // 加上标题高度
-    );
+    return fpllPoint;
 }
 
 QPoint ClockConfigWidget::getClkFPLLSubNodeConnectionPoint(const QString& nodeName) const
@@ -5727,17 +5576,7 @@ QPoint ClockConfigWidget::getClkFPLLSubNodeConnectionPoint(const QString& nodeNa
         subNodeAreaPos.y() + subNodePos.y() + subNodeRect.height() / 2
     );
     
-    // 转换为相对于ClockConfigWidget的坐标
-    QPoint flowPos = m_flowWidget->pos();
-    QPoint scrollOffset = QPoint(
-        m_flowScrollArea->horizontalScrollBar()->value(),
-        m_flowScrollArea->verticalScrollBar()->value()
-    );
-    
-    return QPoint(
-        flowPos.x() + subNodePoint.x() - scrollOffset.x(),
-        flowPos.y() + subNodePoint.y() - scrollOffset.y() + 60  // 加上标题高度
-    );
+    return subNodePoint;
 }
 
 QPoint ClockConfigWidget::getClkTPLLConnectionPoint() const
@@ -5764,17 +5603,7 @@ QPoint ClockConfigWidget::getClkTPLLConnectionPoint() const
         subPllAreaPos.y() + tpllPos.y() + tpllRect.height() / 2
     );
     
-    // 转换为相对于ClockConfigWidget的坐标
-    QPoint flowPos = m_flowWidget->pos();
-    QPoint scrollOffset = QPoint(
-        m_flowScrollArea->horizontalScrollBar()->value(),
-        m_flowScrollArea->verticalScrollBar()->value()
-    );
-    
-    return QPoint(
-        flowPos.x() + tpllPoint.x() - scrollOffset.x(),
-        flowPos.y() + tpllPoint.y() - scrollOffset.y() + 60  // 加上标题高度
-    );
+    return tpllPoint;
 }
 
 QPoint ClockConfigWidget::getClkTPLLSubNodeConnectionPoint(const QString& nodeName) const
@@ -5801,17 +5630,7 @@ QPoint ClockConfigWidget::getClkTPLLSubNodeConnectionPoint(const QString& nodeNa
         subNodeAreaPos.y() + subNodePos.y() + subNodeRect.height() / 2
     );
     
-    // 转换为相对于ClockConfigWidget的坐标
-    QPoint flowPos = m_flowWidget->pos();
-    QPoint scrollOffset = QPoint(
-        m_flowScrollArea->horizontalScrollBar()->value(),
-        m_flowScrollArea->verticalScrollBar()->value()
-    );
-    
-    return QPoint(
-        flowPos.x() + subNodePoint.x() - scrollOffset.x(),
-        flowPos.y() + subNodePoint.y() - scrollOffset.y() + 60  // 加上标题高度
-    );
+    return subNodePoint;
 }
 
 QPoint ClockConfigWidget::getClkMPLLConnectionPoint() const
@@ -5838,17 +5657,7 @@ QPoint ClockConfigWidget::getClkMPLLConnectionPoint() const
         subPllAreaPos.y() + mpllPos.y() + mpllRect.height() / 2
     );
     
-    // 转换为相对于ClockConfigWidget的坐标
-    QPoint flowPos = m_flowWidget->pos();
-    QPoint scrollOffset = QPoint(
-        m_flowScrollArea->horizontalScrollBar()->value(),
-        m_flowScrollArea->verticalScrollBar()->value()
-    );
-    
-    return QPoint(
-        flowPos.x() + mpllPoint.x() - scrollOffset.x(),
-        flowPos.y() + mpllPoint.y() - scrollOffset.y() + 60  // 加上标题高度
-    );
+    return mpllPoint;
 }
 
 QPoint ClockConfigWidget::getClkMPLLSubNodeConnectionPoint(const QString& nodeName) const
@@ -5870,21 +5679,9 @@ QPoint ClockConfigWidget::getClkMPLLSubNodeConnectionPoint(const QString& nodeNa
     QPoint subNodeAreaPos = m_clkMPLLSubNodeWidget->pos();
 
     // 子节点连接点位于widget的左侧中央
-    QPoint subNodePoint = QPoint(
+    return QPoint(
         subNodeAreaPos.x() + subNodePos.x(),
         subNodeAreaPos.y() + subNodePos.y() + subNodeRect.height() / 2
-    );
-
-    // 转换为相对于ClockConfigWidget的坐标
-    QPoint flowPos = m_flowWidget->pos();
-    QPoint scrollOffset = QPoint(
-        m_flowScrollArea->horizontalScrollBar()->value(),
-        m_flowScrollArea->verticalScrollBar()->value()
-    );
-
-    return QPoint(
-        flowPos.x() + subNodePoint.x() - scrollOffset.x(),
-        flowPos.y() + subNodePoint.y() - scrollOffset.y() + 60  // 加上标题高度
     );
 }
 
@@ -5912,17 +5709,7 @@ QPoint ClockConfigWidget::getClkFAB100MConnectionPoint() const
         subPllAreaPos.y() + fab100MPos.y() + fab100MRect.height() / 2
     );
     
-    // 转换为相对于ClockConfigWidget的坐标
-    QPoint flowPos = m_flowWidget->pos();
-    QPoint scrollOffset = QPoint(
-        m_flowScrollArea->horizontalScrollBar()->value(),
-        m_flowScrollArea->verticalScrollBar()->value()
-    );
-    
-    return QPoint(
-        flowPos.x() + fab100MPoint.x() - scrollOffset.x(),
-        flowPos.y() + fab100MPoint.y() - scrollOffset.y() + 60  // 加上标题高度
-    );
+    return fab100MPoint;
 }
 
 QPoint ClockConfigWidget::getClkFAB100MSubNodeConnectionPoint(const QString& nodeName) const
@@ -5944,21 +5731,9 @@ QPoint ClockConfigWidget::getClkFAB100MSubNodeConnectionPoint(const QString& nod
     QPoint subNodeAreaPos = m_clkFAB100MSubNodeWidget->pos();
 
     // 子节点连接点位于widget的左侧中央
-    QPoint subNodePoint = QPoint(
+    return QPoint(
         subNodeAreaPos.x() + subNodePos.x(),
         subNodeAreaPos.y() + subNodePos.y() + subNodeRect.height() / 2
-    );
-
-    // 转换为相对于ClockConfigWidget的坐标
-    QPoint flowPos = m_flowWidget->pos();
-    QPoint scrollOffset = QPoint(
-        m_flowScrollArea->horizontalScrollBar()->value(),
-        m_flowScrollArea->verticalScrollBar()->value()
-    );
-
-    return QPoint(
-        flowPos.x() + subNodePoint.x() - scrollOffset.x(),
-        flowPos.y() + subNodePoint.y() - scrollOffset.y() + 60  // 加上标题高度
     );
 }
 
@@ -5986,17 +5761,7 @@ QPoint ClockConfigWidget::getClkSPINANDConnectionPoint() const
         subPllAreaPos.y() + spinandPos.y() + spinandRect.height() / 2
     );
     
-    // 转换为相对于ClockConfigWidget的坐标
-    QPoint flowPos = m_flowWidget->pos();
-    QPoint scrollOffset = QPoint(
-        m_flowScrollArea->horizontalScrollBar()->value(),
-        m_flowScrollArea->verticalScrollBar()->value()
-    );
-    
-    return QPoint(
-        flowPos.x() + spinandPoint.x() - scrollOffset.x(),
-        flowPos.y() + spinandPoint.y() - scrollOffset.y() + 60  // 加上标题高度
-    );
+    return spinandPoint;
 }
 
 QPoint ClockConfigWidget::getClkSPINANDSubNodeConnectionPoint(const QString& nodeName) const
@@ -6023,17 +5788,7 @@ QPoint ClockConfigWidget::getClkSPINANDSubNodeConnectionPoint(const QString& nod
         subNodeAreaPos.y() + subNodePos.y() + subNodeRect.height() / 2
     );
 
-    // 转换为相对于ClockConfigWidget的坐标
-    QPoint flowPos = m_flowWidget->pos();
-    QPoint scrollOffset = QPoint(
-        m_flowScrollArea->horizontalScrollBar()->value(),
-        m_flowScrollArea->verticalScrollBar()->value()
-    );
-
-    return QPoint(
-        flowPos.x() + subNodePoint.x() - scrollOffset.x(),
-        flowPos.y() + subNodePoint.y() - scrollOffset.y() + 60  // 加上标题高度
-    );
+    return subNodePoint;
 }
 
 QPoint ClockConfigWidget::getClkHSPeriConnectionPoint() const
@@ -6060,17 +5815,7 @@ QPoint ClockConfigWidget::getClkHSPeriConnectionPoint() const
         subPllAreaPos.y() + hsperiPos.y() + hsperiRect.height() / 2
     );
     
-    // 转换为相对于ClockConfigWidget的坐标
-    QPoint flowPos = m_flowWidget->pos();
-    QPoint scrollOffset = QPoint(
-        m_flowScrollArea->horizontalScrollBar()->value(),
-        m_flowScrollArea->verticalScrollBar()->value()
-    );
-    
-    return QPoint(
-        flowPos.x() + hsperiPoint.x() - scrollOffset.x(),
-        flowPos.y() + hsperiPoint.y() - scrollOffset.y() + 60  // 加上标题高度
-    );
+    return hsperiPoint;
 }
 
 QPoint ClockConfigWidget::getClkHSPeriSubNodeConnectionPoint(const QString& nodeName) const
@@ -6097,17 +5842,7 @@ QPoint ClockConfigWidget::getClkHSPeriSubNodeConnectionPoint(const QString& node
         subNodeAreaPos.y() + subNodePos.y() + subNodeRect.height() / 2
     );
 
-    // 转换为相对于ClockConfigWidget的坐标
-    QPoint flowPos = m_flowWidget->pos();
-    QPoint scrollOffset = QPoint(
-        m_flowScrollArea->horizontalScrollBar()->value(),
-        m_flowScrollArea->verticalScrollBar()->value()
-    );
-
-    return QPoint(
-        flowPos.x() + subNodePoint.x() - scrollOffset.x(),
-        flowPos.y() + subNodePoint.y() - scrollOffset.y() + 60  // 加上标题高度
-    );
+    return subNodePoint;
 }
 
 void ClockConfigWidget::updateConnectionOverlay()
@@ -6260,6 +5995,31 @@ QString ClockConfigWidget::getWidgetModuleName(QWidget* widget)
     if (widget == m_clkHSPeriSubNodeWidget) return "clk_hsperi";
     
     return QString();
+}
+
+QWidget* ClockConfigWidget::getWidgetByModuleName(const QString& moduleName)
+{
+    if (moduleName == "input") return m_inputWidget;
+    if (moduleName == "pll") return m_pllWidget;
+    if (moduleName == "subpll") return m_subPllWidget;
+    if (moduleName == "output") return m_outputWidget;
+    if (moduleName == "clk_1M") return m_clk1MSubNodeWidget;
+    if (moduleName == "clk_cam1pll") return m_clkCam1PLLSubNodeWidget;
+    if (moduleName == "clk_raw_axi") return m_clkRawAxiSubNodeWidget;
+    if (moduleName == "clk_cam0pll") return m_clkCam0PLLSubNodeWidget;
+    if (moduleName == "clk_disppll") return m_clkDispPLLSubNodeWidget;
+    if (moduleName == "clk_sys_disp") return m_clkSysDispSubNodeWidget;
+    if (moduleName == "clk_a0pll") return m_clkA0PLLSubNodeWidget;
+    if (moduleName == "clk_rvpll") return m_clkRVPLLSubNodeWidget;
+    if (moduleName == "clk_appll") return m_clkAPPLLSubNodeWidget;
+    if (moduleName == "clk_fpll") return m_clkFPLLSubNodeWidget;
+    if (moduleName == "clk_tpll") return m_clkTPLLSubNodeWidget;
+    if (moduleName == "clk_mpll") return m_clkMPLLSubNodeWidget;
+    if (moduleName == "clk_fab_100M") return m_clkFAB100MSubNodeWidget;
+    if (moduleName == "clk_spi_nand") return m_clkSPINANDSubNodeWidget;
+    if (moduleName == "clk_hsperi") return m_clkHSPeriSubNodeWidget;
+    
+    return nullptr;
 }
 
 void ClockConfigWidget::drawResizeHandles(QPainter& painter, const QRect& rect)
