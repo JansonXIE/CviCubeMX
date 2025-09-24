@@ -211,39 +211,39 @@ private:
     void calculateElbowPoints(const QPoint& start, const QPoint& end, QPoint& elbow1, QPoint& elbow2) const;  // 新增：计算肘形拐点
     QPoint getOSCConnectionPoint() const;
     QPoint getPLLConnectionPoint(const QString& pllName) const;
-    QPoint getSubPLLConnectionPoint(const QString& pllName) const;  // 新增：获取子PLL连接点
+    QPoint getSubPLLConnectionPoint() const;  // 新增：获取子PLL连接点
     QPoint getMIPIMPLLConnectionPoint() const;  // 新增：获取MIPIMPLL输出连接点
     QPoint getOutputAreaConnectionPoint() const;  // 新增：获取输出区域连接点
     QPoint getClk1MConnectionPoint() const;  // 新增：获取clk_1M连接点
-    QPoint getClk1MSubNodeConnectionPoint(const QString& nodeName) const;  // 新增：获取clk_1M子节点连接点
+    QPoint getClk1MSubNodeConnectionPoint() const;  // 新增：获取clk_1M子节点连接点
     QPoint getClkCam1PLLConnectionPoint() const;  // 新增：获取clk_cam1pll连接点
-    QPoint getClkCam1PLLSubNodeConnectionPoint(const QString& nodeName) const;  // 新增：获取clk_cam1pll子节点连接点
+    QPoint getClkCam1PLLSubNodeConnectionPoint() const;  // 新增：获取clk_cam1pll子节点连接点
     QPoint getClkRawAxiConnectionPoint() const;  // 新增：获取clk_raw_axi连接点
-    QPoint getClkRawAxiSubNodeConnectionPoint(const QString& nodeName) const;  // 新增：获取clk_raw_axi子节点连接点
+    QPoint getClkRawAxiSubNodeConnectionPoint() const;  // 新增：获取clk_raw_axi子节点连接点
     QPoint getClkCam0PLLConnectionPoint() const;  // 新增：获取clk_cam0pll连接点
-    QPoint getClkCam0PLLSubNodeConnectionPoint(const QString& nodeName) const;  // 新增：获取clk_cam0pll子节点连接点
+    QPoint getClkCam0PLLSubNodeConnectionPoint() const;  // 新增：获取clk_cam0pll子节点连接点
     QPoint getClkDispPLLConnectionPoint() const;  // 新增：获取clk_disppll连接点
-    QPoint getClkDispPLLSubNodeConnectionPoint(const QString& nodeName) const;  // 新增：获取clk_disppll子节点连接点
+    QPoint getClkDispPLLSubNodeConnectionPoint() const;  // 新增：获取clk_disppll子节点连接点
     QPoint getClkSysDispConnectionPoint() const;  // 新增：获取clk_sys_disp连接点
-    QPoint getClkSysDispSubNodeConnectionPoint(const QString& nodeName) const;  // 新增：获取clk_sys_disp子节点连接点
+    QPoint getClkSysDispSubNodeConnectionPoint() const;  // 新增：获取clk_sys_disp子节点连接点
     QPoint getClkA0PLLConnectionPoint() const;  // 新增：获取clk_a0pll连接点
-    QPoint getClkA0PLLSubNodeConnectionPoint(const QString& nodeName) const;  // 新增：获取clk_a0pll子节点连接点
+    QPoint getClkA0PLLSubNodeConnectionPoint() const;  // 新增：获取clk_a0pll子节点连接点
     QPoint getClkRVPLLConnectionPoint() const;  // 新增：获取clk_rvpll连接点
-    QPoint getClkRVPLLSubNodeConnectionPoint(const QString& nodeName) const;  // 新增：获取clk_rvpll子节点连接点
+    QPoint getClkRVPLLSubNodeConnectionPoint() const;  // 新增：获取clk_rvpll子节点连接点
     QPoint getClkAPPLLConnectionPoint() const;  // 新增：获取clk_appll连接点
-    QPoint getClkAPPLLSubNodeConnectionPoint(const QString& nodeName) const;  // 新增：获取clk_appll子节点连接点
+    QPoint getClkAPPLLSubNodeConnectionPoint() const;  // 新增：获取clk_appll子节点连接点
     QPoint getClkFPLLConnectionPoint() const;  // 新增：获取clk_fpll连接点
-    QPoint getClkFPLLSubNodeConnectionPoint(const QString& nodeName) const;  // 新增：获取clk_fpll子节点连接点
+    QPoint getClkFPLLSubNodeConnectionPoint() const;  // 新增：获取clk_fpll子节点连接点
     QPoint getClkTPLLConnectionPoint() const;  // 新增：获取clk_tpll连接点
-    QPoint getClkTPLLSubNodeConnectionPoint(const QString& nodeName) const;  // 新增：获取clk_tpll子节点连接点
+    QPoint getClkTPLLSubNodeConnectionPoint() const;  // 新增：获取clk_tpll子节点连接点
     QPoint getClkMPLLConnectionPoint() const;  // 新增：获取clk_mpll连接点
-    QPoint getClkMPLLSubNodeConnectionPoint(const QString& nodeName) const;  // 新增：获取clk_mpll子节点连接点
+    QPoint getClkMPLLSubNodeConnectionPoint() const;  // 新增：获取clk_mpll子节点连接点
     QPoint getClkFAB100MConnectionPoint() const;  // 新增：获取clk_fab_100M连接点
-    QPoint getClkFAB100MSubNodeConnectionPoint(const QString& nodeName) const;  // 新增：获取clk_fab_100M子节点连接点
+    QPoint getClkFAB100MSubNodeConnectionPoint() const;  // 新增：获取clk_fab_100M子节点连接点
     QPoint getClkSPINANDConnectionPoint() const;  // 新增：获取clk_spi_nand连接点
-    QPoint getClkSPINANDSubNodeConnectionPoint(const QString& nodeName) const;  // 新增：获取clk_spi_nand子节点连接点
+    QPoint getClkSPINANDSubNodeConnectionPoint() const;  // 新增：获取clk_spi_nand子节点连接点
     QPoint getClkHSPeriConnectionPoint() const;  // 新增：获取clk_hsperi连接点
-    QPoint getClkHSPeriSubNodeConnectionPoint(const QString& nodeName) const;  // 新增：获取clk_hsperi子节点连接点
+    QPoint getClkHSPeriSubNodeConnectionPoint() const;  // 新增：获取clk_hsperi子节点连接点
     void updateConnectionOverlay();
     
     // 拖拽和缩放辅助方法

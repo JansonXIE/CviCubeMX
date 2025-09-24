@@ -2928,25 +2928,25 @@ void ClockConfigWidget::setupClockTree()
 void ClockConfigWidget::initializeModulePositions()
 {
     // 初始化各个模块的默认位置: x, y, 宽度, 高度
-    ModulePosition inputPos = {"输入源", 20, 50, 150, 400};
-    ModulePosition pllPos = {"锁相环", 190, 50, 200, 700};
-    ModulePosition subPllPos = {"子锁相环", 410, 50, 180, 780};
-    ModulePosition outputPos = {"OSC输出", 610, 50, 200, 3500}; // 调整高度以容纳所有输出节点
-    ModulePosition clk1MSubPos = {"clk_1M子节点", 830, 50, 150, 350};
-    ModulePosition clkCam1PLLSubPos = {"clk_cam1pll子节点", 1000, 50, 150, 450}; // 新增clk_cam1pll子节点位置
-    ModulePosition clkRawAxiSubPos = {"clk_raw_axi子节点", 1170, 50, 180, 550}; // 新增clk_raw_axi子节点位置
-    ModulePosition clkCam0PLLSubPos = {"clk_cam0pll子节点", 1370, 50, 150, 250}; // 新增clk_cam0pll子节点位置
-    ModulePosition clkDispPLLSubPos = {"clk_disppll子节点", 1540, 50, 150, 250}; // 新增clk_disppll子节点位置
-    ModulePosition clkSysDispSubPos = {"clk_sys_disp子节点", 1710, 50, 150, 120}; // 新增clk_sys_disp子节点位置
-    ModulePosition clkA0PLLSubPos = {"clk_a0pll子节点", 1880, 50, 150, 450}; // 新增clk_a0pll子节点位置
-    ModulePosition clkRVPLLSubPos = {"clk_rvpll子节点", 1880, 510, 150, 120}; // 新增clk_rvpll子节点位置
-    ModulePosition clkAPPLLSubPos = {"clk_appll子节点", 1880, 640, 150, 120}; // 新增clk_appll子节点位置
-    ModulePosition clkFPLLSubPos = {"clk_fpll子节点", 1710, 200, 150, 800}; // 新增clk_fpll子节点位置
-    ModulePosition clkTPLLSubPos = {"clk_tpu子节点", 1540, 310, 150, 200}; // 新增clk_tpu子节点位置
-    ModulePosition clkMPLLSubPos = {"clk_mpll子节点", 1540, 520, 150, 1600}; // 新增clk_mpll子节点位置
-    ModulePosition clkFAB100MSubPos = {"clk_fab100m子节点", 1880, 770, 150, 300}; // 新增clk_fab100m子节点位置
-    ModulePosition clkSPINANDSubPos = {"clk_spi_nand子节点", 1710, 1010, 150, 120}; // 新增clk_spi_nand子节点位置
-    ModulePosition clkHSPISubPos = {"clk_hspi子节点", 1710, 1140, 150, 210}; // 新增clk_hspi子节点位置
+    ModulePosition inputPos = {"输入源", 25, 730, 100, 350};
+    ModulePosition pllPos = {"锁相环", 240, 600, 200, 700};
+    ModulePosition subPllPos = {"子锁相环", 980, 475, 180, 780};
+    ModulePosition outputPos = {"OSC输出", 1780, 25, 200, 3500}; // 调整高度以容纳所有输出节点
+    ModulePosition clk1MSubPos = {"clk_1M子节点", 2050, 3000, 150, 350};
+    ModulePosition clkCam1PLLSubPos = {"clk_cam1pll子节点", 1280, 650, 150, 450}; // 新增clk_cam1pll子节点位置
+    ModulePosition clkRawAxiSubPos = {"clk_raw_axi子节点", 1500, 750, 180, 550}; // 新增clk_raw_axi子节点位置
+    ModulePosition clkCam0PLLSubPos = {"clk_cam0pll子节点", 1500, 480, 150, 250}; // 新增clk_cam0pll子节点位置
+    ModulePosition clkDispPLLSubPos = {"clk_disppll子节点", 1280, 1160, 150, 250}; // 新增clk_disppll子节点位置
+    ModulePosition clkSysDispSubPos = {"clk_sys_disp子节点", 1500, 1325, 150, 120}; // 新增clk_sys_disp子节点位置
+    ModulePosition clkA0PLLSubPos = {"clk_a0pll子节点", 1280, 130, 150, 450}; // 新增clk_a0pll子节点位置
+    ModulePosition clkRVPLLSubPos = {"clk_rvpll子节点", 510, 1300, 150, 120}; // 新增clk_rvpll子节点位置
+    ModulePosition clkAPPLLSubPos = {"clk_appll子节点", 510, 1130, 150, 120}; // 新增clk_appll子节点位置
+    ModulePosition clkFPLLSubPos = {"clk_fpll子节点", 510, 55, 150, 800}; // 新增clk_fpll子节点位置
+    ModulePosition clkTPLLSubPos = {"clk_tpu子节点", 510, 920, 150, 200}; // 新增clk_tpu子节点位置
+    ModulePosition clkMPLLSubPos = {"clk_mpll子节点", 750, 880, 150, 1600}; // 新增clk_mpll子节点位置
+    ModulePosition clkFAB100MSubPos = {"clk_fab100m子节点", 750, 450, 150, 300}; // 新增clk_fab100m子节点位置
+    ModulePosition clkSPINANDSubPos = {"clk_spi_nand子节点", 984, 1335, 150, 120}; // 新增clk_spi_nand子节点位置
+    ModulePosition clkHSPISubPos = {"clk_hspi子节点", 955, 2352, 150, 210}; // 新增clk_hspi子节点位置
 
     m_modulePositions["输入源"] = inputPos;
     m_modulePositions["锁相环"] = pllPos;
@@ -3152,7 +3152,7 @@ void ClockConfigWidget::showPositionConfigDialog()
         // X坐标
         QLabel* xLabel = new QLabel("X坐标:");
         QSpinBox* xSpinBox = new QSpinBox();
-        xSpinBox->setRange(0, 2000);
+        xSpinBox->setRange(0, 3000);
         if (widget) {
             xSpinBox->setValue(widget->x());
         } else if (m_modulePositions.contains(moduleName)) {
@@ -3163,7 +3163,7 @@ void ClockConfigWidget::showPositionConfigDialog()
         // Y坐标
         QLabel* yLabel = new QLabel("Y坐标:");
         QSpinBox* ySpinBox = new QSpinBox();
-        ySpinBox->setRange(0, 2000);
+        ySpinBox->setRange(0, 3000);
         if (widget) {
             ySpinBox->setValue(widget->y());
         } else if (m_modulePositions.contains(moduleName)) {
@@ -4554,18 +4554,15 @@ void ClockConfigWidget::drawConnectionLines(QPainter& painter)
     // 绘制MIPIMPLL到子PLL的连接线
     if (m_subPllWidget) {
         QPoint mipimpllPoint = getMIPIMPLLConnectionPoint();
-        
-        for (const QString& subPllName : SUB_PLL_NAMES) {
-            QPoint subPllPoint = getSubPLLConnectionPoint(subPllName);
-            if (!subPllPoint.isNull() && !mipimpllPoint.isNull()) {
-                // 使用橙色来表示MIPIMPLL到子PLL的连接
-                QColor lineColor = QColor(255, 165, 0);  // 橙色
-                
-                // 计算肘形拐点
-                QPoint elbow1, elbow2;
-                calculateElbowPoints(mipimpllPoint, subPllPoint, elbow1, elbow2);
-                drawElbowArrowLine(painter, mipimpllPoint, elbow1, elbow2, subPllPoint, lineColor);
-            }
+        QPoint subPllPoint = getSubPLLConnectionPoint();
+        if (!subPllPoint.isNull() && !mipimpllPoint.isNull()) {
+            // 使用橙色来表示MIPIMPLL到子PLL的连接
+            QColor lineColor = QColor(255, 165, 0);  // 橙色
+            
+            // 计算肘形拐点
+            QPoint elbow1, elbow2;
+            calculateElbowPoints(mipimpllPoint, subPllPoint, elbow1, elbow2);
+            drawElbowArrowLine(painter, mipimpllPoint, elbow1, elbow2, subPllPoint, lineColor);
         }
     }
     
@@ -4588,270 +4585,225 @@ void ClockConfigWidget::drawConnectionLines(QPainter& painter)
     // 绘制clk_1M到其子节点的连接线
     if (m_clk1MSubNodeWidget) {
         QPoint clk1MPoint = getClk1MConnectionPoint();
-        
-        for (const QString& nodeName : CLK_1M_SUB_NODES) {
-            QPoint subNodePoint = getClk1MSubNodeConnectionPoint(nodeName);
-            if (!subNodePoint.isNull() && !clk1MPoint.isNull()) {
-                // 使用紫色来表示clk_1M到子节点的连接
-                QColor lineColor = QColor(102, 16, 242);  // 紫色
-                
-                // 计算肘形拐点
-                QPoint elbow1, elbow2;
-                calculateElbowPoints(clk1MPoint, subNodePoint, elbow1, elbow2);
-                drawElbowArrowLine(painter, clk1MPoint, elbow1, elbow2, subNodePoint, lineColor);
-            }
+        QPoint subNodePoint = getClk1MSubNodeConnectionPoint();
+        if (!subNodePoint.isNull() && !clk1MPoint.isNull()) {
+            // 使用紫色来表示clk_1M到子节点的连接
+            QColor lineColor = QColor(102, 16, 242);  // 紫色
+            
+            // 计算肘形拐点
+            QPoint elbow1, elbow2;
+            calculateElbowPoints(clk1MPoint, subNodePoint, elbow1, elbow2);
+            drawElbowArrowLine(painter, clk1MPoint, elbow1, elbow2, subNodePoint, lineColor);
         }
     }
     
     // 绘制clk_cam1pll到其子节点的连接线
     if (m_clkCam1PLLSubNodeWidget) {
         QPoint cam1PLLPoint = getClkCam1PLLConnectionPoint();
-        
-        for (const QString& nodeName : CLK_CAM1PLL_SUB_NODES) {
-            QPoint subNodePoint = getClkCam1PLLSubNodeConnectionPoint(nodeName);
-            if (!subNodePoint.isNull() && !cam1PLLPoint.isNull()) {
-                // 使用橙色来表示clk_cam1pll到子节点的连接
-                QColor lineColor = QColor(255, 165, 0);  // 橙色
-                
-                // 计算肘形拐点
-                QPoint elbow1, elbow2;
-                calculateElbowPoints(cam1PLLPoint, subNodePoint, elbow1, elbow2);
-                drawElbowArrowLine(painter, cam1PLLPoint, elbow1, elbow2, subNodePoint, lineColor);
-            }
+        QPoint subNodePoint = getClkCam1PLLSubNodeConnectionPoint();
+        if (!subNodePoint.isNull() && !cam1PLLPoint.isNull()) {
+            // 使用橙色来表示clk_cam1pll到子节点的连接
+            QColor lineColor = QColor(255, 165, 0);  // 橙色
+            
+            // 计算肘形拐点
+            QPoint elbow1, elbow2;
+            calculateElbowPoints(cam1PLLPoint, subNodePoint, elbow1, elbow2);
+            drawElbowArrowLine(painter, cam1PLLPoint, elbow1, elbow2, subNodePoint, lineColor);
         }
     }
     
     // 绘制clk_raw_axi到其子节点的连接线
     if (m_clkRawAxiSubNodeWidget) {
         QPoint rawAxiPoint = getClkRawAxiConnectionPoint();
-        
-        for (const QString& nodeName : CLK_RAW_AXI_SUB_NODES) {
-            QPoint subNodePoint = getClkRawAxiSubNodeConnectionPoint(nodeName);
-            if (!subNodePoint.isNull() && !rawAxiPoint.isNull()) {
-                // 使用绿色来表示clk_raw_axi到子节点的连接
-                QColor lineColor = QColor(34, 139, 34);  // 森林绿
-                
-                // 计算肘形拐点
-                QPoint elbow1, elbow2;
-                calculateElbowPoints(rawAxiPoint, subNodePoint, elbow1, elbow2);
-                drawElbowArrowLine(painter, rawAxiPoint, elbow1, elbow2, subNodePoint, lineColor);
-            }
+        QPoint subNodePoint = getClkRawAxiSubNodeConnectionPoint();
+        if (!subNodePoint.isNull() && !rawAxiPoint.isNull()) {
+            // 使用绿色来表示clk_raw_axi到子节点的连接
+            QColor lineColor = QColor(34, 139, 34);  // 森林绿
+            
+            // 计算肘形拐点
+            QPoint elbow1, elbow2;
+            calculateElbowPoints(rawAxiPoint, subNodePoint, elbow1, elbow2);
+            drawElbowArrowLine(painter, rawAxiPoint, elbow1, elbow2, subNodePoint, lineColor);
         }
     }
     
     // 绘制clk_cam0pll到其子节点的连接线
     if (m_clkCam0PLLSubNodeWidget) {
         QPoint cam0PLLPoint = getClkCam0PLLConnectionPoint();
-        
-        for (const QString& nodeName : CLK_CAM0PLL_SUB_NODES) {
-            QPoint subNodePoint = getClkCam0PLLSubNodeConnectionPoint(nodeName);
-            if (!subNodePoint.isNull() && !cam0PLLPoint.isNull()) {
-                // 使用深蓝色来表示clk_cam0pll到子节点的连接
-                QColor lineColor = QColor(25, 25, 112);  // 午夜蓝
-                
-                // 计算肘形拐点
-                QPoint elbow1, elbow2;
-                calculateElbowPoints(cam0PLLPoint, subNodePoint, elbow1, elbow2);
-                drawElbowArrowLine(painter, cam0PLLPoint, elbow1, elbow2, subNodePoint, lineColor);
-            }
+        QPoint subNodePoint = getClkCam0PLLSubNodeConnectionPoint();
+        if (!subNodePoint.isNull() && !cam0PLLPoint.isNull()) {
+            // 使用深蓝色来表示clk_cam0pll到子节点的连接
+            QColor lineColor = QColor(25, 25, 112);  // 午夜蓝
+            
+            // 计算肘形拐点
+            QPoint elbow1, elbow2;
+            calculateElbowPoints(cam0PLLPoint, subNodePoint, elbow1, elbow2);
+            drawElbowArrowLine(painter, cam0PLLPoint, elbow1, elbow2, subNodePoint, lineColor);
         }
     }
     
     // 绘制clk_disppll到其子节点的连接线
     if (m_clkDispPLLSubNodeWidget) {
         QPoint dispPLLPoint = getClkDispPLLConnectionPoint();
-        
-        for (const QString& nodeName : CLK_DISPPLL_SUB_NODES) {
-            QPoint subNodePoint = getClkDispPLLSubNodeConnectionPoint(nodeName);
-            if (!subNodePoint.isNull() && !dispPLLPoint.isNull()) {
-                // 使用深紫色来表示clk_disppll到子节点的连接
-                QColor lineColor = QColor(75, 0, 130);  // 靛蓝色
-                
-                // 计算肘形拐点
-                QPoint elbow1, elbow2;
-                calculateElbowPoints(dispPLLPoint, subNodePoint, elbow1, elbow2);
-                drawElbowArrowLine(painter, dispPLLPoint, elbow1, elbow2, subNodePoint, lineColor);
-            }
+        QPoint subNodePoint = getClkDispPLLSubNodeConnectionPoint();
+        if (!subNodePoint.isNull() && !dispPLLPoint.isNull()) {
+            // 使用深紫色来表示clk_disppll到子节点的连接
+            QColor lineColor = QColor(75, 0, 130);  // 靛蓝色
+            
+            // 计算肘形拐点
+            QPoint elbow1, elbow2;
+            calculateElbowPoints(dispPLLPoint, subNodePoint, elbow1, elbow2);
+            drawElbowArrowLine(painter, dispPLLPoint, elbow1, elbow2, subNodePoint, lineColor);
         }
     }
     
     // 绘制clk_sys_disp到其子节点的连接线
     if (m_clkSysDispSubNodeWidget) {
         QPoint sysDispPoint = getClkSysDispConnectionPoint();
-        
-        for (const QString& nodeName : CLK_SYS_DISP_SUB_NODES) {
-            QPoint subNodePoint = getClkSysDispSubNodeConnectionPoint(nodeName);
-            if (!subNodePoint.isNull() && !sysDispPoint.isNull()) {
-                // 使用青绿色来表示clk_sys_disp到子节点的连接
-                QColor lineColor = QColor(0, 150, 136);  // 青绿色
-                
-                // 计算肘形拐点
-                QPoint elbow1, elbow2;
-                calculateElbowPoints(sysDispPoint, subNodePoint, elbow1, elbow2);
-                drawElbowArrowLine(painter, sysDispPoint, elbow1, elbow2, subNodePoint, lineColor);
-            }
+        QPoint subNodePoint = getClkSysDispSubNodeConnectionPoint();
+        if (!subNodePoint.isNull() && !sysDispPoint.isNull()) {
+            // 使用青绿色来表示clk_sys_disp到子节点的连接
+            QColor lineColor = QColor(0, 150, 136);  // 青绿色
+            
+            // 计算肘形拐点
+            QPoint elbow1, elbow2;
+            calculateElbowPoints(sysDispPoint, subNodePoint, elbow1, elbow2);
+            drawElbowArrowLine(painter, sysDispPoint, elbow1, elbow2, subNodePoint, lineColor);
         }
     }
     
     // 绘制clk_a0pll到其子节点的连接线
     if (m_clkA0PLLSubNodeWidget) {
         QPoint a0PLLPoint = getClkA0PLLConnectionPoint();
-        
-        for (const QString& nodeName : CLK_A0PLL_SUB_NODES) {
-            QPoint subNodePoint = getClkA0PLLSubNodeConnectionPoint(nodeName);
-            if (!subNodePoint.isNull() && !a0PLLPoint.isNull()) {
-                // 使用深红色来表示clk_a0pll到子节点的连接
-                QColor lineColor = QColor(139, 0, 0);  // 深红色
-                
-                // 计算肘形拐点
-                QPoint elbow1, elbow2;
-                calculateElbowPoints(a0PLLPoint, subNodePoint, elbow1, elbow2);
-                drawElbowArrowLine(painter, a0PLLPoint, elbow1, elbow2, subNodePoint, lineColor);
-            }
+        QPoint subNodePoint = getClkA0PLLSubNodeConnectionPoint();
+        if (!subNodePoint.isNull() && !a0PLLPoint.isNull()) {
+            // 使用深红色来表示clk_a0pll到子节点的连接
+            QColor lineColor = QColor(139, 0, 0);  // 深红色
+            
+            // 计算肘形拐点
+            QPoint elbow1, elbow2;
+            calculateElbowPoints(a0PLLPoint, subNodePoint, elbow1, elbow2);
+            drawElbowArrowLine(painter, a0PLLPoint, elbow1, elbow2, subNodePoint, lineColor);
         }
     }
 
     // 绘制clk_rvpll到其子节点的连接线
     if (m_clkRVPLLSubNodeWidget) {
         QPoint rvPLLPoint = getClkRVPLLConnectionPoint();
-        
-        for (const QString& nodeName : CLK_RVPLL_SUB_NODES) {
-            QPoint subNodePoint = getClkRVPLLSubNodeConnectionPoint(nodeName);
-            if (!subNodePoint.isNull() && !rvPLLPoint.isNull()) {
-                // 使用深橙色来表示clk_rvpll到子节点的连接
-                QColor lineColor = QColor(255, 140, 0);  // 深橙色
-                
-                // 计算肘形拐点
-                QPoint elbow1, elbow2;
-                calculateElbowPoints(rvPLLPoint, subNodePoint, elbow1, elbow2);
-                drawElbowArrowLine(painter, rvPLLPoint, elbow1, elbow2, subNodePoint, lineColor);
-            }
+        QPoint subNodePoint = getClkRVPLLSubNodeConnectionPoint();
+        if (!subNodePoint.isNull() && !rvPLLPoint.isNull()) {
+            // 使用深橙色来表示clk_rvpll到子节点的连接
+            QColor lineColor = QColor(255, 140, 0);  // 深橙色
+            
+            // 计算肘形拐点
+            QPoint elbow1, elbow2;
+            calculateElbowPoints(rvPLLPoint, subNodePoint, elbow1, elbow2);
+            drawElbowArrowLine(painter, rvPLLPoint, elbow1, elbow2, subNodePoint, lineColor);
         }
     }
 
     // 绘制clk_appll到其子节点的连接线
     if (m_clkAPPLLSubNodeWidget) {
         QPoint apPLLPoint = getClkAPPLLConnectionPoint();
-        
-        for (const QString& nodeName : CLK_APPLL_SUB_NODES) {
-            QPoint subNodePoint = getClkAPPLLSubNodeConnectionPoint(nodeName);
-            if (!subNodePoint.isNull() && !apPLLPoint.isNull()) {
-                // 使用深紫色来表示clk_appll到子节点的连接
-                QColor lineColor = QColor(128, 0, 128);  // 深紫色
-                
-                // 计算肘形拐点
-                QPoint elbow1, elbow2;
-                calculateElbowPoints(apPLLPoint, subNodePoint, elbow1, elbow2);
-                drawElbowArrowLine(painter, apPLLPoint, elbow1, elbow2, subNodePoint, lineColor);
-            }
+        QPoint subNodePoint = getClkAPPLLSubNodeConnectionPoint();
+        if (!subNodePoint.isNull() && !apPLLPoint.isNull()) {
+            // 使用深紫色来表示clk_appll到子节点的连接
+            QColor lineColor = QColor(128, 0, 128);  // 深紫色
+            
+            // 计算肘形拐点
+            QPoint elbow1, elbow2;
+            calculateElbowPoints(apPLLPoint, subNodePoint, elbow1, elbow2);
+            drawElbowArrowLine(painter, apPLLPoint, elbow1, elbow2, subNodePoint, lineColor);
         }
     }
 
     // 绘制clk_fpll到其子节点的连接线
     if (m_clkFPLLSubNodeWidget) {
         QPoint fPLLPoint = getClkFPLLConnectionPoint();
-        
-        for (const QString& nodeName : CLK_FPLL_SUB_NODES) {
-            QPoint subNodePoint = getClkFPLLSubNodeConnectionPoint(nodeName);
-            if (!subNodePoint.isNull() && !fPLLPoint.isNull()) {
-                // 使用深蓝色来表示clk_fpll到子节点的连接
-                QColor lineColor = QColor(0, 0, 139);  // 深蓝色
-                
-                // 计算肘形拐点
-                QPoint elbow1, elbow2;
-                calculateElbowPoints(fPLLPoint, subNodePoint, elbow1, elbow2);
-                drawElbowArrowLine(painter, fPLLPoint, elbow1, elbow2, subNodePoint, lineColor);
-            }
+        QPoint subNodePoint = getClkFPLLSubNodeConnectionPoint();
+        if (!subNodePoint.isNull() && !fPLLPoint.isNull()) {
+            // 使用深蓝色来表示clk_fpll到子节点的连接
+            QColor lineColor = QColor(0, 0, 139);  // 深蓝色
+            
+            // 计算肘形拐点
+            QPoint elbow1, elbow2;
+            calculateElbowPoints(fPLLPoint, subNodePoint, elbow1, elbow2);
+            drawElbowArrowLine(painter, fPLLPoint, elbow1, elbow2, subNodePoint, lineColor);
         }
     }
 
     // 绘制clk_tpll到其子节点的连接线
     if (m_clkTPLLSubNodeWidget) {
         QPoint tPLLPoint = getClkTPLLConnectionPoint();
-        
-        for (const QString& nodeName : CLK_TPLL_SUB_NODES) {
-            QPoint subNodePoint = getClkTPLLSubNodeConnectionPoint(nodeName);
-            if (!subNodePoint.isNull() && !tPLLPoint.isNull()) {
-                // 使用深青色来表示clk_tpll到子节点的连接
-                QColor lineColor = QColor(0, 139, 139);  // 深青色
-                
-                // 计算肘形拐点
-                QPoint elbow1, elbow2;
-                calculateElbowPoints(tPLLPoint, subNodePoint, elbow1, elbow2);
-                drawElbowArrowLine(painter, tPLLPoint, elbow1, elbow2, subNodePoint, lineColor);
-            }
+        QPoint subNodePoint = getClkTPLLSubNodeConnectionPoint();
+        if (!subNodePoint.isNull() && !tPLLPoint.isNull()) {
+            // 使用深青色来表示clk_tpll到子节点的连接
+            QColor lineColor = QColor(0, 139, 139);  // 深青色
+            
+            // 计算肘形拐点
+            QPoint elbow1, elbow2;
+            calculateElbowPoints(tPLLPoint, subNodePoint, elbow1, elbow2);
+            drawElbowArrowLine(painter, tPLLPoint, elbow1, elbow2, subNodePoint, lineColor);
         }
     }
 
     // 绘制clk_mpll到其子节点的连接线
     if (m_clkMPLLSubNodeWidget) {
         QPoint mPLLPoint = getClkMPLLConnectionPoint();
-
-        for (const QString& nodeName : CLK_MPLL_SUB_NODES) {
-            QPoint subNodePoint = getClkMPLLSubNodeConnectionPoint(nodeName);
-            if (!subNodePoint.isNull() && !mPLLPoint.isNull()) {
-                // 使用深绿色来表示clk_mpll到子节点的连接
-                QColor lineColor = QColor(0, 128, 0);  // 深绿色
-                
-                // 计算肘形拐点
-                QPoint elbow1, elbow2;
-                calculateElbowPoints(mPLLPoint, subNodePoint, elbow1, elbow2);
-                drawElbowArrowLine(painter, mPLLPoint, elbow1, elbow2, subNodePoint, lineColor);
-            }
+        QPoint subNodePoint = getClkMPLLSubNodeConnectionPoint();
+        if (!subNodePoint.isNull() && !mPLLPoint.isNull()) {
+            // 使用深绿色来表示clk_mpll到子节点的连接
+            QColor lineColor = QColor(0, 128, 0);  // 深绿色
+            
+            // 计算肘形拐点
+            QPoint elbow1, elbow2;
+            calculateElbowPoints(mPLLPoint, subNodePoint, elbow1, elbow2);
+            drawElbowArrowLine(painter, mPLLPoint, elbow1, elbow2, subNodePoint, lineColor);
         }
     }
 
     // 绘制clk_fab_100m到其子节点的连接线
     if (m_clkFAB100MSubNodeWidget) {
         QPoint fab100MPoint = getClkFAB100MConnectionPoint();
-
-        for (const QString& nodeName : CLK_FAB_100M_SUB_NODES) {
-            QPoint subNodePoint = getClkFAB100MSubNodeConnectionPoint(nodeName);
-            if (!subNodePoint.isNull() && !fab100MPoint.isNull()) {
-                // 使用深粉色来表示clk_fab_100m到子节点的连接
-                QColor lineColor = QColor(255, 20, 147);  // 深粉色
-                
-                // 计算肘形拐点
-                QPoint elbow1, elbow2;
-                calculateElbowPoints(fab100MPoint, subNodePoint, elbow1, elbow2);
-                drawElbowArrowLine(painter, fab100MPoint, elbow1, elbow2, subNodePoint, lineColor);
-            }
+        QPoint subNodePoint = getClkFAB100MSubNodeConnectionPoint();
+        if (!subNodePoint.isNull() && !fab100MPoint.isNull()) {
+            // 使用深粉色来表示clk_fab_100m到子节点的连接
+            QColor lineColor = QColor(255, 20, 147);  // 深粉色
+            
+            // 计算肘形拐点
+            QPoint elbow1, elbow2;
+            calculateElbowPoints(fab100MPoint, subNodePoint, elbow1, elbow2);
+            drawElbowArrowLine(painter, fab100MPoint, elbow1, elbow2, subNodePoint, lineColor);
         }
     }
 
     // 绘制clk_spinand到其子节点的连接线
     if (m_clkSPINANDSubNodeWidget) {
         QPoint spinandPoint = getClkSPINANDConnectionPoint();
-
-        for (const QString& nodeName : CLK_SPI_NAND_SUB_NODES) {
-            QPoint subNodePoint = getClkSPINANDSubNodeConnectionPoint(nodeName);
-            if (!subNodePoint.isNull() && !spinandPoint.isNull()) {
-                // 使用深灰色来表示clk_spinand到子节点的连接
-                QColor lineColor = QColor(105, 105, 105);  // 深灰色
-                
-                // 计算肘形拐点
-                QPoint elbow1, elbow2;
-                calculateElbowPoints(spinandPoint, subNodePoint, elbow1, elbow2);
-                drawElbowArrowLine(painter, spinandPoint, elbow1, elbow2, subNodePoint, lineColor);
-            }
+        QPoint subNodePoint = getClkSPINANDSubNodeConnectionPoint();
+        if (!subNodePoint.isNull() && !spinandPoint.isNull()) {
+            // 使用深灰色来表示clk_spinand到子节点的连接
+            QColor lineColor = QColor(105, 105, 105);  // 深灰色
+            
+            // 计算肘形拐点
+            QPoint elbow1, elbow2;
+            calculateElbowPoints(spinandPoint, subNodePoint, elbow1, elbow2);
+            drawElbowArrowLine(painter, spinandPoint, elbow1, elbow2, subNodePoint, lineColor);
         }
     }
 
     // 绘制clk_hsperi到其子节点的连接线
     if (m_clkHSPeriSubNodeWidget) {
         QPoint hsperiPoint = getClkHSPeriConnectionPoint();
-
-        for (const QString& nodeName : CLK_HSPERI_SUB_NODES) {
-            QPoint subNodePoint = getClkHSPeriSubNodeConnectionPoint(nodeName);
-            if (!subNodePoint.isNull() && !hsperiPoint.isNull()) {
-                // 使用深青绿色来表示clk_hsperi到子节点的连接
-                QColor lineColor = QColor(0, 100, 0);  // 深青绿色
-                
-                // 计算肘形拐点
-                QPoint elbow1, elbow2;
-                calculateElbowPoints(hsperiPoint, subNodePoint, elbow1, elbow2);
-                drawElbowArrowLine(painter, hsperiPoint, elbow1, elbow2, subNodePoint, lineColor);
-            }
+        QPoint subNodePoint = getClkHSPeriSubNodeConnectionPoint();
+        if (!subNodePoint.isNull() && !hsperiPoint.isNull()) {
+            // 使用深青绿色来表示clk_hsperi到子节点的连接
+            QColor lineColor = QColor(0, 100, 0);  // 深青绿色
+            
+            // 计算肘形拐点
+            QPoint elbow1, elbow2;
+            calculateElbowPoints(hsperiPoint, subNodePoint, elbow1, elbow2);
+            drawElbowArrowLine(painter, hsperiPoint, elbow1, elbow2, subNodePoint, lineColor);
         }
     }
 }
@@ -5009,28 +4961,20 @@ QPoint ClockConfigWidget::getMIPIMPLLConnectionPoint() const
     );
 }
 
-QPoint ClockConfigWidget::getSubPLLConnectionPoint(const QString& pllName) const
+QPoint ClockConfigWidget::getSubPLLConnectionPoint() const
 {
-    if (!m_subPllWidget || !m_flowWidget || !m_subPllWidgets.contains(pllName)) {
-        return QPoint();
-    }
-    
-    QWidget* subPllWidget = m_subPllWidgets[pllName];
-    if (!subPllWidget) {
+    if (!m_subPllWidget || !m_flowWidget) {
         return QPoint();
     }
     
     // 获取子PLL widget在其父widget中的位置
-    QPoint pllPos = subPllWidget->pos();
-    QRect pllRect = subPllWidget->rect();
-    
-    // 获取子PLL区域在flow widget中的位置
-    QPoint subPllAreaPos = m_subPllWidget->pos();
+    QPoint pllPos = m_subPllWidget->pos();
+    QRect pllRect = m_subPllWidget->rect();
     
     // 子PLL连接点位于widget的左侧中央
     return QPoint(
-        subPllAreaPos.x() + pllPos.x(),
-        subPllAreaPos.y() + pllPos.y() + pllRect.height() / 2
+        pllPos.x(),
+        pllPos.y() + pllRect.height() / 2
     );
 }
 
@@ -5047,7 +4991,7 @@ QPoint ClockConfigWidget::getOutputAreaConnectionPoint() const
     // 输出区域连接点位于左侧中央
     return QPoint(
         outputAreaPos.x(),
-        outputAreaPos.y() + outputRect.height() / 2
+        outputAreaPos.y() + 20 // 考虑标题栏高度20px
     );
 }
 
@@ -5076,28 +5020,20 @@ QPoint ClockConfigWidget::getClk1MConnectionPoint() const
     );
 }
 
-QPoint ClockConfigWidget::getClk1MSubNodeConnectionPoint(const QString& nodeName) const
+QPoint ClockConfigWidget::getClk1MSubNodeConnectionPoint() const
 {
-    if (!m_clk1MSubNodeWidget || !m_flowWidget || !m_clk1MSubNodeWidgets.contains(nodeName)) {
+    if (!m_clk1MSubNodeWidget || !m_flowWidget) {
         return QPoint();
     }
-    
-    QWidget* subNodeWidget = m_clk1MSubNodeWidgets[nodeName];
-    if (!subNodeWidget) {
-        return QPoint();
-    }
-    
+
     // 获取子节点widget在其父widget中的位置
-    QPoint subNodePos = subNodeWidget->pos();
-    QRect subNodeRect = subNodeWidget->rect();
-    
-    // 获取clk_1M子节点区域在flow widget中的位置
-    QPoint subNodeAreaPos = m_clk1MSubNodeWidget->pos();
-    
+    QPoint subNodePos = m_clk1MSubNodeWidget->pos();
+    QRect subNodeRect = m_clk1MSubNodeWidget->rect();
+
     // 子节点连接点位于widget的左侧中央
     return QPoint(
-        subNodeAreaPos.x() + subNodePos.x(),
-        subNodeAreaPos.y() + subNodePos.y() + subNodeRect.height() / 2
+        subNodePos.x(),
+        subNodePos.y() + subNodeRect.height() / 2
     );
 }
 
@@ -5126,28 +5062,20 @@ QPoint ClockConfigWidget::getClkCam1PLLConnectionPoint() const
     );
 }
 
-QPoint ClockConfigWidget::getClkCam1PLLSubNodeConnectionPoint(const QString& nodeName) const
+QPoint ClockConfigWidget::getClkCam1PLLSubNodeConnectionPoint() const
 {
-    if (!m_clkCam1PLLSubNodeWidget || !m_flowWidget || !m_clkCam1PLLSubNodeWidgets.contains(nodeName)) {
+    if (!m_clkCam1PLLSubNodeWidget || !m_flowWidget) {
         return QPoint();
     }
-    
-    QWidget* subNodeWidget = m_clkCam1PLLSubNodeWidgets[nodeName];
-    if (!subNodeWidget) {
-        return QPoint();
-    }
-    
+
     // 获取子节点widget在其父widget中的位置
-    QPoint subNodePos = subNodeWidget->pos();
-    QRect subNodeRect = subNodeWidget->rect();
-    
-    // 获取clk_cam1pll子节点区域在flow widget中的位置
-    QPoint subNodeAreaPos = m_clkCam1PLLSubNodeWidget->pos();
-    
+    QPoint subNodePos = m_clkCam1PLLSubNodeWidget->pos();
+    QRect subNodeRect = m_clkCam1PLLSubNodeWidget->rect();
+
     // 子节点连接点位于widget的左侧中央
     return QPoint(
-        subNodeAreaPos.x() + subNodePos.x(),
-        subNodeAreaPos.y() + subNodePos.y() + subNodeRect.height() / 2
+        subNodePos.x(),
+        subNodePos.y() + subNodeRect.height() / 2
     );
 }
 
@@ -5176,28 +5104,20 @@ QPoint ClockConfigWidget::getClkRawAxiConnectionPoint() const
     );
 }
 
-QPoint ClockConfigWidget::getClkRawAxiSubNodeConnectionPoint(const QString& nodeName) const
+QPoint ClockConfigWidget::getClkRawAxiSubNodeConnectionPoint() const
 {
-    if (!m_clkRawAxiSubNodeWidget || !m_flowWidget || !m_clkRawAxiSubNodeWidgets.contains(nodeName)) {
+    if (!m_clkRawAxiSubNodeWidget || !m_flowWidget) {
         return QPoint();
     }
-    
-    QWidget* subNodeWidget = m_clkRawAxiSubNodeWidgets[nodeName];
-    if (!subNodeWidget) {
-        return QPoint();
-    }
-    
+
     // 获取子节点widget在其父widget中的位置
-    QPoint subNodePos = subNodeWidget->pos();
-    QRect subNodeRect = subNodeWidget->rect();
-    
-    // 获取clk_raw_axi子节点区域在flow widget中的位置
-    QPoint subNodeAreaPos = m_clkRawAxiSubNodeWidget->pos();
-    
+    QPoint subNodePos = m_clkRawAxiSubNodeWidget->pos();
+    QRect subNodeRect = m_clkRawAxiSubNodeWidget->rect();
+
     // 子节点连接点位于widget的左侧中央
     return QPoint(
-        subNodeAreaPos.x() + subNodePos.x(),
-        subNodeAreaPos.y() + subNodePos.y() + subNodeRect.height() / 2
+        subNodePos.x(),
+        subNodePos.y() + subNodeRect.height() / 2
     );
 }
 
@@ -5228,30 +5148,22 @@ QPoint ClockConfigWidget::getClkCam0PLLConnectionPoint() const
     return cam0PLLPoint;
 }
 
-QPoint ClockConfigWidget::getClkCam0PLLSubNodeConnectionPoint(const QString& nodeName) const
+QPoint ClockConfigWidget::getClkCam0PLLSubNodeConnectionPoint() const
 {
-    if (!m_clkCam0PLLSubNodeWidget || !m_flowWidget || !m_clkCam0PLLSubNodeWidgets.contains(nodeName)) {
+    if (!m_clkCam0PLLSubNodeWidget || !m_flowWidget) {
         return QPoint();
     }
-    
-    QWidget* subNodeWidget = m_clkCam0PLLSubNodeWidgets[nodeName];
-    if (!subNodeWidget) {
-        return QPoint();
-    }
-    
+
     // 获取子节点widget在其父widget中的位置
-    QPoint subNodePos = subNodeWidget->pos();
-    QRect subNodeRect = subNodeWidget->rect();
-    
-    // 获取clk_cam0pll子节点区域在flow widget中的位置
-    QPoint subNodeAreaPos = m_clkCam0PLLSubNodeWidget->pos();
-    
+    QPoint subNodePos = m_clkCam0PLLSubNodeWidget->pos();
+    QRect subNodeRect = m_clkCam0PLLSubNodeWidget->rect();
+
     // 子节点连接点位于widget的左侧中央
     QPoint subNodePoint = QPoint(
-        subNodeAreaPos.x() + subNodePos.x(),
-        subNodeAreaPos.y() + subNodePos.y() + subNodeRect.height() / 2
+        subNodePos.x(),
+        subNodePos.y() + subNodeRect.height() / 2
     );
-    
+
     return subNodePoint;
 }
 
@@ -5282,28 +5194,20 @@ QPoint ClockConfigWidget::getClkDispPLLConnectionPoint() const
     return dispPLLPoint;
 }
 
-QPoint ClockConfigWidget::getClkDispPLLSubNodeConnectionPoint(const QString& nodeName) const
+QPoint ClockConfigWidget::getClkDispPLLSubNodeConnectionPoint() const
 {
-    if (!m_clkDispPLLSubNodeWidget || !m_flowWidget || !m_clkDispPLLSubNodeWidgets.contains(nodeName)) {
+    if (!m_clkDispPLLSubNodeWidget || !m_flowWidget) {
         return QPoint();
     }
-    
-    QWidget* subNodeWidget = m_clkDispPLLSubNodeWidgets[nodeName];
-    if (!subNodeWidget) {
-        return QPoint();
-    }
-    
+
     // 获取子节点widget在其父widget中的位置
-    QPoint subNodePos = subNodeWidget->pos();
-    QRect subNodeRect = subNodeWidget->rect();
-    
-    // 获取clk_disppll子节点区域在flow widget中的位置
-    QPoint subNodeAreaPos = m_clkDispPLLSubNodeWidget->pos();
-    
+    QPoint subNodePos = m_clkDispPLLSubNodeWidget->pos();
+    QRect subNodeRect = m_clkDispPLLSubNodeWidget->rect();
+
     // 子节点连接点位于widget的左侧中央
     QPoint subNodePoint = QPoint(
-        subNodeAreaPos.x() + subNodePos.x(),
-        subNodeAreaPos.y() + subNodePos.y() + subNodeRect.height() / 2
+        subNodePos.x(),
+        subNodePos.y() + subNodeRect.height() / 2
     );
     
     return subNodePoint;
@@ -5336,28 +5240,20 @@ QPoint ClockConfigWidget::getClkSysDispConnectionPoint() const
     return sysDispPoint;
 }
 
-QPoint ClockConfigWidget::getClkSysDispSubNodeConnectionPoint(const QString& nodeName) const
+QPoint ClockConfigWidget::getClkSysDispSubNodeConnectionPoint() const
 {
-    if (!m_clkSysDispSubNodeWidget || !m_flowWidget || !m_clkSysDispSubNodeWidgets.contains(nodeName)) {
-        return QPoint();
-    }
-    
-    QWidget* subNodeWidget = m_clkSysDispSubNodeWidgets[nodeName];
-    if (!subNodeWidget) {
+    if (!m_clkSysDispSubNodeWidget || !m_flowWidget) {
         return QPoint();
     }
     
     // 获取子节点widget在其父widget中的位置
-    QPoint subNodePos = subNodeWidget->pos();
-    QRect subNodeRect = subNodeWidget->rect();
-    
-    // 获取clk_sys_disp子节点区域在flow widget中的位置
-    QPoint subNodeAreaPos = m_clkSysDispSubNodeWidget->pos();
-    
+    QPoint subNodePos = m_clkSysDispSubNodeWidget->pos();
+    QRect subNodeRect = m_clkSysDispSubNodeWidget->rect();
+
     // 子节点连接点位于widget的左侧中央
     QPoint subNodePoint = QPoint(
-        subNodeAreaPos.x() + subNodePos.x(),
-        subNodeAreaPos.y() + subNodePos.y() + subNodeRect.height() / 2
+        subNodePos.x(),
+        subNodePos.y() + subNodeRect.height() / 2
     );
     
     return subNodePoint;
@@ -5390,28 +5286,20 @@ QPoint ClockConfigWidget::getClkA0PLLConnectionPoint() const
     return a0pllPoint;
 }
 
-QPoint ClockConfigWidget::getClkA0PLLSubNodeConnectionPoint(const QString& nodeName) const
+QPoint ClockConfigWidget::getClkA0PLLSubNodeConnectionPoint() const
 {
-    if (!m_clkA0PLLSubNodeWidget || !m_flowWidget || !m_clkA0PLLSubNodeWidgets.contains(nodeName)) {
-        return QPoint();
-    }
-    
-    QWidget* subNodeWidget = m_clkA0PLLSubNodeWidgets[nodeName];
-    if (!subNodeWidget) {
+    if (!m_clkA0PLLSubNodeWidget || !m_flowWidget) {
         return QPoint();
     }
     
     // 获取子节点widget在其父widget中的位置
-    QPoint subNodePos = subNodeWidget->pos();
-    QRect subNodeRect = subNodeWidget->rect();
-    
-    // 获取clk_a0pll子节点区域在flow widget中的位置
-    QPoint subNodeAreaPos = m_clkA0PLLSubNodeWidget->pos();
-    
+    QPoint subNodePos = m_clkA0PLLSubNodeWidget->pos();
+    QRect subNodeRect = m_clkA0PLLSubNodeWidget->rect();
+
     // 子节点连接点位于widget的左侧中央
     QPoint subNodePoint = QPoint(
-        subNodeAreaPos.x() + subNodePos.x(),
-        subNodeAreaPos.y() + subNodePos.y() + subNodeRect.height() / 2
+        subNodePos.x(),
+        subNodePos.y() + subNodeRect.height() / 2
     );
     
     return subNodePoint;
@@ -5444,28 +5332,20 @@ QPoint ClockConfigWidget::getClkRVPLLConnectionPoint() const
     return rvpllPoint;
 }
 
-QPoint ClockConfigWidget::getClkRVPLLSubNodeConnectionPoint(const QString& nodeName) const
+QPoint ClockConfigWidget::getClkRVPLLSubNodeConnectionPoint() const
 {
-    if (!m_clkRVPLLSubNodeWidget || !m_flowWidget || !m_clkRVPLLSubNodeWidgets.contains(nodeName)) {
-        return QPoint();
-    }
-    
-    QWidget* subNodeWidget = m_clkRVPLLSubNodeWidgets[nodeName];
-    if (!subNodeWidget) {
+    if (!m_clkRVPLLSubNodeWidget || !m_flowWidget) {
         return QPoint();
     }
     
     // 获取子节点widget在其父widget中的位置
-    QPoint subNodePos = subNodeWidget->pos();
-    QRect subNodeRect = subNodeWidget->rect();
-    
-    // 获取clk_rvpll子节点区域在flow widget中的位置
-    QPoint subNodeAreaPos = m_clkRVPLLSubNodeWidget->pos();
+    QPoint subNodePos = m_clkRVPLLSubNodeWidget->pos();
+    QRect subNodeRect = m_clkRVPLLSubNodeWidget->rect();
     
     // 子节点连接点位于widget的左侧中央
     QPoint subNodePoint = QPoint(
-        subNodeAreaPos.x() + subNodePos.x(),
-        subNodeAreaPos.y() + subNodePos.y() + subNodeRect.height() / 2
+        subNodePos.x(),
+        subNodePos.y() + subNodeRect.height() / 2
     );
     
     return subNodePoint;
@@ -5498,28 +5378,20 @@ QPoint ClockConfigWidget::getClkAPPLLConnectionPoint() const
     return apllPoint;
 }
 
-QPoint ClockConfigWidget::getClkAPPLLSubNodeConnectionPoint(const QString& nodeName) const
+QPoint ClockConfigWidget::getClkAPPLLSubNodeConnectionPoint() const
 {
-    if (!m_clkAPPLLSubNodeWidget || !m_flowWidget || !m_clkAPPLLSubNodeWidgets.contains(nodeName)) {
+    if (!m_clkAPPLLSubNodeWidget || !m_flowWidget) {
         return QPoint();
     }
-    
-    QWidget* subNodeWidget = m_clkAPPLLSubNodeWidgets[nodeName];
-    if (!subNodeWidget) {
-        return QPoint();
-    }
-    
+
     // 获取子节点widget在其父widget中的位置
-    QPoint subNodePos = subNodeWidget->pos();
-    QRect subNodeRect = subNodeWidget->rect();
-    
-    // 获取clk_appll子节点区域在flow widget中的位置
-    QPoint subNodeAreaPos = m_clkAPPLLSubNodeWidget->pos();
-    
+    QPoint subNodePos = m_clkAPPLLSubNodeWidget->pos();
+    QRect subNodeRect = m_clkAPPLLSubNodeWidget->rect();
+
     // 子节点连接点位于widget的左侧中央
     QPoint subNodePoint = QPoint(
-        subNodeAreaPos.x() + subNodePos.x(),
-        subNodeAreaPos.y() + subNodePos.y() + subNodeRect.height() / 2
+        subNodePos.x(),
+        subNodePos.y() + subNodeRect.height() / 2
     );
     
     return subNodePoint;
@@ -5552,28 +5424,20 @@ QPoint ClockConfigWidget::getClkFPLLConnectionPoint() const
     return fpllPoint;
 }
 
-QPoint ClockConfigWidget::getClkFPLLSubNodeConnectionPoint(const QString& nodeName) const
+QPoint ClockConfigWidget::getClkFPLLSubNodeConnectionPoint() const
 {
-    if (!m_clkFPLLSubNodeWidget || !m_flowWidget || !m_clkFPLLSubNodeWidgets.contains(nodeName)) {
+    if (!m_clkFPLLSubNodeWidget || !m_flowWidget) {
         return QPoint();
     }
-    
-    QWidget* subNodeWidget = m_clkFPLLSubNodeWidgets[nodeName];
-    if (!subNodeWidget) {
-        return QPoint();
-    }
-    
+
     // 获取子节点widget在其父widget中的位置
-    QPoint subNodePos = subNodeWidget->pos();
-    QRect subNodeRect = subNodeWidget->rect();
-    
-    // 获取clk_fpll子节点区域在flow widget中的位置
-    QPoint subNodeAreaPos = m_clkFPLLSubNodeWidget->pos();
-    
+    QPoint subNodePos = m_clkFPLLSubNodeWidget->pos();
+    QRect subNodeRect = m_clkFPLLSubNodeWidget->rect();
+
     // 子节点连接点位于widget的左侧中央
     QPoint subNodePoint = QPoint(
-        subNodeAreaPos.x() + subNodePos.x(),
-        subNodeAreaPos.y() + subNodePos.y() + subNodeRect.height() / 2
+        subNodePos.x(),
+        subNodePos.y() + subNodeRect.height() / 2
     );
     
     return subNodePoint;
@@ -5606,28 +5470,20 @@ QPoint ClockConfigWidget::getClkTPLLConnectionPoint() const
     return tpllPoint;
 }
 
-QPoint ClockConfigWidget::getClkTPLLSubNodeConnectionPoint(const QString& nodeName) const
+QPoint ClockConfigWidget::getClkTPLLSubNodeConnectionPoint() const
 {
-    if (!m_clkTPLLSubNodeWidget || !m_flowWidget || !m_clkTPLLSubNodeWidgets.contains(nodeName)) {
-        return QPoint();
-    }
-    
-    QWidget* subNodeWidget = m_clkTPLLSubNodeWidgets[nodeName];
-    if (!subNodeWidget) {
+    if (!m_clkTPLLSubNodeWidget || !m_flowWidget) {
         return QPoint();
     }
     
     // 获取子节点widget在其父widget中的位置
-    QPoint subNodePos = subNodeWidget->pos();
-    QRect subNodeRect = subNodeWidget->rect();
-    
-    // 获取clk_tpll子节点区域在flow widget中的位置
-    QPoint subNodeAreaPos = m_clkTPLLSubNodeWidget->pos();
-    
+    QPoint subNodePos = m_clkTPLLSubNodeWidget->pos();
+    QRect subNodeRect = m_clkTPLLSubNodeWidget->rect();
+
     // 子节点连接点位于widget的左侧中央
     QPoint subNodePoint = QPoint(
-        subNodeAreaPos.x() + subNodePos.x(),
-        subNodeAreaPos.y() + subNodePos.y() + subNodeRect.height() / 2
+        subNodePos.x(),
+        subNodePos.y() + subNodeRect.height() / 2
     );
     
     return subNodePoint;
@@ -5660,28 +5516,20 @@ QPoint ClockConfigWidget::getClkMPLLConnectionPoint() const
     return mpllPoint;
 }
 
-QPoint ClockConfigWidget::getClkMPLLSubNodeConnectionPoint(const QString& nodeName) const
+QPoint ClockConfigWidget::getClkMPLLSubNodeConnectionPoint() const
 {
-    if (!m_clkMPLLSubNodeWidget || !m_flowWidget || !m_clkMPLLSubNodeWidgets.contains(nodeName)) {
-        return QPoint();
-    }
-
-    QWidget* subNodeWidget = m_clkMPLLSubNodeWidgets[nodeName];
-    if (!subNodeWidget) {
+    if (!m_clkMPLLSubNodeWidget || !m_flowWidget) {
         return QPoint();
     }
 
     // 获取子节点widget在其父widget中的位置
-    QPoint subNodePos = subNodeWidget->pos();
-    QRect subNodeRect = subNodeWidget->rect();
-
-    // 获取clk_mpll子节点区域在flow widget中的位置
-    QPoint subNodeAreaPos = m_clkMPLLSubNodeWidget->pos();
+    QPoint subNodePos = m_clkMPLLSubNodeWidget->pos();
+    QRect subNodeRect = m_clkMPLLSubNodeWidget->rect();
 
     // 子节点连接点位于widget的左侧中央
     return QPoint(
-        subNodeAreaPos.x() + subNodePos.x(),
-        subNodeAreaPos.y() + subNodePos.y() + subNodeRect.height() / 2
+        subNodePos.x(),
+        subNodePos.y() + 20
     );
 }
 
@@ -5712,28 +5560,20 @@ QPoint ClockConfigWidget::getClkFAB100MConnectionPoint() const
     return fab100MPoint;
 }
 
-QPoint ClockConfigWidget::getClkFAB100MSubNodeConnectionPoint(const QString& nodeName) const
+QPoint ClockConfigWidget::getClkFAB100MSubNodeConnectionPoint() const
 {
-    if (!m_clkFAB100MSubNodeWidget || !m_flowWidget || !m_clkFAB100MSubNodeWidgets.contains(nodeName)) {
-        return QPoint();
-    }
-
-    QWidget* subNodeWidget = m_clkFAB100MSubNodeWidgets[nodeName];
-    if (!subNodeWidget) {
+    if (!m_clkFAB100MSubNodeWidget || !m_flowWidget) {
         return QPoint();
     }
 
     // 获取子节点widget在其父widget中的位置
-    QPoint subNodePos = subNodeWidget->pos();
-    QRect subNodeRect = subNodeWidget->rect();
-
-    // 获取clk_fab100m子节点区域在flow widget中的位置
-    QPoint subNodeAreaPos = m_clkFAB100MSubNodeWidget->pos();
+    QPoint subNodePos = m_clkFAB100MSubNodeWidget->pos();
+    QRect subNodeRect = m_clkFAB100MSubNodeWidget->rect();
 
     // 子节点连接点位于widget的左侧中央
     return QPoint(
-        subNodeAreaPos.x() + subNodePos.x(),
-        subNodeAreaPos.y() + subNodePos.y() + subNodeRect.height() / 2
+        subNodePos.x(),
+        subNodePos.y() + subNodeRect.height() / 2
     );
 }
 
@@ -5764,28 +5604,20 @@ QPoint ClockConfigWidget::getClkSPINANDConnectionPoint() const
     return spinandPoint;
 }
 
-QPoint ClockConfigWidget::getClkSPINANDSubNodeConnectionPoint(const QString& nodeName) const
+QPoint ClockConfigWidget::getClkSPINANDSubNodeConnectionPoint() const
 {
-    if (!m_clkSPINANDSubNodeWidget || !m_flowWidget || !m_clkSPINANDSubNodeWidgets.contains(nodeName)) {
-        return QPoint();
-    }
-
-    QWidget* subNodeWidget = m_clkSPINANDSubNodeWidgets[nodeName];
-    if (!subNodeWidget) {
+    if (!m_clkSPINANDSubNodeWidget || !m_flowWidget) {
         return QPoint();
     }
 
     // 获取子节点widget在其父widget中的位置
-    QPoint subNodePos = subNodeWidget->pos();
-    QRect subNodeRect = subNodeWidget->rect();
-
-    // 获取clk_spinand子节点区域在flow widget中的位置
-    QPoint subNodeAreaPos = m_clkSPINANDSubNodeWidget->pos();
+    QPoint subNodePos = m_clkSPINANDSubNodeWidget->pos();
+    QRect subNodeRect = m_clkSPINANDSubNodeWidget->rect();
 
     // 子节点连接点位于widget的左侧中央
     QPoint subNodePoint = QPoint(
-        subNodeAreaPos.x() + subNodePos.x(),
-        subNodeAreaPos.y() + subNodePos.y() + subNodeRect.height() / 2
+        subNodePos.x(),
+        subNodePos.y() + subNodeRect.height() / 2
     );
 
     return subNodePoint;
@@ -5818,28 +5650,20 @@ QPoint ClockConfigWidget::getClkHSPeriConnectionPoint() const
     return hsperiPoint;
 }
 
-QPoint ClockConfigWidget::getClkHSPeriSubNodeConnectionPoint(const QString& nodeName) const
+QPoint ClockConfigWidget::getClkHSPeriSubNodeConnectionPoint() const
 {
-    if (!m_clkHSPeriSubNodeWidget || !m_flowWidget || !m_clkHSPeriSubNodeWidgets.contains(nodeName)) {
-        return QPoint();
-    }
-
-    QWidget* subNodeWidget = m_clkHSPeriSubNodeWidgets[nodeName];
-    if (!subNodeWidget) {
+    if (!m_clkHSPeriSubNodeWidget || !m_flowWidget) {
         return QPoint();
     }
 
     // 获取子节点widget在其父widget中的位置
-    QPoint subNodePos = subNodeWidget->pos();
-    QRect subNodeRect = subNodeWidget->rect();
-
-    // 获取clk_hsperi子节点区域在flow widget中的位置
-    QPoint subNodeAreaPos = m_clkHSPeriSubNodeWidget->pos();
+    QPoint subNodePos = m_clkHSPeriSubNodeWidget->pos();
+    QRect subNodeRect = m_clkHSPeriSubNodeWidget->rect();
 
     // 子节点连接点位于widget的左侧中央
     QPoint subNodePoint = QPoint(
-        subNodeAreaPos.x() + subNodePos.x(),
-        subNodeAreaPos.y() + subNodePos.y() + subNodeRect.height() / 2
+        subNodePos.x(),
+        subNodePos.y() + subNodeRect.height() / 2
     );
 
     return subNodePoint;
