@@ -238,7 +238,7 @@ void ClockConfigWidget::setupUI()
     // 创建控制按钮区域
     m_buttonLayout = new QHBoxLayout();
     
-    m_resetButton = new QPushButton("重置为默认");
+    m_resetButton = new QPushButton("重置为默认ND");
     m_resetButton->setStyleSheet(
         "QPushButton { "
         "background-color: #6c757d; "
@@ -257,7 +257,8 @@ void ClockConfigWidget::setupUI()
         "}"
     );
     
-    m_applyButton = new QPushButton("应用配置");
+    m_applyButton = new QPushButton("OD超频配置");
+    m_applyButton->setObjectName("overclockButton");
     m_applyButton->setStyleSheet(
         "QPushButton { "
         "background-color: #007bff; "
@@ -3339,10 +3340,7 @@ void ClockConfigWidget::connectSignals()
     // 连接按钮信号
     connect(m_resetButton, &QPushButton::clicked, this, &ClockConfigWidget::resetToDefaults);
     connect(m_positionConfigButton, &QPushButton::clicked, this, &ClockConfigWidget::showPositionConfigDialog);
-    connect(m_applyButton, &QPushButton::clicked, this, [this]() {
-        emit configChanged();
-        QMessageBox::information(this, "配置", "时钟配置已应用！");
-    });
+    connect(m_applyButton, &QPushButton::clicked, this, &ClockConfigWidget::applyOverclockConfig);
     
     // 连接滚动条信号以重绘连接线
     connect(m_flowScrollArea->horizontalScrollBar(), &QScrollBar::valueChanged, 
@@ -4378,10 +4376,51 @@ void ClockConfigWidget::resetToDefaults()
             m_clk1MSubNodeDividerBoxes[nodeName]->setValue(1);
         }
     }
+
+    // clk_tpu和clk_tpu_gdma的分频值为3
+    if (m_clkTPLLSubNodeDividerBoxes.contains("clk_tpu")) {
+        m_clkTPLLSubNodeDividerBoxes["clk_tpu"]->setValue(3);
+    }
+    if (m_clkTPLLSubNodeDividerBoxes.contains("clk_tpu_gdma")) {
+        m_clkTPLLSubNodeDividerBoxes["clk_tpu_gdma"]->setValue(3);
+    }
     
     updateFrequencies();
     emit configChanged();
     updateConnectionOverlay();  // 重绘连接线
+
+    // 弹出提示信息
+    QMessageBox::information(this, "默认ND配置", "默认ND配置已应用!");
+}
+
+void ClockConfigWidget::applyOverclockConfig()
+{
+    // 重置PLL配置为超频的倍频值
+    // clk_appll的倍频值为44
+    if (m_pllMultiplierBoxes.contains("clk_appll")) {
+        m_pllMultiplierBoxes["clk_appll"]->setValue(44);
+    }
+
+    // clk_rvpll的倍频值为64
+    if (m_pllMultiplierBoxes.contains("clk_rvpll")) {
+        m_pllMultiplierBoxes["clk_rvpll"]->setValue(64);
+    }
+
+    // clk_tpll的倍频值不变，但子节点分频值改变
+    // clk_tpu和clk_tpu_gdma的分频值为2
+    if (m_clkTPLLSubNodeDividerBoxes.contains("clk_tpu")) {
+        m_clkTPLLSubNodeDividerBoxes["clk_tpu"]->setValue(2);
+    }
+    if (m_clkTPLLSubNodeDividerBoxes.contains("clk_tpu_gdma")) {
+        m_clkTPLLSubNodeDividerBoxes["clk_tpu_gdma"]->setValue(2);
+    }
+
+    // 触发全局更新和信号
+    updateFrequencies();
+    emit configChanged();
+
+    // 弹出提示信息
+    QMessageBox::information(this, "超频配置", "OD超频配置已应用!");
 }
 
 PLLConfig ClockConfigWidget::getPLLConfig(const QString& pllName) const

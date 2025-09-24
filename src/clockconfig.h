@@ -125,6 +125,7 @@ private slots:
     void onClkHSPeriSubNodeDividerChanged(const QString& nodeName, int divider);  // 新增：clk_hsperi子节点分频器变化
     void updateFrequencies();
     void resetToDefaults();
+    void applyOverclockConfig(); // 新增OD超频函数
 
 private:
     void setupUI();
