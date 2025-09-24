@@ -660,8 +660,11 @@ void ClockConfigWidget::setupClkCam1PLLSubNodes()
         subNode.enabled = true;
         
         // 计算频率：clk_cam1pll的频率 / 分频器
-        // 假设clk_cam1pll的默认频率为800MHz (这个值可以根据实际情况调整)
+        // 从clk_cam1pll的配置中获取正确的频率
         double clkCam1PLLFreq = 800.0; // MHz
+        if (m_pllConfigs.contains("clk_cam1pll")) {
+            clkCam1PLLFreq = m_pllConfigs["clk_cam1pll"].outputFreq;
+        }
         subNode.frequency = clkCam1PLLFreq / subNode.divider;
         
         m_clkCam1PLLSubNodes[nodeName] = subNode;
@@ -709,8 +712,11 @@ void ClockConfigWidget::setupClkRawAxiSubNodes()
         subNode.enabled = true;
         
         // 计算频率：clk_raw_axi的频率 / 分频器
-        // 假设clk_raw_axi的默认频率为200MHz (这个值可以根据实际情况调整)
+        // 从配置中获取正确的频率
         double clkRawAxiFreq = 200.0; // MHz
+        if (m_pllConfigs.contains("clk_raw_axi")) {
+            clkRawAxiFreq = m_pllConfigs["clk_raw_axi"].outputFreq;
+        }
         subNode.frequency = clkRawAxiFreq / subNode.divider;
         
         m_clkRawAxiSubNodes[nodeName] = subNode;
@@ -764,8 +770,11 @@ void ClockConfigWidget::setupClkCam0PLLSubNodes()
         }
         
         // 计算频率：clk_cam0pll的频率 / 分频器
-        // 假设clk_cam0pll的默认频率为1000MHz (这个值可以根据实际情况调整)
+        // 从配置中获取正确的频率
         double clkCam0PLLFreq = 1000.0; // MHz
+        if (m_pllConfigs.contains("clk_cam0pll")) {
+            clkCam0PLLFreq = m_pllConfigs["clk_cam0pll"].outputFreq;
+        }
         subNode.frequency = clkCam0PLLFreq / subNode.divider;
         
         m_clkCam0PLLSubNodes[nodeName] = subNode;
@@ -821,8 +830,11 @@ void ClockConfigWidget::setupClkDispPLLSubNodes()
         }
         
         // 计算频率：clk_disppll的频率 / 分频器
-        // 假设clk_disppll的默认频率为1200MHz (这个值可以根据实际情况调整)
+        // 从配置中获取正确的频率
         double clkDispPLLFreq = 1200.0; // MHz
+        if (m_pllConfigs.contains("clk_disppll")) {
+            clkDispPLLFreq = m_pllConfigs["clk_disppll"].outputFreq;
+        }
         subNode.frequency = clkDispPLLFreq / subNode.divider;
         
         m_clkDispPLLSubNodes[nodeName] = subNode;
@@ -870,8 +882,11 @@ void ClockConfigWidget::setupClkSysDispSubNodes()
         subNode.divider = 1;  // clk_disp_vip默认分频系数是1
         
         // 计算频率：clk_sys_disp的频率 / 分频器
-        // clk_sys_disp的频率来自clk_disppll/8，假设clk_disppll为1200MHz，那么clk_sys_disp为150MHz
+        // 从配置中获取正确的频率
         double clkSysDispFreq = 150.0; // MHz (1200/8)
+        if (m_pllConfigs.contains("clk_disppll")) {
+            clkSysDispFreq = m_pllConfigs["clk_disppll"].outputFreq / 8;
+        }
         subNode.frequency = clkSysDispFreq / subNode.divider;
         
         m_clkSysDispSubNodes[nodeName] = subNode;
@@ -3407,6 +3422,21 @@ void ClockConfigWidget::onSubPLLConfigChanged(const QString& pllName)
     if (pllName == "clk_a0pll") {
         updateAllClkA0PLLSubNodeFrequencies();
     }
+
+    // 如果是clk_cam0pll，还需要更新其子节点的频率
+    if (pllName == "clk_cam0pll") {
+        updateAllClkCam0PLLSubNodeFrequencies();
+    }
+
+    // 如果是clk_cam1pll，还需要更新其子节点的频率
+    if (pllName == "clk_cam1pll") {
+        updateAllClkCam1PLLSubNodeFrequencies();
+    }
+
+    // 如果是clk_disppll，还需要更新其子节点的频率
+    if (pllName == "clk_disppll") {
+        updateAllClkDispPLLSubNodeFrequencies();
+    }
     
     emit configChanged();
 }
@@ -3440,6 +3470,17 @@ void ClockConfigWidget::onClkCam1PLLSubNodeDividerChanged(const QString& nodeNam
     if (m_clkCam1PLLSubNodes.contains(nodeName)) {
         m_clkCam1PLLSubNodes[nodeName].divider = divider;
         updateClkCam1PLLSubNodeFrequency(nodeName);
+
+        // 如果修改的是clk_raw_axi，更新其子节点
+        if (nodeName == "clk_raw_axi") {
+            // 同步更新m_pllConfigs中的频率
+            if (m_pllConfigs.contains("clk_raw_axi")) {
+                m_pllConfigs["clk_raw_axi"].outputFreq = m_clkMPLLSubNodes[nodeName].frequency;
+            }
+            // 更新clk_raw_axi的所有子节点频率
+            updateAllClkRawAxiSubNodeFrequencies();
+        }
+
         emit configChanged();
     }
 }
@@ -3467,6 +3508,17 @@ void ClockConfigWidget::onClkDispPLLSubNodeDividerChanged(const QString& nodeNam
     if (m_clkDispPLLSubNodes.contains(nodeName)) {
         m_clkDispPLLSubNodes[nodeName].divider = divider;
         updateClkDispPLLSubNodeFrequency(nodeName);
+
+        // 如果修改的是clk_sys_disp，并更新其子节点
+        if (nodeName == "clk_sys_disp") {
+            // 同步更新m_pllConfigs中的频率
+            if (m_pllConfigs.contains("clk_sys_disp")) {
+                m_pllConfigs["clk_sys_disp"].outputFreq = m_clkMPLLSubNodes[nodeName].frequency;
+            }
+            // 更新clk_sys_disp的所有子节点频率
+            updateAllClkSysDispSubNodeFrequencies();
+        }
+
         emit configChanged();
     }
 }
@@ -3627,6 +3679,8 @@ void ClockConfigWidget::updateSubPLLFrequency(const QString& pllName)
     
     // 计算子PLL输出频率: (输入频率 * 倍频器) / 分频器
     config.outputFreq = (config.inputFreq * config.multiplier) / config.divider;
+    // 同步更新m_pllConfigs[子锁相环子节点]中的频率
+    m_pllConfigs[pllName].outputFreq = config.outputFreq;
     
     // 更新显示
     if (m_subPllFreqLabels.contains(pllName)) {
@@ -3640,6 +3694,18 @@ void ClockConfigWidget::updateAllSubPLLFrequencies()
     for (const QString& subPllName : SUB_PLL_NAMES) {
         updateSubPLLFrequency(subPllName);
     }
+
+    // 更新clk_a0pll的所有子节点频率
+    updateAllClkA0PLLSubNodeFrequencies();
+
+    // 更新clk_cam0pll的所有子节点频率
+    updateAllClkCam0PLLSubNodeFrequencies();
+
+    // 更新clk_cam1pll的所有子节点频率
+    updateAllClkCam1PLLSubNodeFrequencies();
+
+    // 更新clk_disppll的所有子节点频率
+    updateAllClkDispPLLSubNodeFrequencies();
 }
 
 void ClockConfigWidget::updateOutputFrequency(const QString& outputName)
@@ -3711,6 +3777,8 @@ void ClockConfigWidget::updateClkCam1PLLSubNodeFrequency(const QString& nodeName
     
     // clk_cam1pll子节点频率 = clk_cam1pll频率 / 分频器
     subNode.frequency = clkCam1PLLFreq / subNode.divider;
+    // 同步更新m_pllConfigs[clk_cam1pll子节点]中的频率
+    m_pllConfigs[nodeName].outputFreq = subNode.frequency;
     
     // 更新显示
     if (m_clkCam1PLLSubNodeFreqLabels.contains(nodeName)) {
@@ -3724,6 +3792,9 @@ void ClockConfigWidget::updateAllClkCam1PLLSubNodeFrequencies()
     for (const QString& nodeName : CLK_CAM1PLL_SUB_NODES) {
         updateClkCam1PLLSubNodeFrequency(nodeName);
     }
+
+    // 更新clk_raw_axi的所有子节点频率
+    updateAllClkRawAxiSubNodeFrequencies();
 }
 
 void ClockConfigWidget::updateClkRawAxiSubNodeFrequency(const QString& nodeName)
@@ -3799,6 +3870,8 @@ void ClockConfigWidget::updateClkDispPLLSubNodeFrequency(const QString& nodeName
     
     // clk_disppll子节点频率 = clk_disppll频率 / 分频器
     subNode.frequency = clkDispPLLFreq / subNode.divider;
+    // 同步更新m_pllConfigs[clk_disppll子节点]中的频率
+    m_pllConfigs[nodeName].outputFreq = subNode.frequency;
     
     // 更新显示
     if (m_clkDispPLLSubNodeFreqLabels.contains(nodeName)) {
@@ -3812,6 +3885,9 @@ void ClockConfigWidget::updateAllClkDispPLLSubNodeFrequencies()
     for (const QString& nodeName : CLK_DISPPLL_SUB_NODES) {
         updateClkDispPLLSubNodeFrequency(nodeName);
     }
+
+    // 更新clk_sys_disp的所有子节点频率
+    updateAllClkSysDispSubNodeFrequencies();
 }
 
 void ClockConfigWidget::updateClkSysDispSubNodeFrequency(const QString& nodeName)
@@ -3943,6 +4019,8 @@ void ClockConfigWidget::updateClkFPLLSubNodeFrequency(const QString& nodeName)
 
     // clk_fpll子节点频率 = clk_fpll频率 / 分频器
     subNode.frequency = clkFPLLFreq / subNode.divider;
+    // 同步更新m_pllConfigs[clk_fpll子节点]中的频率
+    m_pllConfigs[nodeName].outputFreq = subNode.frequency;
 
     // 更新显示
     if (m_clkFPLLSubNodeFreqLabels.contains(nodeName)) {
@@ -3956,6 +4034,9 @@ void ClockConfigWidget::updateAllClkFPLLSubNodeFrequencies()
     for (const QString& nodeName : CLK_FPLL_SUB_NODES) {
         updateClkFPLLSubNodeFrequency(nodeName);
     }
+
+    // 更新clk_fab_100M的所有子节点频率
+    updateAllClkFAB100MSubNodeFrequencies();
 }
 
 void ClockConfigWidget::updateClkTPLLSubNodeFrequency(const QString& nodeName)
@@ -4001,6 +4082,8 @@ void ClockConfigWidget::updateClkMPLLSubNodeFrequency(const QString& nodeName)
 
     // clk_mpll子节点频率 = clk_mpll频率 / 分频器
     subNode.frequency = clkMPLLFreq / subNode.divider;
+    // 同步更新m_pllConfigs[clk_mpll子节点]中的频率
+    m_pllConfigs[nodeName].outputFreq = subNode.frequency;
 
     // 更新显示
     if (m_clkMPLLSubNodeFreqLabels.contains(nodeName)) {
@@ -4014,6 +4097,12 @@ void ClockConfigWidget::updateAllClkMPLLSubNodeFrequencies()
     for (const QString& nodeName : CLK_MPLL_SUB_NODES) {
         updateClkMPLLSubNodeFrequency(nodeName);
     }
+
+    // 更新clk_spi_nand的所有子节点频率
+    updateAllClkSPINANDSubNodeFrequencies();
+
+    // 更新clk_hsperi的所有子节点频率
+    updateAllClkHSPeriSubNodeFrequencies();
 }
 
 void ClockConfigWidget::updateClkFAB100MSubNodeFrequency(const QString& nodeName)

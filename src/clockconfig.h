@@ -168,7 +168,7 @@ private:
     void createClkSPINANDSubNodeWidget(const QString& nodeName, QWidget* parent);  // 新增：创建clk_spi_nand子节点widget
     void createClkHSPeriSubNodeWidget(const QString& nodeName, QWidget* parent);  // 新增：创建clk_hsperi子节点widget
     void updatePLLFrequency(const QString& pllName);
-    void updateSubPLLFrequency(const QString& pllName);  // 新增
+    void updateSubPLLFrequency(const QString& pllName);  // 新增：更新子锁相环(clk_mipimpll)子节点频率
     void updateAllSubPLLFrequencies();  // 新增
     void updateOutputFrequency(const QString& outputName);
     void updateClk1MSubNodeFrequency(const QString& nodeName);  // 新增：更新clk_1M子节点频率
