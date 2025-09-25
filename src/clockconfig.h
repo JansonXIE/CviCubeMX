@@ -85,6 +85,13 @@ public:
     bool saveConfig(const QString& filePath);
     bool loadConfig(const QString& filePath);
     
+    // 设置源代码路径和芯片类型
+    void setSourcePath(const QString& sourcePath);
+    void setChipType(const QString& chipType);
+    
+    // 导出到defconfig文件
+    bool exportToDefconfig(const QString& sourcePath, const QString& chipType, const QString& configName, const QString& value);
+    
     // 模块位置配置相关函数
     void showPositionConfigDialog();
     void setModulePosition(const QString& moduleName, int x, int y);
@@ -439,6 +446,10 @@ private:
     QMap<QString, ClockOutput> m_clkSPINANDSubNodes;  // 新增：clk_spi_nand子节点数据
     QMap<QString, ClockOutput> m_clkHSPeriSubNodes;  // 新增：clk_hsperi子节点数据
     QMap<QString, ModulePosition> m_modulePositions;  // 新增：模块位置配置
+    
+    // 源代码路径和芯片类型
+    QString m_sourcePath;
+    QString m_chipType;
     
     // 常量
     static const double OSC_FREQUENCY;  // 25MHz

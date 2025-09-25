@@ -399,6 +399,14 @@ void MainWindow::setupClockTab()
 
     // 创建时钟配置页面
     m_clockConfigPage = new ClockConfigWidget();
+    
+    // 如果已经有源代码路径和芯片类型，设置到时钟配置页面
+    if (!m_sourcePath.isEmpty()) {
+        m_clockConfigPage->setSourcePath(m_sourcePath);
+    }
+    if (!m_selectedChip.isEmpty() && m_selectedChip != "请选择芯片型号") {
+        m_clockConfigPage->setChipType(m_selectedChip);
+    }
 
     // 设置时钟标签页布局
     QVBoxLayout* clockLayout = new QVBoxLayout(m_clockTab);
@@ -469,10 +477,15 @@ void MainWindow::onChipSelectionChanged()
     QString selectedChip = m_chipComboBox->currentText();
     m_startProjectButton->setEnabled(selectedChip != "请选择芯片型号");
     m_selectedChip = selectedChip;
-
+    
     // 更新内存配置页面的芯片类型
     if (m_memoryConfigPage && selectedChip != "请选择芯片型号") {
         m_memoryConfigPage->setChipType(selectedChip);
+    }
+    
+    // 更新时钟配置页面的芯片类型
+    if (m_clockConfigPage && selectedChip != "请选择芯片型号") {
+        m_clockConfigPage->setChipType(selectedChip);
     }
 }
 
@@ -1453,6 +1466,11 @@ void MainWindow::showPathSelectionDialog()
         // 更新内存配置页面的源代码路径
         if (m_memoryConfigPage) {
             m_memoryConfigPage->setSourcePath(m_sourcePath);
+        }
+        
+        // 更新时钟配置页面的源代码路径
+        if (m_clockConfigPage) {
+            m_clockConfigPage->setSourcePath(m_sourcePath);
         }
 
         QMessageBox::information(this, "成功",

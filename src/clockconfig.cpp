@@ -4389,12 +4389,31 @@ void ClockConfigWidget::resetToDefaults()
     emit configChanged();
     updateConnectionOverlay();  // 重绘连接线
 
-    // 弹出提示信息
-    QMessageBox::information(this, "默认ND配置", "默认ND配置已应用!");
+    // 导出CONFIG_OD_CLK_SEL=n到defconfig文件（如果路径和芯片类型已设置）
+    if (!m_sourcePath.isEmpty() && !m_chipType.isEmpty()) {
+        if (exportToDefconfig(m_sourcePath, m_chipType, "CONFIG_OD_CLK_SEL", "n")) {
+            QString defconfigPath = QString("build/boards/cv184x/%1_wevb_0014a_emmc/%1_wevb_0014a_emmc_defconfig")
+                                   .arg(m_chipType);
+            QMessageBox::information(this, "成功", 
+                                   QString("默认ND配置已应用并导出到: %1").arg(defconfigPath));
+        } else {
+            QMessageBox::critical(this, "错误", "默认ND配置应用成功，但导出到defconfig文件失败！");
+        }
+    } else {
+        // 弹出提示信息
+        QMessageBox::information(this, "默认ND配置", "默认ND配置已应用!");
+    }
 }
 
 void ClockConfigWidget::applyOverclockConfig()
 {
+    // 检查是否设置了源代码路径和芯片类型
+    if (m_sourcePath.isEmpty() || m_chipType.isEmpty()) {
+        QMessageBox::warning(this, "警告", 
+                           "请先选择芯片类型和源代码路径！");
+        return;
+    }
+    
     // 重置PLL配置为超频的倍频值
     // clk_appll的倍频值为44
     if (m_pllMultiplierBoxes.contains("clk_appll")) {
@@ -4418,9 +4437,16 @@ void ClockConfigWidget::applyOverclockConfig()
     // 触发全局更新和信号
     updateFrequencies();
     emit configChanged();
-
-    // 弹出提示信息
-    QMessageBox::information(this, "超频配置", "OD超频配置已应用!");
+    
+    // 导出CONFIG_OD_CLK_SEL=y到defconfig文件
+    if (exportToDefconfig(m_sourcePath, m_chipType, "CONFIG_OD_CLK_SEL", "y")) {
+        QString defconfigPath = QString("build/boards/cv184x/%1_wevb_0014a_emmc/%1_wevb_0014a_emmc_defconfig")
+                               .arg(m_chipType);
+        QMessageBox::information(this, "成功", 
+                               QString("OD超频配置已应用并导出到: %1").arg(defconfigPath));
+    } else {
+        QMessageBox::critical(this, "错误", "OD超频配置应用成功，但导出到defconfig文件失败！");
+    }
 }
 
 PLLConfig ClockConfigWidget::getPLLConfig(const QString& pllName) const
@@ -6012,4 +6038,78 @@ QRect ClockConfigWidget::getResizeHandleRect(const QRect& widgetRect, ResizeDire
         default:
             return QRect();
     }
+}
+
+void ClockConfigWidget::setSourcePath(const QString& sourcePath)
+{
+    m_sourcePath = sourcePath;
+}
+
+void ClockConfigWidget::setChipType(const QString& chipType)
+{
+    m_chipType = chipType;
+}
+
+bool ClockConfigWidget::exportToDefconfig(const QString& sourcePath, const QString& chipType, const QString& configName, const QString& value)
+{
+    // 构建defconfig文件路径
+    QString defconfigPath = QString("%1/build/boards/cv184x/%2_wevb_0014a_emmc/%2_wevb_0014a_emmc_defconfig")
+                           .arg(sourcePath)
+                           .arg(chipType);
+    
+    // 检查文件是否存在
+    QFile defconfigFile(defconfigPath);
+    if (!defconfigFile.exists()) {
+        QMessageBox::critical(nullptr, "错误", 
+                            QString("Defconfig文件不存在: %1").arg(defconfigPath));
+        return false;
+    }
+    
+    // 读取现有文件内容
+    if (!defconfigFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        QMessageBox::critical(nullptr, "错误", 
+                            QString("无法读取defconfig文件: %1").arg(defconfigPath));
+        return false;
+    }
+    
+    QTextStream in(&defconfigFile);
+    QStringList lines;
+    while (!in.atEnd()) {
+        lines.append(in.readLine());
+    }
+    defconfigFile.close();
+    
+    // 更新配置行
+    bool foundConfig = false;
+    QString configLine = QString("%1=%2").arg(configName).arg(value);
+    
+    for (int i = 0; i < lines.size(); ++i) {
+        QString& line = lines[i];
+        
+        if (line.startsWith(configName + "=")) {
+            line = configLine;
+            foundConfig = true;
+            break;
+        }
+    }
+    
+    // 如果没有找到配置项，则添加到文件末尾
+    if (!foundConfig) {
+        lines.append(configLine);
+    }
+    
+    // 写回文件
+    if (!defconfigFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        QMessageBox::critical(nullptr, "错误", 
+                            QString("无法写入defconfig文件: %1").arg(defconfigPath));
+        return false;
+    }
+    
+    QTextStream out(&defconfigFile);
+    for (const QString& line : lines) {
+        out << line << "\n";
+    }
+    defconfigFile.close();
+    
+    return true;
 }
