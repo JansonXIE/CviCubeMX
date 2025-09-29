@@ -10,15 +10,23 @@ struct PeripheralInfo {
     QString status;  // "okay", "disabled", or empty (defaults to okay)
     QString clockName;
     QString clockFreq;
-    int clockFrequency;  // 时钟频率 (从 clock-frequency 属性解析)
-    int pwmCells;        // PWM cells 数量 (从 #pwm-cells 属性解析)
-    int currentSpeed;    // 波特率 (从 current-speed 属性解析，仅UART使用)
-    bool hasStatus;
-    bool hasClock;
-    bool hasClockFreq;  // 是否有 clock-frequency 属性
-    bool hasPwmCells;   // 是否有 #pwm-cells 属性
-    bool hasCurrentSpeed; // 是否有 current-speed 属性 (仅UART使用)
-    int lineNumber;  // 在文件中的行号，用于定位修改
+    int clockFrequency = 0;  // 时钟频率 (从 clock-frequency 属性解析)
+    int pwmCells = 1;        // PWM cells 数量 (从 #pwm-cells 属性解析)
+    int currentSpeed = 115200;    // 波特率 (从 current-speed 属性解析，仅UART使用)
+    QStringList sysdmaChannels; // SYSDMA通道映射 (仅SYSDMA使用)
+    bool hasStatus = false;
+    bool hasClock = false;
+    bool hasClockFreq = false;  // 是否有 clock-frequency 属性
+    bool hasPwmCells = false;   // 是否有 #pwm-cells 属性
+    bool hasCurrentSpeed = false; // 是否有 current-speed 属性 (仅UART使用)
+    bool hasSysdmaChannels = false; // 是否有 SYSDMA 通道映射
+    int lineNumber = 0;  // 在文件中的行号，用于定位修改
+    
+    // 默认构造函数
+    PeripheralInfo() {
+        status = "okay";
+        sysdmaChannels = {"0", "5", "12", "13", "42", "42", "4", "7"}; // 默认SYSDMA通道映射
+    }
 };
 
 class DtsConfig : public QObject
@@ -55,6 +63,9 @@ public:
     // 设置UART波特率 (current-speed)
     bool setPeripheralCurrentSpeed(const QString &peripheral, int speed);
     
+    // 设置SYSDMA通道映射 (ch-remap)
+    bool setPeripheralSysdmaChannels(const QString &peripheral, const QStringList &channels);
+    
     // 获取特定外设信息
     PeripheralInfo getPeripheralInfo(const QString &peripheral) const;
 
@@ -77,6 +88,30 @@ private:
     
     // 查找节点在文件中的位置
     QPair<int, int> findNodePosition(const QString &nodeName);
+    
+    // 将SYSDMA常量名转换为数字
+    QString getChannelNumber(const QString &channelName);
+    
+    // 将数字转换为SYSDMA常量名
+    QString getChannelName(const QString &channelNumber);
+    
+    // 创建sysdma_remap节点
+    void createSysdmaRemapNode(const PeripheralInfo &info);
+    
+    // 更新外设DMA配置
+    void updatePeripheralDmaConfigWithPrevious(const QStringList &previousChannels, const QStringList &sysdmaChannels);
+    
+    // 根据通道号获取外设节点名
+    QString getPeripheralNodeFromChannel(const QString &channelNumber);
+    
+    // 判断通道是否为RX通道
+    bool isChannelRx(const QString &channelNumber);
+    
+    // 为外设添加DMA配置
+    void addDmaConfigToPeripheral(const QString &peripheralNode, const QString &channelIndex1, const QString &channelIndex2, const QString &capability);
+    
+    // 清除DMA通道映射发生变化的外设的DMA配置
+    void clearChangedPeripheralDmaConfigs(const QStringList &previousChannels, const QStringList &newChannels);
 };
 
 #endif // DTSCONFIG_H

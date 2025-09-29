@@ -4,6 +4,7 @@
 #include <QIntValidator>
 #include <QDoubleSpinBox>
 #include <QAbstractSpinBox>
+#include <QRegularExpression>
 
 PeripheralConfigDialog::PeripheralConfigDialog(const QString &peripheralType, DtsConfig *dtsConfig, QWidget *parent)
     : QDialog(parent)
@@ -32,6 +33,11 @@ PeripheralConfigDialog::PeripheralConfigDialog(const QString &peripheralType, Dt
     , m_baudRateComboBox(nullptr)
     , m_customBaudLineEdit(nullptr)
 {
+    // 初始化SYSDMA通道控件指针为nullptr
+    for (int i = 0; i < 8; i++) {
+        m_sysdmaChannelLabels[i] = nullptr;
+        m_sysdmaChannelComboBoxes[i] = nullptr;
+    }
     setupUI();
     updatePeripheralList();
 }
@@ -39,7 +45,7 @@ PeripheralConfigDialog::PeripheralConfigDialog(const QString &peripheralType, Dt
 void PeripheralConfigDialog::setupUI()
 {
     setWindowTitle(QString("%1 外设配置").arg(m_peripheralType.toUpper()));
-    setFixedSize(400, 300);
+    setFixedSize(400, 400);
     setModal(true);
 
     // 创建主布局
@@ -105,6 +111,10 @@ void PeripheralConfigDialog::updatePeripheralList()
         const QString &peripheralName = it.key();
 
         if (peripheralName.startsWith(m_peripheralType)) {
+            m_peripheralComboBox->addItem(peripheralName);
+        }
+        // 特殊处理SYSDMA，因为节点名是sysdma_remap
+        else if (m_peripheralType == "sysdma" && peripheralName == "sysdma_remap") {
             m_peripheralComboBox->addItem(peripheralName);
         }
     }
@@ -204,6 +214,46 @@ void PeripheralConfigDialog::setupPeripheralSpecificUI(int &currentRow)
         m_peripheralLayout->addWidget(m_clockLineEdit, currentRow, 1);
         currentRow++;
 
+    } else if (m_peripheralType == "sysdma") {
+        // SYSDMA: 显示8个通道的映射配置
+        QStringList channelOptions = {
+            "CVI_I2S0_RX (0)", "CVI_I2S0_TX (1)", "CVI_I2S1_RX (2)", "CVI_I2S1_TX (3)",
+            "CVI_I2S2_RX (4)", "CVI_I2S2_TX (5)", "CVI_I2S3_RX (6)", "CVI_I2S3_TX (7)",
+            "CVI_UART0_RX (8)", "CVI_UART0_TX (9)", "CVI_UART1_RX (10)", "CVI_UART1_TX (11)",
+            "CVI_UART2_RX (12)", "CVI_UART2_TX (13)", "CVI_UART3_RX (14)", "CVI_UART3_TX (15)",
+            "CVI_SPI0_RX (16)", "CVI_SPI0_TX (17)", "CVI_SPI1_RX (18)", "CVI_SPI1_TX (19)",
+            "CVI_SPI2_RX (20)", "CVI_SPI2_TX (21)", "CVI_SPI3_RX (22)", "CVI_SPI3_TX (23)",
+            "CVI_I2C0_RX (24)", "CVI_I2C0_TX (25)", "CVI_I2C1_RX (26)", "CVI_I2C1_TX (27)",
+            "CVI_I2C2_RX (28)", "CVI_I2C2_TX (29)", "CVI_I2C3_RX (30)", "CVI_I2C3_TX (31)",
+            "CVI_I2C4_RX (32)", "CVI_I2C4_TX (33)", "CVI_TDM0_RX (34)", "CVI_TDM0_TX (35)",
+            "CVI_TDM1_RX (36)", "CVI_AUDSRC (37)", "CVI_SPI_NOR_RX (38)", "CVI_SPI_NOR_TX (39)",
+            "CVI_UART4_RX (40)", "CVI_UART4_TX (41)", "CVI_SPI_NAND (42)"
+        };
+
+        // 默认通道映射
+        QStringList defaultChannels = {
+            "CVI_I2S0_RX (0)", "CVI_I2S2_TX (5)", "CVI_I2S1_RX (2)", "CVI_I2S1_TX (3)",
+            "CVI_SPI_NAND (42)", "CVI_SPI_NAND (42)", "CVI_I2S2_RX (4)", "CVI_I2S3_TX (7)"
+        };
+
+        for (int i = 0; i < 8; i++) {
+            m_sysdmaChannelLabels[i] = new QLabel(QString("通道 %1:").arg(i), this);
+            m_sysdmaChannelComboBoxes[i] = new QComboBox(this);
+            m_sysdmaChannelComboBoxes[i]->addItems(channelOptions);
+            
+            // 设置默认值
+            if (i < defaultChannels.size()) {
+                int index = m_sysdmaChannelComboBoxes[i]->findText(defaultChannels[i]);
+                if (index >= 0) {
+                    m_sysdmaChannelComboBoxes[i]->setCurrentIndex(index);
+                }
+            }
+
+            m_peripheralLayout->addWidget(m_sysdmaChannelLabels[i], currentRow, 0);
+            m_peripheralLayout->addWidget(m_sysdmaChannelComboBoxes[i], currentRow, 1);
+            currentRow++;
+        }
+
     } else if (m_peripheralType == "gpio" || m_peripheralType == "saradc") {
         // GPIO和SARADC: 只有状态配置，不需要额外控件
         // 这里不添加任何额外控件
@@ -252,6 +302,14 @@ void PeripheralConfigDialog::setupConnections()
     if (m_customBaudLineEdit) {
         connect(m_customBaudLineEdit, &QLineEdit::textChanged, this, &PeripheralConfigDialog::onCurrentSpeedChanged);
     }
+
+    // SYSDMA通道变化连接
+    for (int i = 0; i < 8; i++) {
+        if (m_sysdmaChannelComboBoxes[i]) {
+            connect(m_sysdmaChannelComboBoxes[i], QOverload<int>::of(&QComboBox::currentIndexChanged),
+                    this, &PeripheralConfigDialog::onSysdmaChannelChanged);
+        }
+    }
 }
 
 void PeripheralConfigDialog::loadPeripheralConfig()
@@ -269,6 +327,14 @@ void PeripheralConfigDialog::loadPeripheralConfig()
         m_clockLineEdit, m_freqSpinBox, m_freqDoubleSpinBox,
         m_pwmCellsSpinBox, m_baudRateComboBox, m_customBaudLineEdit
     };
+    
+    // 添加SYSDMA通道控件到屏蔽列表
+    for (int i = 0; i < 8; i++) {
+        if (m_sysdmaChannelComboBoxes[i]) {
+            toBlock.append(m_sysdmaChannelComboBoxes[i]);
+        }
+    }
+    
     for (QObject* o : toBlock) {
         if (o) o->blockSignals(true);
     }
@@ -354,6 +420,24 @@ void PeripheralConfigDialog::loadPeripheralConfig()
         }
     }
 
+    // SYSDMA通道配置
+    if (m_peripheralType == "sysdma" && info.hasSysdmaChannels) {
+        for (int i = 0; i < 8 && i < info.sysdmaChannels.size(); i++) {
+            if (m_sysdmaChannelComboBoxes[i]) {
+                QString channelNumber = info.sysdmaChannels[i];
+                // 查找包含该数字的选项（格式为 "CVI_XXX_XXX (数字)"）
+                QString searchPattern = QString("(%1)").arg(channelNumber);
+                int index = m_sysdmaChannelComboBoxes[i]->findText(searchPattern, Qt::MatchContains);
+                if (index >= 0) {
+                    m_sysdmaChannelComboBoxes[i]->setCurrentIndex(index);
+                } else {
+                    // 如果没有找到，使用默认值（第一个选项）
+                    m_sysdmaChannelComboBoxes[i]->setCurrentIndex(0);
+                }
+            }
+        }
+    }
+
     // 恢复信号
     for (QObject* o : toBlock) {
         if (o) o->blockSignals(false);
@@ -417,6 +501,25 @@ void PeripheralConfigDialog::savePeripheralConfig()
     } else if (m_currentSpeedSpinBox) {
         m_dtsConfig->setPeripheralCurrentSpeed(m_currentPeripheral, m_currentSpeedSpinBox->value());
     }
+
+    // 保存SYSDMA通道映射（如果支持）
+    if (m_peripheralType == "sysdma" && m_sysdmaChannelComboBoxes[0]) {
+        QStringList channels;
+        for (int i = 0; i < 8; i++) {
+            if (m_sysdmaChannelComboBoxes[i]) {
+                QString selectedText = m_sysdmaChannelComboBoxes[i]->currentText();
+                // 从 "CVI_I2S0_RX (0)" 格式中提取数字值
+                QRegularExpression re(R"(\((\d+)\))");
+                QRegularExpressionMatch match = re.match(selectedText);
+                if (match.hasMatch()) {
+                    channels.append(match.captured(1));
+                } else {
+                    channels.append("0"); // 默认值
+                }
+            }
+        }
+        m_dtsConfig->setPeripheralSysdmaChannels(m_currentPeripheral, channels);
+    }
 }
 
 void PeripheralConfigDialog::onPeripheralSelectionChanged()
@@ -460,6 +563,14 @@ void PeripheralConfigDialog::onPwmCellsChanged()
 void PeripheralConfigDialog::onCurrentSpeedChanged()
 {
     // 实时更新波特率配置
+    if (!m_currentPeripheral.isEmpty()) {
+        savePeripheralConfig();
+    }
+}
+
+void PeripheralConfigDialog::onSysdmaChannelChanged()
+{
+    // 实时更新SYSDMA通道配置
     if (!m_currentPeripheral.isEmpty()) {
         savePeripheralConfig();
     }

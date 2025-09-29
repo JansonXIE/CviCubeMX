@@ -31,6 +31,7 @@ private slots:
     void onFreqChanged();
     void onPwmCellsChanged();
     void onCurrentSpeedChanged();
+    void onSysdmaChannelChanged();
 
 private:
     void setupUI();
@@ -64,6 +65,9 @@ private:
     QSpinBox *m_currentSpeedSpinBox;
     QComboBox *m_baudRateComboBox;       // 新增：波特率下拉
     QLineEdit *m_customBaudLineEdit;     // 新增：自定义波特率输入
+    // SYSDMA 通道控件
+    QLabel *m_sysdmaChannelLabels[8];    // 8个通道的标签
+    QComboBox *m_sysdmaChannelComboBoxes[8]; // 8个通道的下拉框
     QHBoxLayout *m_buttonLayout;
     QPushButton *m_applyButton;
     QPushButton *m_cancelButton;

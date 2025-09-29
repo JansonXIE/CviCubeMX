@@ -365,7 +365,7 @@ void MainWindow::setupPinoutConfigPanel()
     peripheralItem->setExpanded(true);
 
     // 创建外设子项
-    QStringList peripherals = {"PWM", "I2C", "SPI", "UART", "GPIO", "ADC"};
+    QStringList peripherals = {"PWM", "I2C", "SPI", "UART", "GPIO", "ADC", "SYSDMA"};
     for (const QString &peripheral : peripherals) {
         QTreeWidgetItem *subItem = new QTreeWidgetItem(peripheralItem);
 
@@ -486,6 +486,12 @@ void MainWindow::onChipSelectionChanged()
     // 更新时钟配置页面的芯片类型
     if (m_clockConfigPage && selectedChip != "请选择芯片型号") {
         m_clockConfigPage->setChipType(selectedChip);
+    }
+    
+    // 重新加载外设状态（基于新选择的芯片类型）
+    if (selectedChip != "请选择芯片型号" && !m_sourcePath.isEmpty()) {
+        loadPeripheralStates();
+        updatePeripheralCheckBoxes();
     }
 }
 
@@ -768,6 +774,13 @@ void MainWindow::onPinFunctionChanged(const QString& pinName, const QString& fun
 
 void MainWindow::onGenerateCode()
 {
+    // 首先保存DTS配置
+    if (m_dtsConfig && m_dtsConfig->saveDtsFile()) {
+        qDebug() << "DTS配置已保存";
+    } else {
+        qDebug() << "DTS配置保存失败或未加载DTS文件";
+    }
+
     // 直接更新或生成代码到默认位置
     QString result = m_codeGenerator.generateCode(m_chipConfig);
 
@@ -1262,6 +1275,7 @@ QMap<QString, QStringList> MainWindow::getPeripheralConfigs() const
     configs["UART"] = {"CONFIG_SERIAL_8250", "CONFIG_SERIAL_8250_CONSOLE", "CONFIG_SERIAL_8250_DW"};
     configs["GPIO"] = {"CONFIG_GPIOLIB", "CONFIG_GPIO_SYSFS", "CONFIG_GPIO_DWAPB"};
     configs["ADC"] = {"CONFIG_IIO", "CONFIG_IIO_BUFFER", "CONFIG_IIO_TRIGGER"};
+    configs["SYSDMA"] = {"CONFIG_DMADEVICES", "CONFIG_DW_DMAC_CVITEK"};
 
     return configs;
 }
@@ -1274,8 +1288,8 @@ bool MainWindow::loadPeripheralStates()
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
         qDebug() << "无法打开defconfig文件：" << defconfigPath;
 
-        // 如果文件不存在，设置默认状态为false
-        QStringList peripherals = {"PWM", "I2C", "SPI", "UART", "GPIO", "ADC"};
+        // 如果文件不存在，设置默认状态（所有外设都禁用）
+        QStringList peripherals = {"PWM", "I2C", "SPI", "UART", "GPIO", "ADC", "SYSDMA"};
         for (const QString &peripheral : peripherals) {
             m_peripheralStates[peripheral] = false;
         }
@@ -1369,6 +1383,32 @@ bool MainWindow::savePeripheralStates()
     file.close();
 
     return true;
+}
+
+void MainWindow::updatePeripheralCheckBoxes()
+{
+    // 更新UI中外设复选框的状态
+    QTreeWidgetItem *peripheralItem = m_pinoutConfigTree->topLevelItem(0);
+    if (!peripheralItem) {
+        return;
+    }
+
+    // 遍历所有外设子项，更新复选框状态
+    for (int i = 0; i < peripheralItem->childCount(); ++i) {
+        QTreeWidgetItem *subItem = peripheralItem->child(i);
+        QCheckBox *checkBox = qobject_cast<QCheckBox*>(m_pinoutConfigTree->itemWidget(subItem, 0));
+        if (checkBox) {
+            QString peripheralType = checkBox->text();
+            bool isEnabled = m_peripheralStates.value(peripheralType, false);
+            
+            // 临时断开信号连接，避免触发onPeripheralCheckBoxChanged
+            checkBox->blockSignals(true);
+            checkBox->setChecked(isEnabled);
+            checkBox->blockSignals(false);
+            
+            qDebug() << QString("更新外设 %1 的复选框状态为: %2").arg(peripheralType).arg(isEnabled ? "启用" : "禁用");
+        }
+    }
 }
 
 void MainWindow::initializeDtsConfig()

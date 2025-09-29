@@ -73,6 +73,7 @@ private:
     // defconfig文件处理
     bool loadPeripheralStates();
     bool savePeripheralStates();
+    void updatePeripheralCheckBoxes();
     QString getDefconfigPath() const;
     QMap<QString, QStringList> getPeripheralConfigs() const;
     
