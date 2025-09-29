@@ -4,7 +4,7 @@ project(CviCubeMX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
+find_package(Qt6 REQUIRED COMPONENTS Core Widgets Network)
 
 qt_standard_project_setup()
 
@@ -19,6 +19,7 @@ set(SOURCES
     src/peripheralconfigdialog.cpp
     src/clockconfig.cpp
     src/memoryconfig.cpp
+    src/aichatdialog.cpp
 )
 
 set(HEADERS
@@ -30,6 +31,7 @@ set(HEADERS
     src/peripheralconfigdialog.h
     src/clockconfig.h
     src/memoryconfig.h
+    src/aichatdialog.h
     include/pinfunction.h
     include/cvi_board_init.h
 )
@@ -51,6 +53,7 @@ target_link_libraries(CviCubeMX
     PRIVATE
         Qt6::Core
         Qt6::Widgets
+        Qt6::Network
 )
 
 # Copy output to bin directory

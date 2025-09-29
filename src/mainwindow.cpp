@@ -1,5 +1,6 @@
 #include "mainwindow.h"
 #include "peripheralconfigdialog.h"
+#include "aichatdialog.h"
 #include <QApplication>
 #include <QScreen>
 #include <QTimer>
@@ -24,6 +25,9 @@ MainWindow::MainWindow(QWidget *parent)
     , m_mainLayout(nullptr)
     , m_headerLayout(nullptr)
     , m_controlLayout(nullptr)
+    , m_menuBar(nullptr)
+    , m_toolsMenu(nullptr)
+    , m_aiChatAction(nullptr)
     , m_configTabWidget(nullptr)
     , m_pinoutTab(nullptr)
     , m_clockTab(nullptr)
@@ -51,6 +55,7 @@ MainWindow::MainWindow(QWidget *parent)
     , m_highlightedPin(nullptr)
     , m_blinkState(false)
     , m_dtsConfig(nullptr)
+    , m_aiChatDialog(nullptr)
 {
     // 首先显示路径选择对话框
     if (!selectSourcePath()) {
@@ -88,6 +93,9 @@ MainWindow::~MainWindow()
 
 void MainWindow::setupUI()
 {
+    // 设置菜单栏
+    setupMenuBar();
+    
     // 创建中央部件
     m_centralWidget = new QWidget(this);
     setCentralWidget(m_centralWidget);
@@ -157,6 +165,28 @@ void MainWindow::setupUI()
 
     // 连接内存配置信号
     connect(m_memoryConfigPage, &MemoryConfigWidget::configChanged, this, &MainWindow::onMemoryConfigChanged);
+}
+
+void MainWindow::setupMenuBar()
+{
+    // 创建菜单栏
+    m_menuBar = menuBar();
+    
+    // 创建工具菜单
+    m_toolsMenu = m_menuBar->addMenu("工具(&T)");
+    
+    // 添加 AI 对话菜单项
+    m_aiChatAction = new QAction("AI 智能助手(&A)", this);
+    m_aiChatAction->setShortcut(QKeySequence("Ctrl+A"));
+    m_aiChatAction->setStatusTip("打开 AI 智能助手进行问答对话");
+    connect(m_aiChatAction, &QAction::triggered, this, &MainWindow::onShowAIChat);
+    
+    m_toolsMenu->addAction(m_aiChatAction);
+    
+    // 添加分隔符
+    m_toolsMenu->addSeparator();
+    
+    // 可以在这里添加其他工具菜单项
 }
 
 void MainWindow::setupPinoutTab()
@@ -1578,4 +1608,17 @@ void MainWindow::onSelectSourcePath()
             }
         }
     }
+}
+
+void MainWindow::onShowAIChat()
+{
+    // 如果对话窗口还没有创建，创建一个新的
+    if (!m_aiChatDialog) {
+        m_aiChatDialog = new AIChatDialog(this);
+    }
+    
+    // 显示对话窗口
+    m_aiChatDialog->show();
+    m_aiChatDialog->raise();
+    m_aiChatDialog->activateWindow();
 }

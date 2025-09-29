@@ -19,12 +19,14 @@
 #include <QMenu>
 #include <QAction>
 #include <QTabWidget>
+#include <QMenuBar>
 #include "chipconfig.h"
 #include "pinwidget.h"
 #include "codegenerator.h"
 #include "dtsconfig.h"
 #include "clockconfig.h"
 #include "memoryconfig.h"
+#include "aichatdialog.h"
 
 QT_BEGIN_NAMESPACE
 QT_END_NAMESPACE
@@ -50,9 +52,11 @@ private slots:
     void onMemoryConfigChanged();
     void onConfigTabChanged(int index);
     void onSelectSourcePath();
+    void onShowAIChat();
 
 private:
     void setupUI();
+    void setupMenuBar();
     void setupPinoutTab();
     void setupPinoutConfigPanel();
     void setupClockTab();
@@ -91,6 +95,11 @@ private:
     QVBoxLayout *m_mainLayout;
     QHBoxLayout *m_headerLayout;
     QHBoxLayout *m_controlLayout;
+    
+    // 菜单栏
+    QMenuBar *m_menuBar;
+    QMenu *m_toolsMenu;
+    QAction *m_aiChatAction;
     
     // 顶部配置标签页
     QTabWidget *m_configTabWidget;
@@ -153,6 +162,9 @@ private:
     
     // 源代码路径
     QString m_sourcePath;
+    
+    // AI 对话窗口
+    AIChatDialog *m_aiChatDialog;
 };
 
 #endif // MAINWINDOW_H
