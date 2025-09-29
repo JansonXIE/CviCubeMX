@@ -37,6 +37,8 @@ private:
     void sendMessageToAI(const QString& message);
     void appendUserMessage(const QString& message);
     void appendAIMessage(const QString& message);
+    void appendAIMessageWithMarkdown(const QString& markdown);
+    bool isMarkdownContent(const QString& content);
     void updateAIResponse();
     void updateAIResponseWithContent(const QString& content);
     void showErrorMessage(const QString& error);

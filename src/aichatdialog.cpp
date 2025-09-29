@@ -11,6 +11,7 @@
 #include <QDebug>
 #include <QStyle>
 #include <QTimer>
+#include <QTextDocument>
 
 AIChatDialog::AIChatDialog(QWidget *parent)
     : QDialog(parent)
@@ -30,7 +31,7 @@ AIChatDialog::AIChatDialog(QWidget *parent)
     , m_isWaitingForResponse(false)
 {
     // 初始化AI API配置
-    m_apiKey = "";
+    m_apiKey = "QWGNmtHwAu1WRJkjmHD4FSpIMgDCS1puYeMq5gglfhpIXBGitoD1YPdygcKwEAQ-PKQZETbIVRUcuiiY1D8JaQ";
     m_baseUrl = "https://www.sophnet.com/api/open-apis";
     m_model = "QwQ-32B";
     
@@ -507,14 +508,21 @@ void AIChatDialog::appendUserMessage(const QString& message)
 
 void AIChatDialog::appendAIMessage(const QString& message)
 {
-    QString html = QString(
-        "<div style=\"margin: 10px 0; text-align: left;\">"
-        "<span style=\"background-color: #ecf0f1; color: #2c3e50; padding: 8px 12px; "
-        "border-radius: 18px; display: inline-block; max-width: 70%; word-wrap: break-word;\">"
-        "%1</span></div>"
-    ).arg(message.toHtmlEscaped());
-    
-    m_chatDisplay->append(html);
+    // 检测是否为Markdown内容
+    if (isMarkdownContent(message)) {
+        // 使用Markdown渲染
+        appendAIMessageWithMarkdown(message);
+    } else {
+        // 使用普通文本渲染
+        QString html = QString(
+            "<div style=\"margin: 10px 0; text-align: left;\">"
+            "<span style=\"background-color: #ecf0f1; color: #2c3e50; padding: 8px 12px; "
+            "border-radius: 18px; display: inline-block; max-width: 70%; word-wrap: break-word;\">"
+            "%1</span></div>"
+        ).arg(message.toHtmlEscaped());
+        
+        m_chatDisplay->append(html);
+    }
     scrollToBottom();
 }
 
@@ -637,4 +645,55 @@ void AIChatDialog::scrollToBottom()
 {
     QScrollBar* scrollBar = m_chatDisplay->verticalScrollBar();
     scrollBar->setValue(scrollBar->maximum());
+}
+
+void AIChatDialog::appendAIMessageWithMarkdown(const QString& markdown)
+{
+    // 创建一个临时的QTextDocument来处理Markdown
+    QTextDocument tempDoc;
+    tempDoc.setMarkdown(markdown);
+    QString htmlContent = tempDoc.toHtml();
+    
+    // 移除HTML文档的头部和尾部，只保留body内容
+    int bodyStart = htmlContent.indexOf("<body");
+    int bodyContentStart = htmlContent.indexOf(">", bodyStart) + 1;
+    int bodyEnd = htmlContent.lastIndexOf("</body>");
+    
+    QString bodyContent;
+    if (bodyStart != -1 && bodyEnd != -1 && bodyContentStart < bodyEnd) {
+        bodyContent = htmlContent.mid(bodyContentStart, bodyEnd - bodyContentStart).trimmed();
+    } else {
+        // 如果无法提取body内容，使用原始内容
+        bodyContent = markdown.toHtmlEscaped();
+    }
+    
+    // 将Markdown渲染的内容包装在聊天气泡样式中
+    QString html = QString(
+        "<div style=\"margin: 10px 0; text-align: left;\">"
+        "<div style=\"background-color: #ecf0f1; color: #2c3e50; padding: 12px 16px; "
+        "border-radius: 12px; display: inline-block; max-width: 80%; word-wrap: break-word; "
+        "font-family: 'Microsoft YaHei', Arial, sans-serif; line-height: 1.5;\">"
+        "%1</div></div>"
+    ).arg(bodyContent);
+    
+    m_chatDisplay->append(html);
+}
+
+bool AIChatDialog::isMarkdownContent(const QString& content)
+{
+    // 检测常见的Markdown标记
+    if (content.contains(QRegularExpression("^#{1,6}\\s+")) ||          // 标题 # ## ### 等
+        content.contains(QRegularExpression("\\*\\*.*\\*\\*")) ||         // 粗体 **text**
+        content.contains(QRegularExpression("\\*.*\\*")) ||               // 斜体 *text*
+        content.contains(QRegularExpression("`.*`")) ||                  // 行内代码 `code`
+        content.contains(QRegularExpression("```[\\s\\S]*```")) ||        // 代码块 ```code```
+        content.contains(QRegularExpression("^\\s*[-*+]\\s+")) ||        // 无序列表 - * +
+        content.contains(QRegularExpression("^\\s*\\d+\\.\\s+")) ||      // 有序列表 1. 2.
+        content.contains(QRegularExpression("^>\\s+")) ||                // 引用 >
+        content.contains(QRegularExpression("\\[.*\\]\\(.*\\)")) ||      // 链接 [text](url)
+        content.contains("---") ||                           // 分割线
+        content.contains("|")) {                             // 表格分隔符
+        return true;
+    }
+    return false;
 }
