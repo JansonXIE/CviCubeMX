@@ -12,6 +12,7 @@
 #include <QStyle>
 #include <QTimer>
 #include <QTextDocument>
+#include <QRegularExpression>
 
 AIChatDialog::AIChatDialog(QWidget *parent)
     : QDialog(parent)
@@ -90,10 +91,16 @@ void AIChatDialog::setupUI()
     
     // 输入区域
     m_inputLayout = new QHBoxLayout();
-    m_inputLineEdit = new QLineEdit();
+    m_inputLineEdit = new QTextEdit();
     m_inputLineEdit->setObjectName("inputLineEdit");
-    m_inputLineEdit->setPlaceholderText("请输入您的问题...");
+    m_inputLineEdit->setPlaceholderText("请输入您的问题... (Enter发送 | Shift+Enter换行)");
     m_inputLineEdit->setMinimumHeight(40);
+    m_inputLineEdit->setMaximumHeight(120); // 限制最大高度
+    m_inputLineEdit->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    m_inputLineEdit->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    m_inputLineEdit->setLineWrapMode(QTextEdit::WidgetWidth);
+    m_inputLineEdit->setAcceptRichText(false); // 只接受纯文本
+    m_inputLineEdit->installEventFilter(this); // 安装事件过滤器
     
     m_sendButton = new QPushButton("发送");
     m_sendButton->setObjectName("sendButton");
@@ -116,8 +123,7 @@ void AIChatDialog::setupUI()
     
     // 连接信号槽
     connect(m_sendButton, &QPushButton::clicked, this, &AIChatDialog::onSendMessage);
-    connect(m_inputLineEdit, &QLineEdit::returnPressed, this, &AIChatDialog::onSendMessage);
-    connect(m_inputLineEdit, &QLineEdit::textChanged, this, &AIChatDialog::onTextChanged);
+    connect(m_inputLineEdit, &QTextEdit::textChanged, this, &AIChatDialog::onTextChanged);
     connect(m_clearButton, &QPushButton::clicked, m_chatDisplay, &QTextEdit::clear);
     
     // 初始状态
@@ -236,7 +242,7 @@ void AIChatDialog::setupStyles()
 
 void AIChatDialog::onSendMessage()
 {
-    QString message = m_inputLineEdit->text().trimmed();
+    QString message = m_inputLineEdit->toPlainText().trimmed();
     if (message.isEmpty() || m_isWaitingForResponse) {
         return;
     }
@@ -247,6 +253,9 @@ void AIChatDialog::onSendMessage()
     // 清空输入框
     m_inputLineEdit->clear();
     
+    // 重置输入框高度
+    m_inputLineEdit->setMinimumHeight(40);
+    
     // 强制立即处理UI事件,确保用户消息立即显示
     QApplication::processEvents();
     
@@ -256,8 +265,14 @@ void AIChatDialog::onSendMessage()
 
 void AIChatDialog::onTextChanged()
 {
-    bool hasText = !m_inputLineEdit->text().trimmed().isEmpty();
+    bool hasText = !m_inputLineEdit->toPlainText().trimmed().isEmpty();
     m_sendButton->setEnabled(hasText && !m_isWaitingForResponse);
+    
+    // 动态调整输入框高度
+    QTextDocument *doc = m_inputLineEdit->document();
+    int docHeight = doc->size().height() + m_inputLineEdit->contentsMargins().top() + m_inputLineEdit->contentsMargins().bottom();
+    docHeight = qBound(40, docHeight + 10, 120); // 限制在40-120像素之间
+    m_inputLineEdit->setMinimumHeight(docHeight);
 }
 
 void AIChatDialog::sendMessageToAI(const QString& message)
@@ -741,4 +756,28 @@ bool AIChatDialog::isMarkdownContent(const QString& content)
         return true;
     }
     return false;
+}
+
+bool AIChatDialog::eventFilter(QObject *obj, QEvent *event)
+{
+    if (obj == m_inputLineEdit && event->type() == QEvent::KeyPress) {
+        QKeyEvent *keyEvent = static_cast<QKeyEvent*>(event);
+        
+        // 处理 Enter 键
+        if (keyEvent->key() == Qt::Key_Return || keyEvent->key() == Qt::Key_Enter) {
+            // Shift+Enter: 插入换行符
+            if (keyEvent->modifiers() & Qt::ShiftModifier) {
+                m_inputLineEdit->insertPlainText("\n");
+                return true; // 事件已处理
+            }
+            // 单独 Enter: 发送消息
+            else {
+                onSendMessage();
+                return true; // 事件已处理
+            }
+        }
+    }
+    
+    // 调用基类的事件过滤器
+    return QDialog::eventFilter(obj, event);
 }

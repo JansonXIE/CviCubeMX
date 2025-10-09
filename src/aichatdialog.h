@@ -15,6 +15,8 @@
 #include <QJsonObject>
 #include <QScrollBar>
 #include <QTimer>
+#include <QEvent>
+#include <QKeyEvent>
 
 class AIChatDialog : public QDialog
 {
@@ -30,6 +32,9 @@ private slots:
     void onNetworkReplyFinished();
     void onNetworkReplyReadyRead();
     void onRetryConnection();
+
+protected:
+    bool eventFilter(QObject *obj, QEvent *event) override;
 
 private:
     void setupUI();
@@ -55,7 +60,7 @@ private:
     QPushButton *m_retryButton;
     
     QTextEdit *m_chatDisplay;
-    QLineEdit *m_inputLineEdit;
+    QTextEdit *m_inputLineEdit;
     QPushButton *m_sendButton;
     QPushButton *m_clearButton;
     
