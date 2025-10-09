@@ -93,16 +93,16 @@ void AIChatDialog::setupUI()
     m_inputLineEdit = new QLineEdit();
     m_inputLineEdit->setObjectName("inputLineEdit");
     m_inputLineEdit->setPlaceholderText("请输入您的问题...");
-    m_inputLineEdit->setMinimumHeight(35);
+    m_inputLineEdit->setMinimumHeight(40);
     
     m_sendButton = new QPushButton("发送");
     m_sendButton->setObjectName("sendButton");
-    m_sendButton->setMinimumHeight(35);
+    m_sendButton->setMinimumHeight(40);
     m_sendButton->setMinimumWidth(80);
     
     m_clearButton = new QPushButton("清空");
     m_clearButton->setObjectName("clearButton");
-    m_clearButton->setMinimumHeight(35);
+    m_clearButton->setMinimumHeight(40);
     m_clearButton->setMinimumWidth(80);
     
     m_inputLayout->addWidget(m_inputLineEdit);
@@ -124,7 +124,7 @@ void AIChatDialog::setupUI()
     m_sendButton->setEnabled(false);
     
     // 添加欢迎消息
-    appendAIMessage("您好！我是 SophNet 智能助手，很高兴为您服务。请随时向我提问，我会尽力帮助您解答问题。");
+    // appendAIMessage("您好！我是 SophNet 智能助手，很高兴为您服务。请随时向我提问，我会尽力帮助您解答问题。");
 }
 
 void AIChatDialog::setupStyles()
@@ -246,6 +246,9 @@ void AIChatDialog::onSendMessage()
     
     // 清空输入框
     m_inputLineEdit->clear();
+    
+    // 强制立即处理UI事件,确保用户消息立即显示
+    QApplication::processEvents();
     
     // 发送到AI
     sendMessageToAI(message);
@@ -453,24 +456,35 @@ void AIChatDialog::onNetworkReplyFinished()
         if (!m_currentAIResponse.isEmpty()) {
             qDebug() << "执行最终的强制更新，内容:" << m_currentAIResponse;
             
-            // 清除"正在思考中..."消息并显示最终完整响应
-            QString plainText = m_chatDisplay->toPlainText();
-            if (plainText.contains("正在思考中...")) {
-                // 移除最后一行"正在思考中..."消息
-                QStringList lines = plainText.split('\n');
-                while (!lines.isEmpty() && lines.last().trimmed().isEmpty()) {
-                    lines.removeLast();
-                }
-                if (!lines.isEmpty() && lines.last().contains("正在思考中...")) {
-                    lines.removeLast();
-                }
+            // 使用QTextCursor方式清除"正在思考中..."消息
+            QString currentText = m_chatDisplay->toPlainText();
+            int lastThinkingIndex = currentText.lastIndexOf("正在思考中...");
+            
+            if (lastThinkingIndex != -1) {
+                qDebug() << "找到'正在思考中...'位置:" << lastThinkingIndex;
                 
-                // 重新构建聊天记录
-                m_chatDisplay->clear();
-                for (const QString& line : lines) {
-                    if (!line.trimmed().isEmpty()) {
-                        m_chatDisplay->append(line);
-                    }
+                // 使用QTextCursor定位并删除"正在思考中..."所在的块
+                QTextCursor cursor = m_chatDisplay->textCursor();
+                
+                // 从头开始查找"正在思考中..."
+                cursor.movePosition(QTextCursor::Start);
+                QTextDocument* doc = m_chatDisplay->document();
+                cursor = doc->find("正在思考中...", cursor);
+                
+                if (!cursor.isNull()) {
+                    qDebug() << "通过QTextCursor找到'正在思考中...'";
+                    
+                    // 选择整个块（段落）
+                    cursor.movePosition(QTextCursor::StartOfBlock);
+                    cursor.movePosition(QTextCursor::EndOfBlock, QTextCursor::KeepAnchor);
+                    
+                    // 删除选中的内容
+                    cursor.removeSelectedText();
+                    
+                    // 删除空行
+                    cursor.deletePreviousChar();
+                    
+                    qDebug() << "已删除'正在思考中...'消息";
                 }
             }
             
@@ -495,14 +509,24 @@ void AIChatDialog::onRetryConnection()
 
 void AIChatDialog::appendUserMessage(const QString& message)
 {
+    QTextCursor cursor = m_chatDisplay->textCursor();
+    cursor.movePosition(QTextCursor::End);
+    
+    // 创建右对齐的块格式
+    QTextBlockFormat blockFormat;
+    blockFormat.setAlignment(Qt::AlignRight);
+    cursor.insertBlock(blockFormat);
+    
+    // 插入用户消息的HTML
     QString html = QString(
-        "<div style=\"margin: 10px 0; text-align: right;\">"
-        "<span style=\"background-color: #3498db; color: white; padding: 8px 12px; "
-        "border-radius: 18px; display: inline-block; max-width: 70%; word-wrap: break-word;\">"
-        "%1</span></div>"
+        "<span style=\"background-color: #3498db; color: white; padding: 10px 15px; "
+        "border-radius: 18px; display: inline-block; max-width: 65%; word-wrap: break-word; "
+        "font-size: 14px; line-height: 1.5; box-shadow: 0 2px 5px rgba(52, 152, 219, 0.3);\">"
+        "%1</span>"
     ).arg(message.toHtmlEscaped());
     
-    m_chatDisplay->append(html);
+    cursor.insertHtml(html);
+    m_chatDisplay->setTextCursor(cursor);
     scrollToBottom();
 }
 
@@ -514,14 +538,24 @@ void AIChatDialog::appendAIMessage(const QString& message)
         appendAIMessageWithMarkdown(message);
     } else {
         // 使用普通文本渲染
+        QTextCursor cursor = m_chatDisplay->textCursor();
+        cursor.movePosition(QTextCursor::End);
+        
+        // 创建左对齐的块格式
+        QTextBlockFormat blockFormat;
+        blockFormat.setAlignment(Qt::AlignLeft);
+        cursor.insertBlock(blockFormat);
+        
+        // 插入AI消息的HTML
         QString html = QString(
-            "<div style=\"margin: 10px 0; text-align: left;\">"
-            "<span style=\"background-color: #ecf0f1; color: #2c3e50; padding: 8px 12px; "
-            "border-radius: 18px; display: inline-block; max-width: 70%; word-wrap: break-word;\">"
-            "%1</span></div>"
+            "<span style=\"background-color: #ecf0f1; color: #2c3e50; padding: 10px 15px; "
+            "border-radius: 18px; display: inline-block; max-width: 65%; word-wrap: break-word; "
+            "font-size: 14px; line-height: 1.5; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);\">"
+            "%1</span>"
         ).arg(message.toHtmlEscaped());
         
-        m_chatDisplay->append(html);
+        cursor.insertHtml(html);
+        m_chatDisplay->setTextCursor(cursor);
     }
     scrollToBottom();
 }
@@ -552,9 +586,10 @@ void AIChatDialog::updateAIResponse()
             // 创建新的AI响应HTML
             QString aiResponseHtml = QString(
                 "<div style=\"margin: 10px 0; text-align: left;\">"
-                "<span style=\"background-color: #ecf0f1; color: #2c3e50; padding: 8px 12px; "
-                "border-radius: 18px; display: inline-block; max-width: 70%; word-wrap: break-word;\">"
-                "%1</span></div>"
+                "<div style=\"background-color: #ecf0f1; color: #2c3e50; padding: 10px 15px; "
+                "border-radius: 18px; display: inline-block; max-width: 65%; word-wrap: break-word; "
+                "font-size: 14px; line-height: 1.5; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);\">"
+                "%1</div></div>"
             ).arg(m_currentAIResponse.toHtmlEscaped());
             
             QString newHtml = beforeDiv + aiResponseHtml + afterDiv;
@@ -593,9 +628,10 @@ void AIChatDialog::updateAIResponseWithContent(const QString& content)
             // 创建新的AI响应HTML
             QString aiResponseHtml = QString(
                 "<div style=\"margin: 10px 0; text-align: left;\">"
-                "<span style=\"background-color: #ecf0f1; color: #2c3e50; padding: 8px 12px; "
-                "border-radius: 18px; display: inline-block; max-width: 70%; word-wrap: break-word;\">"
-                "%1</span></div>"
+                "<div style=\"background-color: #ecf0f1; color: #2c3e50; padding: 10px 15px; "
+                "border-radius: 18px; display: inline-block; max-width: 65%; word-wrap: break-word; "
+                "font-size: 14px; line-height: 1.5; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);\">"
+                "%1</div></div>"
             ).arg(content.toHtmlEscaped());
             
             QString newHtml = beforeDiv + aiResponseHtml + afterDiv;
@@ -667,16 +703,25 @@ void AIChatDialog::appendAIMessageWithMarkdown(const QString& markdown)
         bodyContent = markdown.toHtmlEscaped();
     }
     
+    QTextCursor cursor = m_chatDisplay->textCursor();
+    cursor.movePosition(QTextCursor::End);
+    
+    // 创建左对齐的块格式
+    QTextBlockFormat blockFormat;
+    blockFormat.setAlignment(Qt::AlignLeft);
+    cursor.insertBlock(blockFormat);
+    
     // 将Markdown渲染的内容包装在聊天气泡样式中
     QString html = QString(
-        "<div style=\"margin: 10px 0; text-align: left;\">"
-        "<div style=\"background-color: #ecf0f1; color: #2c3e50; padding: 12px 16px; "
-        "border-radius: 12px; display: inline-block; max-width: 80%; word-wrap: break-word; "
-        "font-family: 'Microsoft YaHei', Arial, sans-serif; line-height: 1.5;\">"
-        "%1</div></div>"
+        "<span style=\"background-color: #ecf0f1; color: #2c3e50; padding: 12px 16px; "
+        "border-radius: 12px; display: inline-block; max-width: 75%; word-wrap: break-word; "
+        "font-family: 'Microsoft YaHei', Arial, sans-serif; line-height: 1.5; "
+        "box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);\">"
+        "%1</span>"
     ).arg(bodyContent);
     
-    m_chatDisplay->append(html);
+    cursor.insertHtml(html);
+    m_chatDisplay->setTextCursor(cursor);
 }
 
 bool AIChatDialog::isMarkdownContent(const QString& content)
