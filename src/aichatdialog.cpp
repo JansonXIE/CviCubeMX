@@ -534,7 +534,7 @@ void AIChatDialog::appendUserMessage(const QString& message)
     
     // 插入用户消息的HTML
     QString html = QString(
-        "<span style=\"background-color: #3498db; color: white; padding: 10px 15px; "
+        "<span style=\"background-color: #ecf0f1; color: #2c3e50; padding: 10px 15px; "
         "border-radius: 18px; display: inline-block; max-width: 65%; word-wrap: break-word; "
         "font-size: 14px; line-height: 1.5; box-shadow: 0 2px 5px rgba(52, 152, 219, 0.3);\">"
         "%1</span>"
@@ -563,7 +563,7 @@ void AIChatDialog::appendAIMessage(const QString& message)
         
         // 插入AI消息的HTML
         QString html = QString(
-            "<span style=\"background-color: #ecf0f1; color: #2c3e50; padding: 10px 15px; "
+            "<span style=\"background-color: #ffffffff; color: #2c3e50; padding: 10px 15px; "
             "border-radius: 18px; display: inline-block; max-width: 65%; word-wrap: break-word; "
             "font-size: 14px; line-height: 1.5; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);\">"
             "%1</span>"
