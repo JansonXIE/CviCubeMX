@@ -29,6 +29,7 @@ AIChatDialog::AIChatDialog(QWidget *parent)
     , m_networkManager(nullptr)
     , m_currentReply(nullptr)
     , m_isConnected(false)
+    , m_isFirstContentChunk(true)
     , m_isWaitingForResponse(false)
 {
     // 初始化AI API配置
@@ -283,6 +284,7 @@ void AIChatDialog::sendMessageToAI(const QString& message)
     
     m_isWaitingForResponse = true;
     m_sendButton->setEnabled(false);
+    m_isFirstContentChunk = true; // 重置首次内容标记
     
     // 创建请求
     QNetworkRequest request;
@@ -391,9 +393,9 @@ void AIChatDialog::onNetworkReplyReadyRead()
                                 if (!content.isEmpty()) {
                                     m_currentAIResponse += content;
                                     qDebug() << "累积响应内容长度:" << m_currentAIResponse.length();
-                                    qDebug() << "当前累积内容:" << m_currentAIResponse;
                                     
-                                    // 不进行实时更新，只累积内容
+                                    // 实时流式更新显示
+                                    updateAIResponseStreamContent(content);
                                 } else {
                                     qDebug() << "内容片段为空，跳过";
                                 }
@@ -467,46 +469,55 @@ void AIChatDialog::onNetworkReplyFinished()
         setConnectionStatus(true);
         qDebug() << "流式响应完成，累积内容长度:" << m_currentAIResponse.length();
         
-        // 显示最终的完整响应内容
-        if (!m_currentAIResponse.isEmpty()) {
-            qDebug() << "执行最终的强制更新，内容:" << m_currentAIResponse;
-            
-            // 使用QTextCursor方式清除"正在思考中..."消息
+        // 内容已经在流式输出中显示，这里只需检查是否收到了内容
+        if (m_currentAIResponse.isEmpty()) {
+            // 如果没有收到任何内容（第一个内容块都没有到达）
+            // 删除"正在思考中..."并显示错误
             QString currentText = m_chatDisplay->toPlainText();
             int lastThinkingIndex = currentText.lastIndexOf("正在思考中...");
             
             if (lastThinkingIndex != -1) {
-                qDebug() << "找到'正在思考中...'位置:" << lastThinkingIndex;
-                
-                // 使用QTextCursor定位并删除"正在思考中..."所在的块
                 QTextCursor cursor = m_chatDisplay->textCursor();
-                
-                // 从头开始查找"正在思考中..."
                 cursor.movePosition(QTextCursor::Start);
                 QTextDocument* doc = m_chatDisplay->document();
                 cursor = doc->find("正在思考中...", cursor);
                 
                 if (!cursor.isNull()) {
-                    qDebug() << "通过QTextCursor找到'正在思考中...'";
-                    
-                    // 选择整个块（段落）
                     cursor.movePosition(QTextCursor::StartOfBlock);
                     cursor.movePosition(QTextCursor::EndOfBlock, QTextCursor::KeepAnchor);
-                    
-                    // 删除选中的内容
                     cursor.removeSelectedText();
-                    
-                    // 删除空行
                     cursor.deletePreviousChar();
-                    
-                    qDebug() << "已删除'正在思考中...'消息";
                 }
             }
             
-            // 添加最终的完整AI响应
-            appendAIMessage(m_currentAIResponse);
-        } else {
             showErrorMessage("没有收到AI响应内容");
+        } else {
+            // 检测内容是否包含Markdown格式，如果是则重新渲染
+            if (isMarkdownContent(m_currentAIResponse)) {
+                qDebug() << "检测到Markdown内容，删除纯文本并重新渲染...";
+                
+                // 删除最后一个AI消息段落（纯文本流式输出）
+                QTextCursor cursor = m_chatDisplay->textCursor();
+                cursor.movePosition(QTextCursor::End);
+                cursor.movePosition(QTextCursor::StartOfBlock);
+                
+                // 检查是否是左对齐的AI消息
+                QTextBlockFormat blockFormat = cursor.blockFormat();
+                if (blockFormat.alignment() == Qt::AlignLeft) {
+                    qDebug() << "找到AI消息段落，删除...";
+                    
+                    // 选择并删除整个段落
+                    cursor.select(QTextCursor::BlockUnderCursor);
+                    cursor.removeSelectedText();
+                    cursor.deletePreviousChar(); // 删除段落分隔符
+                    
+                    qDebug() << "已删除纯文本，准备插入Markdown版本";
+                }
+                
+                // 一次性插入Markdown渲染的完整内容
+                appendAIMessageWithMarkdown(m_currentAIResponse);
+                qDebug() << "已插入Markdown渲染内容";
+            }
         }
     }
     
@@ -655,6 +666,87 @@ void AIChatDialog::updateAIResponseWithContent(const QString& content)
     } else {
         // 如果没找到"正在思考中..."，直接添加新消息
         appendAIMessage(content);
+    }
+    
+    scrollToBottom();
+}
+
+void AIChatDialog::updateAIResponseStreamContent(const QString& newContent)
+{
+    if (m_isFirstContentChunk) {
+        // 第一次收到内容，删除"正在思考中..."并创建AI消息气泡
+        m_isFirstContentChunk = false;
+        
+        // 查找并删除"正在思考中..."消息
+        QString currentText = m_chatDisplay->toPlainText();
+        int lastThinkingIndex = currentText.lastIndexOf("正在思考中...");
+        
+        if (lastThinkingIndex != -1) {
+            QTextCursor cursor = m_chatDisplay->textCursor();
+            cursor.movePosition(QTextCursor::Start);
+            QTextDocument* doc = m_chatDisplay->document();
+            cursor = doc->find("正在思考中...", cursor);
+            
+            if (!cursor.isNull()) {
+                // 选择并删除整个块
+                cursor.movePosition(QTextCursor::StartOfBlock);
+                cursor.movePosition(QTextCursor::EndOfBlock, QTextCursor::KeepAnchor);
+                cursor.removeSelectedText();
+                cursor.deletePreviousChar(); // 删除空行
+            }
+        }
+        
+        // 创建新的AI消息区域
+        QTextCursor cursor = m_chatDisplay->textCursor();
+        cursor.movePosition(QTextCursor::End);
+        
+        // 创建左对齐的块格式
+        QTextBlockFormat blockFormat;
+        blockFormat.setAlignment(Qt::AlignLeft);
+        cursor.insertBlock(blockFormat);
+        
+        // 插入AI消息的起始HTML
+        QString html = QString(
+            "<span style=\"background-color: #ffffffff; color: #2c3e50; padding: 10px 15px; "
+            "border-radius: 18px; display: inline-block; max-width: 65%; word-wrap: break-word; "
+            "font-size: 14px; line-height: 1.5; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);\">"
+            "%1</span>"
+        ).arg(newContent.toHtmlEscaped());
+        
+        cursor.insertHtml(html);
+        
+        // 保存当前文档末尾位置作为插入点
+        m_streamCursor = m_chatDisplay->textCursor();
+        m_streamCursor.movePosition(QTextCursor::End);
+        
+    } else {
+        // 后续内容片段，在文档末尾追加（不是替换）
+        // 获取当前HTML内容
+        QString currentHtml = m_chatDisplay->toHtml();
+        
+        // 找到最后一个</span>标签的位置
+        int lastSpanClose = currentHtml.lastIndexOf("</span>");
+        
+        if (lastSpanClose != -1) {
+            // 在最后一个</span>之前插入新内容
+            QString beforeSpan = currentHtml.left(lastSpanClose);
+            QString afterSpan = currentHtml.mid(lastSpanClose);
+            
+            // 拼接新内容
+            QString newHtml = beforeSpan + newContent.toHtmlEscaped() + afterSpan;
+            
+            // 保存滚动条位置
+            QScrollBar* scrollBar = m_chatDisplay->verticalScrollBar();
+            bool wasAtBottom = (scrollBar->value() >= scrollBar->maximum() - 10);
+            
+            // 更新HTML
+            m_chatDisplay->setHtml(newHtml);
+            
+            // 恢复滚动位置或滚动到底部
+            if (wasAtBottom) {
+                scrollBar->setValue(scrollBar->maximum());
+            }
+        }
     }
     
     scrollToBottom();

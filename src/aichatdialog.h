@@ -46,6 +46,7 @@ private:
     bool isMarkdownContent(const QString& content);
     void updateAIResponse();
     void updateAIResponseWithContent(const QString& content);
+    void updateAIResponseStreamContent(const QString& newContent);
     void showErrorMessage(const QString& error);
     void setConnectionStatus(bool connected);
     void scrollToBottom();
@@ -76,6 +77,8 @@ private:
     // 状态管理
     bool m_isConnected;
     QString m_currentAIResponse;
+    bool m_isFirstContentChunk; // 标记是否为第一个内容片段
+    QTextCursor m_streamCursor; // 用于流式更新的光标位置
     
     // UI状态
     bool m_isWaitingForResponse;
