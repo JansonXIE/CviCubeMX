@@ -567,9 +567,11 @@ void AIChatDialog::appendAIMessage(const QString& message)
         QTextCursor cursor = m_chatDisplay->textCursor();
         cursor.movePosition(QTextCursor::End);
         
-        // 创建左对齐的块格式
+        // 创建左对齐的块格式，增加上下间距
         QTextBlockFormat blockFormat;
         blockFormat.setAlignment(Qt::AlignLeft);
+        blockFormat.setTopMargin(15);      // 上边距
+        blockFormat.setBottomMargin(15);   // 下边距
         cursor.insertBlock(blockFormat);
         
         // 插入AI消息的HTML
@@ -700,9 +702,11 @@ void AIChatDialog::updateAIResponseStreamContent(const QString& newContent)
         QTextCursor cursor = m_chatDisplay->textCursor();
         cursor.movePosition(QTextCursor::End);
         
-        // 创建左对齐的块格式
+        // 创建左对齐的块格式，增加上下间距
         QTextBlockFormat blockFormat;
         blockFormat.setAlignment(Qt::AlignLeft);
+        blockFormat.setTopMargin(15);      // 上边距
+        blockFormat.setBottomMargin(15);   // 下边距
         cursor.insertBlock(blockFormat);
         
         // 插入AI消息的起始HTML
@@ -813,9 +817,11 @@ void AIChatDialog::appendAIMessageWithMarkdown(const QString& markdown)
     QTextCursor cursor = m_chatDisplay->textCursor();
     cursor.movePosition(QTextCursor::End);
     
-    // 创建左对齐的块格式
+    // 创建左对齐的块格式，增加上下间距
     QTextBlockFormat blockFormat;
     blockFormat.setAlignment(Qt::AlignLeft);
+    blockFormat.setTopMargin(15);      // 上边距
+    blockFormat.setBottomMargin(15);   // 下边距
     cursor.insertBlock(blockFormat);
     
     // 将Markdown渲染的内容包装在聊天气泡样式中
