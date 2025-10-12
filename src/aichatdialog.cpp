@@ -308,7 +308,7 @@ void AIChatDialog::sendMessageToAI(const QString& message)
     // System message
     QJsonObject systemMessage;
     systemMessage["role"] = "system";
-    systemMessage["content"] = "你是SophNet智能助手";
+    systemMessage["content"] = "你是SophNet智能助手, 尽量使用markdown格式回复问题。";
     messages.append(systemMessage);
     
     // User message
