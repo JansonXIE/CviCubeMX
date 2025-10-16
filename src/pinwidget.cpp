@@ -9,10 +9,11 @@ PinWidget::PinWidget(const QString& pinName, bool isSquare, QWidget *parent)
     , m_contextMenu(nullptr)
     , m_isHighlighted(false)
     , m_blinkState(false)
+    , m_userConfigured(false)
 {
-    // 设置基本属性
-    setMinimumSize(25, 25);
-    setMaximumSize(25, 25);
+    // 设置基本属性：为底部标签预留额外高度（不改变圆圈尺寸）
+    setMinimumSize(60, 25);
+    setMaximumSize(60, 25);
 
     // 初始化显示名称为引脚名称
     m_displayName = m_pinName;
@@ -32,8 +33,10 @@ PinWidget::PinWidget(const QString& pinName, bool isSquare, QWidget *parent)
 
 void PinWidget::setFunction(const QString& function)
 {
-    if (m_functions.contains(function)) {
+    if (m_functions.contains(function) || function.compare("reset_state", Qt::CaseInsensitive) == 0) {
         m_function = function;
+        // 用户通过菜单选择，标记为已配置
+        m_userConfigured = true;
         updateButtonStyle();
         updateTooltip();
         emit functionChanged(m_pinName, m_function);
@@ -64,6 +67,9 @@ QString PinWidget::getDisplayName() const
 void PinWidget::setSupportedFunctions(const QStringList& functions)
 {
     m_functions = functions;
+    if (!m_functions.contains("reset_state")) {
+        m_functions.append("reset_state");
+    }
 
     // 如果当前功能不在支持列表中，设置为默认功能
     if (!m_functions.contains(m_function)) {
@@ -98,39 +104,10 @@ void PinWidget::paintEvent(QPaintEvent *event)
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);
 
-    // 获取颜色
-    QColor color;
-    if (m_function == "GPIO" || m_function.startsWith("XGPIO")) {
-        color = QColor("#95a5a6");  // 灰色
-    } else if (m_function == "ADC" || m_function.contains("ADC")) {
-        color = QColor("#e74c3c");  // 红色
-    } else if (m_function == "I2C" || m_function.contains("IIC")) {
-        color = QColor("#3498db");  // 蓝色
-    } else if (m_function == "UART" || m_function.contains("UART")) {
-        color = QColor("#2ecc71");  // 绿色
-    } else if (m_function == "SPI" || m_function.contains("SPI")) {
-        color = QColor("#f39c12");  // 橙色
-    } else if (m_function == "PWM" || m_function.contains("PWM")) {
-        color = QColor("#9b59b6");  // 紫色
-    } else if (m_function == "Timer" || m_function.contains("TIMER")) {
-        color = QColor("#e67e22");  // 棕色
-    } else if (m_function.contains("CAM")) {
-        color = QColor("#1abc9c");  // 青绿色 - 摄像头接口
-    } else if (m_function.contains("AUX")) {
-        color = QColor("#f1c40f");  // 黄色 - 辅助接口
-    } else if (m_function.contains("DBG")) {
-        color = QColor("#8e44ad");  // 深紫色 - 调试接口
-    } else if (m_function.contains("MIPI")) {
-        color = QColor("#e91e63");  // 粉色 - MIPI接口
-    } else if (m_function.contains("VI") || m_function.contains("VO")) {
-        color = QColor("#ff5722");  // 深橙色 - 视频接口
-    } else if (m_function.contains("SD")) {
-        color = QColor("#607d8b");  // 蓝灰色 - SD卡接口
-    } else if (m_function.contains("PAD")) {
-        color = QColor("#795548");  // 棕色 - PAD接口
-    } else {
-        color = QColor("#95a5a6");  // 默认灰色
-    }
+    // 两态着色：仅当被用户配置过且功能不是reset_state 时显示为绿色
+    const bool isConfigured = (m_userConfigured && !(m_function.compare("reset_state", Qt::CaseInsensitive) == 0));
+
+    QColor color = isConfigured ? QColor("#2ecc71") : QColor("#95a5a6");
 
     // 如果引脚被禁用，淡化颜色
     if (!isEnabled()) {
@@ -144,41 +121,63 @@ void PinWidget::paintEvent(QPaintEvent *event)
     painter.setBrush(color);
     painter.setPen(QPen(QColor("#ffffffff"), 2));
 
-    // 如果是高亮状态，根据闪烁状态改变边框颜色
-    if (m_isHighlighted && isEnabled()) {
-        if (m_blinkState) {
-            painter.setPen(QPen(QColor("#000000"), 4)); // 黑色粗边框
-        } else {
-            painter.setPen(QPen(QColor("#000000"), 2)); // 黑色细边框
-        }
-    }
+    // 记录是否需要高亮，避免修改圆圈边框笔画（保持白边），高亮改为外部矩形框
+    const bool needHighlightBorder = (m_isHighlighted && isEnabled());
+
+    // 圆圈以高度为基准（与未配置相同），文字绘制在圆圈右侧
+    const int shapeSize = qMax(4, height() - 4);
 
     if (m_isSquare) {
-        // 绘制方形（QFN封装）
-        painter.drawRect(2, 2, width() - 4, height() - 4);
+        // 绘制方形（QFN封装）：固定为正方形，不随控件加宽变大
+        painter.drawRect(2, 2, shapeSize, shapeSize);
     } else {
-        // 绘制圆形（BGA封装）
-        painter.drawEllipse(2, 2, width() - 4, height() - 4);
+        // 绘制圆形（BGA封装）：固定为正圆，不随控件加宽变椭圆
+        painter.drawEllipse(2, 2, shapeSize, shapeSize);
     }
 
-    // 如果引脚被禁用，绘制×标记
+    // 如果引脚被禁用，绘制×标记（与圆圈尺寸一致，落在圆圈内框）
     if (!isEnabled()) {
         painter.setPen(QPen(QColor("#e74c3c"), 2));  // 红色×
-        int margin = 4;
-        // 绘制×的两条线
-        painter.drawLine(margin, margin, width() - margin, height() - margin);
-        painter.drawLine(width() - margin, margin, margin, height() - margin);
+        const int inset = 4; // 留出与白色边框一致的内缩
+        QRect shapeRect(2, 2, shapeSize, shapeSize);
+        QPoint a(shapeRect.left() + inset, shapeRect.top() + inset);
+        QPoint b(shapeRect.right() - inset, shapeRect.bottom() - inset);
+        QPoint c(shapeRect.right() - inset, shapeRect.top() + inset);
+        QPoint d(shapeRect.left() + inset, shapeRect.bottom() - inset);
+        painter.drawLine(a, b);
+        painter.drawLine(c, d);
     }
 
-    // 绘制悬停效果
+    // 绘制悬停效果：仅绘制矩形边框，避免出现椭圆圈
     if (underMouse() && isEnabled()) {
-        painter.setBrush(QBrush());
-        painter.setPen(QPen(QColor("#34495e"), 3));
-        if (m_isSquare) {
-            painter.drawRect(1, 1, width() - 2, height() - 2);
-        } else {
-            painter.drawEllipse(1, 1, width() - 2, height() - 2);
-        }
+        painter.setBrush(Qt::NoBrush);
+        painter.setPen(QPen(QColor("#34495e"), 2));
+        painter.drawRect(1, 1, width() - 2, height() - 2);
+    }
+
+    // 已配置时在右侧显示功能名（与选择框高度齐平），避免省略
+    if (isConfigured) {
+        QFont font = painter.font();
+        int ps = font.pointSize();
+        if (ps <= 0) ps = 9; // 兜底
+        int newPs = ps - 5; // 小号字体
+        if (newPs < 4) newPs = 4;
+        if (newPs > 9) newPs = 9;
+        font.setPointSize(newPs);
+        painter.setFont(font);
+        painter.setPen(QPen(QColor("#000000")));
+        QString text = m_function; // 显示所选功能名（如 VO_D_8）
+        // 在圆圈右侧绘制，垂直居中
+        const int margin = 4;
+        QRect textRect(2 + shapeSize + margin, 2, width() - (2 + shapeSize + margin) - 2, shapeSize);
+        painter.drawText(textRect, Qt::AlignVCenter | Qt::AlignLeft | Qt::TextWrapAnywhere, text);
+    }
+
+    // 绘制高亮边框（矩形），避免椭圆外圈
+    if (needHighlightBorder) {
+        painter.setBrush(Qt::NoBrush);
+        painter.setPen(QPen(QColor("#000000"), m_blinkState ? 4 : 2));
+        painter.drawRect(1, 1, width() - 2, height() - 2);
     }
 }
 
@@ -218,6 +217,16 @@ void PinWidget::setupContextMenu()
         action->setChecked(function == m_function);
         connect(action, &QAction::triggered, this, &PinWidget::onFunctionSelected);
     }
+
+    // 如果列表中没有 reset_state，追加一个“复位状态(reset_state)”选项，便于显式取消 PINMUX 生成
+    if (!m_functions.contains("reset_state")) {
+        m_contextMenu->addSeparator();
+        QAction *resetAct = m_contextMenu->addAction("reset_state");
+        resetAct->setData("reset_state");
+        resetAct->setCheckable(true);
+        resetAct->setChecked(m_function.compare("reset_state", Qt::CaseInsensitive) == 0);
+        connect(resetAct, &QAction::triggered, this, &PinWidget::onFunctionSelected);
+    }
 }
 
 void PinWidget::onFunctionSelected()
@@ -246,6 +255,9 @@ void PinWidget::initializePinFunctions()
 {
     // 获取该引脚支持的功能列表
     m_functions = m_pinFunction.getSupportedFunctions(m_pinName);
+    if (!m_functions.contains("reset_state")) {
+        m_functions.append("reset_state");
+    }
 
     // 设置默认功能
     m_function = m_pinFunction.getDefaultFunction(m_pinName);

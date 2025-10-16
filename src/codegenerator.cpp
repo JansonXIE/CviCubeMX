@@ -366,6 +366,10 @@ QString CodeGenerator::generatePinmuxFunction(const ChipConfig& config)
     for (auto it = pinFunctions.begin(); it != pinFunctions.end(); ++it) {
         QString pinName = it.key();
         QString funcName = it.value();
+        // reset_state: 取消生成 PINMUX_CONFIG
+        if (funcName.compare("reset_state", Qt::CaseInsensitive) == 0) {
+            continue;
+        }
         if (funcName != "GPIO") { // GPIO不需要特殊配置
             functionGroups[funcName].append(pinName);
         }
@@ -454,6 +458,10 @@ QString CodeGenerator::generatePinmuxConfig(const ChipConfig& config)
     for (auto it = pinFunctions.begin(); it != pinFunctions.end(); ++it) {
         QString pinName = it.key();
         QString funcName = it.value();
+        // reset_state: 取消生成 PINMUX_CONFIG
+        if (funcName.compare("reset_state", Qt::CaseInsensitive) == 0) {
+            continue;
+        }
         if (funcName != "GPIO") { // GPIO不需要特殊配置
             functionGroups[funcName].append(pinName);
         }

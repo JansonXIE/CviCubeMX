@@ -48,7 +48,7 @@ void ChipConfig::clearPinFunctions()
 
 void ChipConfig::initializeAvailableFunctions()
 {
-    m_availableFunctions << "GPIO" << "ADC" << "I2C" << "UART" << "SPI" << "PWM" << "Timer";
+    m_availableFunctions << "GPIO" << "ADC" << "I2C" << "UART" << "SPI" << "PWM" << "Timer" << "reset_state";
 }
 
 int ChipConfig::getPinCountForChip(const QString& chipType) const
