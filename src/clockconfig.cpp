@@ -145,6 +145,7 @@ ClockConfigWidget::ClockConfigWidget(QWidget *parent)
     , m_resizeDirection(None)
     , m_handleSize(8)
     , m_connectionOverlay(nullptr)
+    , m_isPanning(false)
 {
     setupUI();
     setupClockSources();
@@ -171,6 +172,7 @@ ClockConfigWidget::ClockConfigWidget(QWidget *parent)
 
     // 初始化模块位置
     initializeModulePositions();
+    m_highlightTarget = nullptr;
 }
 
 ClockConfigWidget::~ClockConfigWidget()
@@ -195,7 +197,7 @@ void ClockConfigWidget::setupUI()
 
     // 创建时钟流程显示区域（水平滚动）
     m_flowScrollArea = new QScrollArea();
-    m_flowScrollArea->setWidgetResizable(true);
+    m_flowScrollArea->setWidgetResizable(false);
     m_flowScrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
     m_flowScrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
     m_flowScrollArea->setMinimumHeight(600);
@@ -237,6 +239,25 @@ void ClockConfigWidget::setupUI()
 
     // 创建控制按钮区域
     m_buttonLayout = new QHBoxLayout();
+
+    // 搜索框与按钮
+    m_searchEdit = new QLineEdit();
+    m_searchEdit->setPlaceholderText("搜索clk名称，例如 clk_cpu / clk_tpu …");
+    m_searchEdit->setFixedWidth(260);
+    m_searchButton = new QPushButton("搜索");
+    m_searchButton->setStyleSheet(
+        "QPushButton { "
+        "background-color: #17a2b8; "
+        "color: white; "
+        "border: none; "
+        "padding: 8px 16px; "
+        "border-radius: 6px; "
+        "font-weight: bold; "
+        "font-size: 13px; "
+        "} "
+        "QPushButton:hover { background-color: #138496; } "
+        "QPushButton:pressed { background-color: #0f6674; }"
+    );
 
     m_resetButton = new QPushButton("重置为默认ND");
     m_resetButton->setStyleSheet(
@@ -296,6 +317,8 @@ void ClockConfigWidget::setupUI()
         "}"
     );
 
+    m_buttonLayout->addWidget(m_searchEdit);
+    m_buttonLayout->addWidget(m_searchButton);
     m_buttonLayout->addWidget(m_resetButton);
     m_buttonLayout->addWidget(m_positionConfigButton);
     m_buttonLayout->addStretch();
@@ -1373,7 +1396,13 @@ void ClockConfigWidget::setupClkFAB100MSubNodes()
     m_clkFAB100MSubNodeWidget->setParent(m_flowWidget);
     // 默认位置将在initializeModulePositions中设置
 }
-
+QString ClockConfigWidget::formatClockTitle(const QString& text) const
+{
+    // 保留下划线，但在下划线后插入零宽空格，允许换行同时不丢失字符
+    QString s = text;
+    s.replace("_", "_\u200b");
+    return s;
+}
 void ClockConfigWidget::setupClkSPINANDSubNodes()
 {
     // 创建clk_spi_nand子节点区域
@@ -1501,9 +1530,11 @@ void ClockConfigWidget::createPLLWidget(const QString& pllName, QWidget* parent)
     layout->setContentsMargins(5, 5, 5, 5);
 
     // PLL名称标签
-    QLabel* nameLabel = new QLabel(pllName);
+    QLabel* nameLabel = new QLabel();
+    nameLabel->setText(formatClockTitle(pllName));
     nameLabel->setStyleSheet("font-weight: bold; color: #856404; font-size: 11px;");
     nameLabel->setAlignment(Qt::AlignCenter);
+    nameLabel->setWordWrap(true);
 
     // 倍频器配置（居中布局）
     QHBoxLayout* configLayout = new QHBoxLayout();
@@ -1594,9 +1625,11 @@ void ClockConfigWidget::createSubPLLWidget(const QString& pllName, QWidget* pare
     layout->setContentsMargins(5, 5, 5, 5);
 
     // PLL名称标签
-    QLabel* nameLabel = new QLabel(pllName);
+    QLabel* nameLabel = new QLabel();
+    nameLabel->setText(formatClockTitle(pllName));
     nameLabel->setStyleSheet("font-weight: bold; color: #0c5460; font-size: 11px;");
     nameLabel->setAlignment(Qt::AlignCenter);
+    nameLabel->setWordWrap(true);
 
     // 分频器配置
     QHBoxLayout* divConfigLayout = new QHBoxLayout();
@@ -1712,7 +1745,8 @@ void ClockConfigWidget::createOutputWidget(const QString& outputName, QWidget* p
     layout->setContentsMargins(3, 3, 3, 3);
 
     // 输出名称标签
-    QLabel* nameLabel = new QLabel(outputName);
+    QLabel* nameLabel = new QLabel();
+    nameLabel->setText(formatClockTitle(outputName));
     nameLabel->setStyleSheet("font-weight: bold; color: #721c24; font-size: 11px;");
     nameLabel->setAlignment(Qt::AlignCenter);
     nameLabel->setWordWrap(true);
@@ -1789,7 +1823,8 @@ void ClockConfigWidget::createClk1MSubNodeWidget(const QString& nodeName, QWidge
     layout->setContentsMargins(3, 3, 3, 3);
 
     // 子节点名称标签
-    QLabel* nameLabel = new QLabel(nodeName);
+    QLabel* nameLabel = new QLabel();
+    nameLabel->setText(formatClockTitle(nodeName));
     nameLabel->setStyleSheet("font-weight: bold; color: #004085; font-size: 11px;");
     nameLabel->setAlignment(Qt::AlignCenter);
     nameLabel->setWordWrap(true);
@@ -1858,7 +1893,8 @@ void ClockConfigWidget::createClkCam1PLLSubNodeWidget(const QString& nodeName, Q
     layout->setContentsMargins(3, 3, 3, 3);
 
     // 子节点名称标签
-    QLabel* nameLabel = new QLabel(nodeName);
+    QLabel* nameLabel = new QLabel();
+    nameLabel->setText(formatClockTitle(nodeName));
     nameLabel->setStyleSheet("font-weight: bold; color: #856404; font-size: 11px;");
     nameLabel->setAlignment(Qt::AlignCenter);
     nameLabel->setWordWrap(true);
@@ -1928,7 +1964,8 @@ void ClockConfigWidget::createClkRawAxiSubNodeWidget(const QString& nodeName, QW
     layout->setContentsMargins(3, 3, 3, 3);
 
     // 子节点名称标签
-    QLabel* nameLabel = new QLabel(nodeName);
+    QLabel* nameLabel = new QLabel();
+    nameLabel->setText(formatClockTitle(nodeName));
     nameLabel->setStyleSheet("font-weight: bold; color: #8b7355; font-size: 11px;");
     nameLabel->setAlignment(Qt::AlignCenter);
     nameLabel->setWordWrap(true);
@@ -1998,7 +2035,8 @@ void ClockConfigWidget::createClkCam0PLLSubNodeWidget(const QString& nodeName, Q
     layout->setContentsMargins(3, 3, 3, 3);
 
     // 子节点名称标签
-    QLabel* nameLabel = new QLabel(nodeName);
+    QLabel* nameLabel = new QLabel();
+    nameLabel->setText(formatClockTitle(nodeName));
     nameLabel->setStyleSheet("font-weight: bold; color: #0066cc; font-size: 11px;");
     nameLabel->setAlignment(Qt::AlignCenter);
     nameLabel->setWordWrap(true);
@@ -2078,7 +2116,8 @@ void ClockConfigWidget::createClkDispPLLSubNodeWidget(const QString& nodeName, Q
     layout->setContentsMargins(3, 3, 3, 3);
 
     // 子节点名称标签
-    QLabel* nameLabel = new QLabel(nodeName);
+    QLabel* nameLabel = new QLabel();
+    nameLabel->setText(formatClockTitle(nodeName));
     nameLabel->setStyleSheet("font-weight: bold; color: #cc0066; font-size: 11px;");
     nameLabel->setAlignment(Qt::AlignCenter);
     nameLabel->setWordWrap(true);
@@ -2162,7 +2201,8 @@ void ClockConfigWidget::createClkSysDispSubNodeWidget(const QString& nodeName, Q
     layout->setContentsMargins(3, 3, 3, 3);
 
     // 子节点名称标签
-    QLabel* nameLabel = new QLabel(nodeName);
+    QLabel* nameLabel = new QLabel();
+    nameLabel->setText(formatClockTitle(nodeName));
     nameLabel->setStyleSheet("font-weight: bold; color: #0066cc; font-size: 11px;");
     nameLabel->setAlignment(Qt::AlignCenter);
     nameLabel->setWordWrap(true);
@@ -2232,7 +2272,8 @@ void ClockConfigWidget::createClkA0PLLSubNodeWidget(const QString& nodeName, QWi
     layout->setContentsMargins(3, 3, 3, 3);
 
     // 子节点名称标签
-    QLabel* nameLabel = new QLabel(nodeName);
+    QLabel* nameLabel = new QLabel();
+    nameLabel->setText(formatClockTitle(nodeName));
     nameLabel->setStyleSheet("font-weight: bold; color: #191970; font-size: 11px;");
     nameLabel->setAlignment(Qt::AlignCenter);
     nameLabel->setWordWrap(true);
@@ -2302,7 +2343,8 @@ void ClockConfigWidget::createClkRVPLLSubNodeWidget(const QString& nodeName, QWi
     layout->setContentsMargins(3, 3, 3, 3);
 
     // 子节点名称标签
-    QLabel* nameLabel = new QLabel(nodeName);
+    QLabel* nameLabel = new QLabel();
+    nameLabel->setText(formatClockTitle(nodeName));
     nameLabel->setStyleSheet("font-weight: bold; color: #191970; font-size: 11px;");
     nameLabel->setAlignment(Qt::AlignCenter);
     nameLabel->setWordWrap(true);
@@ -2375,7 +2417,8 @@ void ClockConfigWidget::createClkAPPLLSubNodeWidget(const QString& nodeName, QWi
     layout->setContentsMargins(3, 3, 3, 3);
 
     // 子节点名称标签
-    QLabel* nameLabel = new QLabel(nodeName);
+    QLabel* nameLabel = new QLabel();
+    nameLabel->setText(formatClockTitle(nodeName));
     nameLabel->setStyleSheet("font-weight: bold; color: #117a65; font-size: 11px;");
     nameLabel->setAlignment(Qt::AlignCenter);
     nameLabel->setWordWrap(true);
@@ -2445,7 +2488,8 @@ void ClockConfigWidget::createClkFPLLSubNodeWidget(const QString& nodeName, QWid
     layout->setContentsMargins(3, 3, 3, 3);
 
     // 子节点名称标签
-    QLabel* nameLabel = new QLabel(nodeName);
+    QLabel* nameLabel = new QLabel();
+    nameLabel->setText(formatClockTitle(nodeName));
     nameLabel->setStyleSheet("font-weight: bold; color: #155724; font-size: 11px;");
     nameLabel->setAlignment(Qt::AlignCenter);
     nameLabel->setWordWrap(true);
@@ -2553,7 +2597,8 @@ void ClockConfigWidget::createClkTPLLSubNodeWidget(const QString& nodeName, QWid
     layout->setContentsMargins(3, 3, 3, 3);
 
     // 子节点名称标签
-    QLabel* nameLabel = new QLabel(nodeName);
+    QLabel* nameLabel = new QLabel();
+    nameLabel->setText(formatClockTitle(nodeName));
     nameLabel->setStyleSheet("font-weight: bold; color: #cc5200; font-size: 11px;");
     nameLabel->setAlignment(Qt::AlignCenter);
     nameLabel->setWordWrap(true);
@@ -2633,7 +2678,8 @@ void ClockConfigWidget::createClkMPLLSubNodeWidget(const QString& nodeName, QWid
     layout->setContentsMargins(3, 3, 3, 3);
 
     // 子节点名称标签
-    QLabel* nameLabel = new QLabel(nodeName);
+    QLabel* nameLabel = new QLabel();
+    nameLabel->setText(formatClockTitle(nodeName));
     nameLabel->setStyleSheet("font-weight: bold; color: #996600; font-size: 11px;");
     nameLabel->setAlignment(Qt::AlignCenter);
     nameLabel->setWordWrap(true);
@@ -2793,7 +2839,8 @@ void ClockConfigWidget::createClkFAB100MSubNodeWidget(const QString& nodeName, Q
     layout->setContentsMargins(3, 3, 3, 3);
 
     // 子节点名称标签
-    QLabel* nameLabel = new QLabel(nodeName);
+    QLabel* nameLabel = new QLabel();
+    nameLabel->setText(formatClockTitle(nodeName));
     nameLabel->setStyleSheet("font-weight: bold; color: #4b0082; font-size: 11px;");
     nameLabel->setAlignment(Qt::AlignCenter);
     nameLabel->setWordWrap(true);
@@ -2877,7 +2924,8 @@ void ClockConfigWidget::createClkSPINANDSubNodeWidget(const QString& nodeName, Q
     layout->setContentsMargins(3, 3, 3, 3);
 
     // 子节点名称标签
-    QLabel* nameLabel = new QLabel(nodeName);
+    QLabel* nameLabel = new QLabel();
+    nameLabel->setText(formatClockTitle(nodeName));
     nameLabel->setStyleSheet("font-weight: bold; color: #212529; font-size: 11px;");
     nameLabel->setAlignment(Qt::AlignCenter);
     nameLabel->setWordWrap(true);
@@ -2947,7 +2995,8 @@ void ClockConfigWidget::createClkHSPeriSubNodeWidget(const QString& nodeName, QW
     layout->setContentsMargins(3, 3, 3, 3);
 
     // 子节点名称标签
-    QLabel* nameLabel = new QLabel(nodeName);
+    QLabel* nameLabel = new QLabel();
+    nameLabel->setText(formatClockTitle(nodeName));
     nameLabel->setStyleSheet("font-weight: bold; color: #117a8b; font-size: 11px;");
     nameLabel->setAlignment(Qt::AlignCenter);
     nameLabel->setWordWrap(true);
@@ -3180,6 +3229,41 @@ void ClockConfigWidget::applyModulePositions()
 
     // 重绘连接线
     updateConnectionOverlay();
+
+    // 确保画布尺寸覆盖所有模块，避免无法拖到最右/最下
+    ensureFlowCanvasFitsContent();
+}
+
+void ClockConfigWidget::ensureFlowCanvasFitsContent()
+{
+    if (!m_flowWidget) return;
+
+    int maxRight = 0;
+    int maxBottom = 0;
+
+    // 收集所有模块widget
+    QList<QWidget*> allWidgets;
+    allWidgets << m_inputWidget << m_pllWidget << m_subPllWidget << m_outputWidget
+               << m_clk1MSubNodeWidget << m_clkCam1PLLSubNodeWidget << m_clkRawAxiSubNodeWidget
+               << m_clkCam0PLLSubNodeWidget << m_clkDispPLLSubNodeWidget << m_clkSysDispSubNodeWidget
+               << m_clkA0PLLSubNodeWidget << m_clkRVPLLSubNodeWidget << m_clkAPPLLSubNodeWidget
+               << m_clkFPLLSubNodeWidget << m_clkTPLLSubNodeWidget << m_clkMPLLSubNodeWidget
+               << m_clkFAB100MSubNodeWidget << m_clkSPINANDSubNodeWidget << m_clkHSPeriSubNodeWidget;
+
+    for (QWidget* w : allWidgets) {
+        if (!w) continue;
+        QRect r = w->geometry();
+        maxRight = qMax(maxRight, r.right() + 40);   // 右侧留边
+        maxBottom = qMax(maxBottom, r.bottom() + 40); // 底部留边
+    }
+
+    // 至少保持当前大小
+    maxRight = qMax(maxRight, m_flowWidget->minimumWidth());
+    maxBottom = qMax(maxBottom, m_flowWidget->minimumHeight());
+
+    // 同时更新最小尺寸与实际尺寸，确保滚动区域有足够的可滚动范围
+    m_flowWidget->setMinimumSize(maxRight, maxBottom);
+    m_flowWidget->resize(maxRight, maxBottom);
 }
 
 void ClockConfigWidget::showPositionConfigDialog()
@@ -3415,6 +3499,8 @@ void ClockConfigWidget::connectSignals()
     connect(m_resetButton, &QPushButton::clicked, this, &ClockConfigWidget::resetToDefaults);
     connect(m_positionConfigButton, &QPushButton::clicked, this, &ClockConfigWidget::showPositionConfigDialog);
     connect(m_applyButton, &QPushButton::clicked, this, &ClockConfigWidget::applyOverclockConfig);
+    connect(m_searchButton, &QPushButton::clicked, this, &ClockConfigWidget::onSearchTriggered);
+    connect(m_searchEdit, &QLineEdit::returnPressed, this, &ClockConfigWidget::onSearchTriggered);
 
     // 连接滚动条信号以重绘连接线
     connect(m_flowScrollArea->horizontalScrollBar(), &QScrollBar::valueChanged,
@@ -4599,6 +4685,16 @@ bool ClockConfigWidget::eventFilter(QObject* obj, QEvent* event)
         // 绘制连接线
         drawConnectionLines(painter);
 
+        // 高亮选中目标（若存在）
+        if (m_highlightTarget && m_highlightTarget->isVisible()) {
+            // 将目标控件矩形转换到 flowWidget 坐标系
+            QPoint tlFlow = m_highlightTarget->mapTo(m_flowWidget, QPoint(0, 0));
+            QRect rect = QRect(tlFlow, m_highlightTarget->size()).adjusted(-6, -6, 6, 6);
+            painter.setPen(QPen(QColor(220, 53, 69), 3));
+            painter.setBrush(Qt::NoBrush);
+            painter.drawRoundedRect(rect, 8, 8);
+        }
+
         return true;  // 事件已处理
     }
 
@@ -4635,8 +4731,14 @@ void ClockConfigWidget::mousePressEvent(QMouseEvent* event)
             // 重绘以显示选中状态
             update();
         } else {
-            // 点击空白区域，取消选中
+            // 点击空白区域，开始画布平移
             m_selectedWidget = nullptr;
+            m_isPanning = true;
+            m_panStartPos = event->pos();
+            if (m_flowScrollArea) {
+                m_panStartHValue = m_flowScrollArea->horizontalScrollBar()->value();
+                m_panStartVValue = m_flowScrollArea->verticalScrollBar()->value();
+            }
             update();
         }
     }
@@ -4701,6 +4803,15 @@ void ClockConfigWidget::mouseMoveEvent(QMouseEvent* event)
 
         // 更新连接线
         m_connectionOverlay->update();
+    } else if (m_isPanning && m_flowScrollArea) {
+        // 画布平移：根据鼠标位移同步水平/垂直滚动条
+        QPoint delta = pos - m_panStartPos;
+        QScrollBar* hbar = m_flowScrollArea->horizontalScrollBar();
+        QScrollBar* vbar = m_flowScrollArea->verticalScrollBar();
+        if (hbar) hbar->setValue(m_panStartHValue - delta.x());
+        if (vbar) vbar->setValue(m_panStartVValue - delta.y());
+        // 更新连接线覆盖层
+        updateConnectionOverlay();
     } else {
         // 更新鼠标光标 - 转换坐标到flowWidget坐标系
         QPoint flowPos = convertToFlowWidgetCoordinate(pos);
@@ -4732,6 +4843,7 @@ void ClockConfigWidget::mouseReleaseEvent(QMouseEvent* event)
 
         m_isDragging = false;
         m_isResizing = false;
+        m_isPanning = false;
         m_resizeDirection = None;
 
         // 恢复默认光标
@@ -5919,6 +6031,92 @@ void ClockConfigWidget::updateConnectionOverlay()
     m_connectionOverlay->update(); // 重绘覆盖层
 }
 
+QWidget* ClockConfigWidget::findClockWidgetByName(const QString& key, QString* resolvedName) const
+{
+    if (key.isEmpty()) return nullptr;
+    QString k = key.trimmed();
+
+    auto tryFind = [&](const QMap<QString, QWidget*>& map)->QWidget*{
+        for (auto it = map.constBegin(); it != map.constEnd(); ++it) {
+            if (it.key().compare(k, Qt::CaseInsensitive) == 0) { if (resolvedName) *resolvedName = it.key(); return it.value(); }
+        }
+        return nullptr;
+    };
+
+    QWidget* w = nullptr;
+    // 1) 先在三大区域内查找同名输出/PLL名称
+    if (!w) w = tryFind(m_pllWidgets);
+    if (!w) w = tryFind(m_subPllWidgets);
+    if (!w) w = tryFind(m_outputWidgets);
+
+    // 2) 子节点区域
+    if (!w) w = tryFind(m_clk1MSubNodeWidgets);
+    if (!w) w = tryFind(m_clkCam1PLLSubNodeWidgets);
+    if (!w) w = tryFind(m_clkRawAxiSubNodeWidgets);
+    if (!w) w = tryFind(m_clkCam0PLLSubNodeWidgets);
+    if (!w) w = tryFind(m_clkDispPLLSubNodeWidgets);
+    if (!w) w = tryFind(m_clkSysDispSubNodeWidgets);
+    if (!w) w = tryFind(m_clkA0PLLSubNodeWidgets);
+    if (!w) w = tryFind(m_clkRVPLLSubNodeWidgets);
+    if (!w) w = tryFind(m_clkAPPLLSubNodeWidgets);
+    if (!w) w = tryFind(m_clkFPLLSubNodeWidgets);
+    if (!w) w = tryFind(m_clkTPLLSubNodeWidgets);
+    if (!w) w = tryFind(m_clkMPLLSubNodeWidgets);
+    if (!w) w = tryFind(m_clkFAB100MSubNodeWidgets);
+    if (!w) w = tryFind(m_clkSPINANDSubNodeWidgets);
+    if (!w) w = tryFind(m_clkHSPeriSubNodeWidgets);
+
+    // 3) 兼容用户输入省略前缀的情况：如输入 cpu 试配 clk_cpu
+    if (!w && !k.startsWith("clk_", Qt::CaseInsensitive)) {
+        QString alt = QString("clk_%1").arg(k);
+        if (!w) w = findClockWidgetByName(alt, resolvedName);
+    }
+
+    return w;
+}
+
+void ClockConfigWidget::centerOnWidget(QWidget* w)
+{
+    if (!w || !m_flowScrollArea) return;
+    // 转换到 flowWidget 坐标
+    QPoint tlFlow = w->mapTo(m_flowWidget, QPoint(0, 0));
+    QRect g(tlFlow, w->size());
+    QPoint center = g.center();
+    // 视口尺寸
+    QSize vp = m_flowScrollArea->viewport()->size();
+    int targetX = qMax(0, center.x() - vp.width() / 2);
+    int targetY = qMax(0, center.y() - vp.height() / 2);
+    m_flowScrollArea->horizontalScrollBar()->setValue(targetX);
+    m_flowScrollArea->verticalScrollBar()->setValue(targetY);
+    updateConnectionOverlay();
+}
+
+void ClockConfigWidget::requestHighlight(QWidget* w)
+{
+    m_highlightTarget = w;
+    // 2秒后清除高亮
+    QTimer::singleShot(2000, this, [this]() {
+        m_highlightTarget = nullptr;
+        updateConnectionOverlay();
+    });
+    updateConnectionOverlay();
+}
+
+void ClockConfigWidget::onSearchTriggered()
+{
+    QString key = m_searchEdit ? m_searchEdit->text().trimmed() : QString();
+    if (key.isEmpty()) return;
+    m_lastSearch = key;
+    QString resolved;
+    QWidget* w = findClockWidgetByName(key, &resolved);
+    if (!w) {
+        QMessageBox::information(this, "提示", QString("未找到: %1").arg(key));
+        return;
+    }
+    centerOnWidget(w);
+    requestHighlight(w);
+}
+
 QWidget* ClockConfigWidget::getWidgetAt(const QPoint& pos)
 {
     // 检查所有模块widget是否包含该点
@@ -6005,6 +6203,10 @@ void ClockConfigWidget::updateWidgetGeometry(QWidget* widget, const QRect& newGe
         pos.height = newGeometry.height();
         m_modulePositions[moduleName] = pos;
     }
+
+    // 模块拖拽/缩放后，确保画布可滚动到新边界
+    ensureFlowCanvasFitsContent();
+    updateConnectionOverlay();
 }
 
 QPoint ClockConfigWidget::convertToFlowWidgetCoordinate(const QPoint& pos) const

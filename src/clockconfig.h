@@ -12,6 +12,7 @@
 #include <QGroupBox>
 #include <QScrollArea>
 #include <QPushButton>
+#include <QLineEdit>
 #include <QFrame>
 #include <QSplitter>
 #include <QTreeWidget>
@@ -80,24 +81,25 @@ public:
     // 获取和设置PLL配置
     PLLConfig getPLLConfig(const QString& pllName) const;
     void setPLLConfig(const QString& pllName, const PLLConfig& config);
-    
+
     // 保存和加载配置
     bool saveConfig(const QString& filePath);
     bool loadConfig(const QString& filePath);
-    
+
     // 设置源代码路径和芯片类型
     void setSourcePath(const QString& sourcePath);
     void setChipType(const QString& chipType);
-    
+
     // 导出到defconfig文件
     bool exportToDefconfig(const QString& sourcePath, const QString& chipType, const QString& configName, const QString& value);
-    
+
     // 模块位置配置相关函数
     void showPositionConfigDialog();
     void setModulePosition(const QString& moduleName, int x, int y);
     ModulePosition getModulePosition(const QString& moduleName) const;
     void resetModulePositions();
     void applyModulePositions();
+    void ensureFlowCanvasFitsContent();  // 调整画布最小尺寸以包含所有模块
 
 protected:
     void paintEvent(QPaintEvent* event) override;
@@ -133,6 +135,7 @@ private slots:
     void updateFrequencies();
     void resetToDefaults();
     void applyOverclockConfig(); // 新增OD超频函数
+    void onSearchTriggered();    // 新增：搜索触发
 
 private:
     void setupUI();
@@ -211,7 +214,7 @@ private:
     void updateAllClkHSPeriSubNodeFrequencies();  // 新增：更新所有clk_hsperi子节点频率
 
     void connectSignals();
-    
+
     // 连接线绘制相关方法
     void drawConnectionLines(QPainter& painter);
     void drawArrowLine(QPainter& painter, const QPoint& start, const QPoint& end, const QColor& color = Qt::blue);
@@ -253,7 +256,11 @@ private:
     QPoint getClkHSPeriConnectionPoint() const;  // 新增：获取clk_hsperi连接点
     QPoint getClkHSPeriSubNodeConnectionPoint() const;  // 新增：获取clk_hsperi子节点连接点
     void updateConnectionOverlay();
-    
+    QWidget* findClockWidgetByName(const QString& key, QString* resolvedName = nullptr) const; // 新增：根据名称查找控件
+    void centerOnWidget(QWidget* w);  // 新增：将视角定位到控件
+    void requestHighlight(QWidget* w); // 新增：请求高亮
+    QString formatClockTitle(const QString& text) const; // 新增：名称可读性与自动换行
+
     // 拖拽和缩放辅助方法
     QWidget* getWidgetAt(const QPoint& pos);
     ResizeDirection getResizeDirection(const QPoint& pos, const QRect& widgetRect);
@@ -264,31 +271,31 @@ private:
     void drawResizeHandles(QPainter& painter, const QRect& rect);
     QRect getResizeHandleRect(const QRect& widgetRect, ResizeDirection direction);
     QPoint convertToFlowWidgetCoordinate(const QPoint& pos) const;  // 新增：坐标转换方法
-    
+
     // UI组件
     QVBoxLayout* m_mainLayout;
-    
+
     // 时钟流程显示区域
     QScrollArea* m_flowScrollArea;
     QWidget* m_flowWidget;
     // QHBoxLayout* m_flowLayout;  // 不再使用布局管理器，改为绝对定位
-    
+
     // 输入源区域
     QWidget* m_inputWidget;
     QVBoxLayout* m_inputLayout;
-    
+
     // PLL区域
     QWidget* m_pllWidget;
     QVBoxLayout* m_pllLayout;
-    
+
     // 子PLL区域
     QWidget* m_subPllWidget;
     QVBoxLayout* m_subPllLayout;
-    
+
     // 输出区域
     QWidget* m_outputWidget;
     QVBoxLayout* m_outputLayout;
-    
+
     // clk_1M子节点区域
     QWidget* m_clk1MSubNodeWidget;
     QVBoxLayout* m_clk1MSubNodeLayout;
@@ -302,7 +309,7 @@ private:
     QWidget* m_clkSysDispSubNodeWidget;
     QVBoxLayout* m_clkDispPLLSubNodeLayout;
     QVBoxLayout* m_clkSysDispSubNodeLayout;
-    
+
     // clk_a0pll子节点区域
     QWidget* m_clkA0PLLSubNodeWidget;
     QVBoxLayout* m_clkA0PLLSubNodeLayout;
@@ -343,9 +350,9 @@ private:
     QWidget* m_clockTreeWidget;
     QVBoxLayout* m_clockTreeLayout;
     QTreeWidget* m_clockTree;
-    
+
     // 右侧配置面板已删除，现在使用流程布局
-    
+
     // 时钟源配置组件
     QGroupBox* m_clockSourceGroup;
     QVBoxLayout* m_clockSourceLayout;
@@ -353,27 +360,27 @@ private:
     QLabel* m_rtcLabel;
     QLabel* m_oscFreqLabel;
     QLabel* m_rtcFreqLabel;
-    
+
     // PLL配置组
     QGroupBox* m_pllGroup;
     QVBoxLayout* m_pllGroupLayout;
     QMap<QString, QWidget*> m_pllWidgets;
     QMap<QString, QSpinBox*> m_pllMultiplierBoxes;
     QMap<QString, QLabel*> m_pllFreqLabels;
-    
+
     // 子PLL配置组
     QMap<QString, QWidget*> m_subPllWidgets;
     QMap<QString, QSpinBox*> m_subPllMultiplierBoxes;
     QMap<QString, QDoubleSpinBox*> m_subPllDividerBoxes;  // 改为QDoubleSpinBox支持小数
     QMap<QString, QLabel*> m_subPllFreqLabels;
-    
+
     // 输出配置组
     QGroupBox* m_outputGroup;
     QVBoxLayout* m_outputGroupLayout;
     QMap<QString, QWidget*> m_outputWidgets;
     QMap<QString, QLabel*> m_outputFreqLabels;
     QMap<QString, QSpinBox*> m_outputDividerBoxes;  // 新增：输出分频器控件
-    
+
     // clk子节点配置组
     QMap<QString, QWidget*> m_clk1MSubNodeWidgets;
     QMap<QString, QLabel*> m_clk1MSubNodeFreqLabels;
@@ -420,13 +427,15 @@ private:
     QMap<QString, QWidget*> m_clkHSPeriSubNodeWidgets;
     QMap<QString, QLabel*> m_clkHSPeriSubNodeFreqLabels;
     QMap<QString, QSpinBox*> m_clkHSPeriSubNodeDividerBoxes;
-    
+
     // 控制按钮
     QHBoxLayout* m_buttonLayout;
     QPushButton* m_resetButton;
     QPushButton* m_applyButton;
     QPushButton* m_positionConfigButton;  // 新增：位置配置按钮
-    
+    QLineEdit* m_searchEdit;              // 新增：搜索框
+    QPushButton* m_searchButton;          // 新增：搜索按钮
+
     // 数据存储
     QMap<QString, PLLConfig> m_pllConfigs;
     QMap<QString, ClockOutput> m_outputs;
@@ -446,11 +455,11 @@ private:
     QMap<QString, ClockOutput> m_clkSPINANDSubNodes;  // 新增：clk_spi_nand子节点数据
     QMap<QString, ClockOutput> m_clkHSPeriSubNodes;  // 新增：clk_hsperi子节点数据
     QMap<QString, ModulePosition> m_modulePositions;  // 新增：模块位置配置
-    
+
     // 源代码路径和芯片类型
     QString m_sourcePath;
     QString m_chipType;
-    
+
     // 常量
     static const double OSC_FREQUENCY;  // 25MHz
     static const double RTC_FREQUENCY;  // 32.768kHz
@@ -472,7 +481,7 @@ private:
     static const QStringList CLK_FAB_100M_SUB_NODES;  // 新增：clk_fab_100M子节点列表
     static const QStringList CLK_SPI_NAND_SUB_NODES;  // 新增：clk_spi_nand子节点列表
     static const QStringList CLK_HSPERI_SUB_NODES;  // 新增：clk_hsperi子节点列表
-    
+
     // 拖拽和缩放相关的成员变量
     bool m_isDragging;              // 是否正在拖拽
     bool m_isResizing;              // 是否正在缩放
@@ -482,9 +491,17 @@ private:
     QRect m_originalGeometry;       // 原始几何形状
     ResizeDirection m_resizeDirection;  // 缩放方向
     int m_handleSize;               // 缩放手柄大小
-    
+
     // 连接线覆盖层
     QWidget* m_connectionOverlay;
+    QWidget* m_highlightTarget;           // 新增：当前高亮目标
+    QString m_lastSearch;                 // 新增：上次搜索关键字
+
+    // 画布平移（拖动画布）相关
+    bool m_isPanning;               // 是否正在平移画布
+    QPoint m_panStartPos;           // 平移开始时鼠标位置（组件坐标）
+    int m_panStartHValue;           // 平移开始时水平滚动条值
+    int m_panStartVValue;           // 平移开始时垂直滚动条值
 };
 
 #endif // CLOCKCONFIG_H
