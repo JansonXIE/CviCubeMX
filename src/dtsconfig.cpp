@@ -266,7 +266,7 @@ QPair<int,int> DtsConfig::getCoolingFrequenciesForTrip(const QString &zoneName, 
     QString coolBlock = m_fileContent.mid(coolRange.first, coolRange.second - coolRange.first);
     // 解析 dev-freqs 行，采集为 pair 列表（按顺序）
     // 形如：dev-freqs = <1100000000 750000000>,\n            <500000000 375000000>,\n            <500000000 300000000>;
-    QRegularExpression devRe("dev-freqs\s*=\s*([^;]+);", QRegularExpression::DotMatchesEverythingOption);
+    QRegularExpression devRe("dev-freqs\\s*=\\s*([^;]+);", QRegularExpression::DotMatchesEverythingOption);
     auto dm = devRe.match(coolBlock);
     if (!dm.hasMatch()) return qMakePair(0, 0);
     QString devBody = dm.captured(1);
