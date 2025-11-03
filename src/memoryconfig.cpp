@@ -866,6 +866,35 @@ void MemoryConfigWidget::onTableSelectionChanged()
         m_nameEdit->setText(region.name);
         m_startAddressEdit->setText(formatAddress(region.startAddress));
         
+        // 对于ION区域，Start Address是基于End Address和Size计算的，设置为只读
+        if (regionName == "ION") {
+            m_startAddressEdit->setReadOnly(true);
+            m_startAddressEdit->setToolTip("ION的起始地址由结束地址和大小自动计算");
+            m_startAddressEdit->setStyleSheet(
+                "QLineEdit { "
+                "padding: 6px; "
+                "border: 1px solid #bdc3c7; "
+                "border-radius: 4px; "
+                "background-color: #f0f0f0; "
+                "color: #7f8c8d; "
+                "}"
+            );
+        } else {
+            m_startAddressEdit->setReadOnly(false);
+            m_startAddressEdit->setToolTip("");
+            m_startAddressEdit->setStyleSheet(
+                "QLineEdit { "
+                "padding: 6px; "
+                "border: 1px solid #bdc3c7; "
+                "border-radius: 4px; "
+                "background-color: #ffffff; "
+                "} "
+                "QLineEdit:focus { "
+                "border: 2px solid #3498db; "
+                "}"
+            );
+        }
+        
         // 自动选择合适的单位显示大小
         QString sizeText;
         QString unit;
@@ -907,6 +936,14 @@ void MemoryConfigWidget::onConfigFieldChanged()
     
     MemoryRegion& region = m_memoryRegions[regionName];
     
+    // 保存所有旧值，用于验证失败时回滚
+    MemoryRegion oldRegion = region;
+    QString oldRegionName = regionName;
+    QMap<QString, MemoryRegion> oldMemoryRegions = m_memoryRegions;
+    
+    // 保存旧的size值，用于判断是否有变化
+    quint64 oldSize = region.size;
+    
     // 更新区域数据
     QString newName = m_nameEdit->text().trimmed();
     if (!newName.isEmpty() && newName != region.name) {
@@ -918,31 +955,124 @@ void MemoryConfigWidget::onConfigFieldChanged()
         regionName = newName;
     }
     
-    // 更新起始地址
-    region.startAddress = parseAddress(m_startAddressEdit->text());
+    // 更新起始地址（ION区域除外，因为ION的Start Address需要基于End Address和Size计算）
+    if (regionName != "ION") {
+        region.startAddress = parseAddress(m_startAddressEdit->text());
+    }
     
     // 更新大小
     bool ok;
     double sizeValue = m_sizeEdit->text().toDouble(&ok);
     if (ok && sizeValue >= 0) {
         QString unit = m_sizeUnitCombo->currentText();
-        quint64 actualSize = static_cast<quint64>(sizeValue);
+        quint64 actualSize = 0;
         if (unit == "K") {
-            actualSize = static_cast<quint64>(sizeValue * 1024);
+            actualSize = static_cast<quint64>(sizeValue * 1024.0);
         } else if (unit == "M") {
-            actualSize = static_cast<quint64>(sizeValue * 1024 * 1024);
+            actualSize = static_cast<quint64>(sizeValue * 1024.0 * 1024.0);
         } else if (unit == "G") {
-            actualSize = static_cast<quint64>(sizeValue * 1024 * 1024 * 1024);
+            actualSize = static_cast<quint64>(sizeValue * 1024.0 * 1024.0 * 1024.0);
+        } else {
+            // B
+            actualSize = static_cast<quint64>(sizeValue);
         }
         
         region.size = actualSize;
-        // 基于start address + size计算end address
-        region.endAddress = region.startAddress + region.size;
-        region.sizeString = formatSize(region.size);
+        
+        // 特殊处理：ION和RTOS_ION区域在size改变时需要调整Start Address
+        if (regionName == "ION") {
+            // ION区域：End Address固定不变，通过调整Start Address来适应新的size
+            // 保持当前的End Address，向前调整Start Address
+            // 如果是初始化状态，使用默认的End Address
+            if (region.endAddress == 0 || region.endAddress == region.startAddress + oldSize) {
+                // 使用当前的End Address（如果已经设置）或计算默认值
+                if (region.endAddress == 0) {
+                    // 初始化：使用BOOTLOGO的起始地址作为ION的End Address
+                    region.endAddress = 0x89e3e000;
+                }
+            }
+            // 基于固定的End Address和新的size计算Start Address
+            region.startAddress = region.endAddress - actualSize;
+            
+            // 同步更新H26X_BITSTREAM、H26X_ENC_BUFF、ISP_MEM_BASE的Start Address
+            // 这些区域与ION共享起始地址
+            QStringList relatedRegions = {"H26X_BITSTREAM", "H26X_ENC_BUFF", "ISP_MEM_BASE"};
+            for (const QString& relatedName : relatedRegions) {
+                if (m_memoryRegions.contains(relatedName)) {
+                    m_memoryRegions[relatedName].startAddress = region.startAddress;
+                    m_memoryRegions[relatedName].endAddress = m_memoryRegions[relatedName].startAddress + m_memoryRegions[relatedName].size;
+                    // 更新相关区域的sizeString
+                    m_memoryRegions[relatedName].sizeString = formatSize(m_memoryRegions[relatedName].size);
+                }
+            }
+        } else if (regionName == "RTOS_ION" && actualSize != oldSize) {
+            // RTOS_ION区域：调整Start Address，End Address固定在总内存末尾
+            // 总内存末尾：0x80000000 + 0x10000000 = 0x90000000
+            quint64 memoryEnd = MEMORY_BASE_ADDRESS + TOTAL_MEMORY_SIZE;
+            region.endAddress = memoryEnd;
+            region.startAddress = region.endAddress - actualSize;
+            
+            // 当RTOS_ION改变时，需要调整ION及相关区域的Start Address
+            // 计算新的ION起始地址：RTOS_ION的Start Address之前
+            quint64 newIonStartAddress = region.startAddress;
+            
+            if (m_memoryRegions.contains("ION")) {
+                quint64 ionSize = m_memoryRegions["ION"].size;
+                m_memoryRegions["ION"].startAddress = newIonStartAddress - ionSize;
+                m_memoryRegions["ION"].endAddress = m_memoryRegions["ION"].startAddress + ionSize;
+                // 更新ION的sizeString
+                m_memoryRegions["ION"].sizeString = formatSize(ionSize);
+                
+                // H26X_BITSTREAM、H26X_ENC_BUFF、ISP_MEM_BASE与ION共享Start Address
+                QStringList relatedRegions = {"H26X_BITSTREAM", "H26X_ENC_BUFF", "ISP_MEM_BASE"};
+                for (const QString& relatedName : relatedRegions) {
+                    if (m_memoryRegions.contains(relatedName)) {
+                        m_memoryRegions[relatedName].startAddress = m_memoryRegions["ION"].startAddress;
+                        m_memoryRegions[relatedName].endAddress = m_memoryRegions[relatedName].startAddress + m_memoryRegions[relatedName].size;
+                        // 更新相关区域的sizeString
+                        m_memoryRegions[relatedName].sizeString = formatSize(m_memoryRegions[relatedName].size);
+                    }
+                }
+            }
+        } else {
+            // 其他区域：基于start address + size计算end address
+            region.endAddress = region.startAddress + region.size;
+        }
+        
+        // 确保sizeString使用实际的size值更新
+        region.sizeString = formatSize(actualSize);
     }
+    
+    // 先更新内存区域映射中的数据
+    m_memoryRegions[regionName] = region;
     
     // 更新表格显示
     updateSizeString(currentRow);
+    
+    // 如果是ION或RTOS_ION，需要更新相关区域的表格显示
+    if (regionName == "ION" || regionName == "RTOS_ION") {
+        QStringList relatedRegions;
+        if (regionName == "ION") {
+            relatedRegions = {"H26X_BITSTREAM", "H26X_ENC_BUFF", "ISP_MEM_BASE"};
+        } else {
+            relatedRegions = {"ION", "H26X_BITSTREAM", "H26X_ENC_BUFF", "ISP_MEM_BASE"};
+        }
+        
+        for (const QString& relatedName : relatedRegions) {
+            int relatedRow = m_regionOrder.indexOf(relatedName);
+            if (relatedRow >= 0) {
+                updateSizeString(relatedRow);
+                
+                // 更新表格中的地址
+                if (QTableWidgetItem* startItem = m_memoryTable->item(relatedRow, COL_START_ADDRESS)) {
+                    startItem->setText(formatAddress(m_memoryRegions[relatedName].startAddress));
+                }
+                if (QTableWidgetItem* endItem = m_memoryTable->item(relatedRow, COL_END_ADDRESS)) {
+                    endItem->setText(formatAddress(m_memoryRegions[relatedName].endAddress));
+                }
+            }
+        }
+    }
     
     // 更新表格中的名称和地址
     if (QTableWidgetItem* nameItem = m_memoryTable->item(currentRow, COL_NAME)) {
@@ -955,7 +1085,93 @@ void MemoryConfigWidget::onConfigFieldChanged()
         endItem->setText(formatAddress(region.endAddress));
     }
     
-    // 更新内存可视化
+    // 验证内存约束
+    QString errorMessage;
+    if (!validateMemoryConstraints(errorMessage)) {
+        // 验证失败，回滚所有修改
+        m_memoryRegions = oldMemoryRegions;
+        
+        // 如果名称改变了，需要恢复顺序列表
+        if (oldRegionName != region.name) {
+            m_regionOrder[currentRow] = oldRegionName;
+        }
+        
+        // 显示错误信息
+        QMessageBox::warning(this, "内存配置约束错误", 
+                           QString("当前配置违反了内存约束条件:\n\n%1\n\n"
+                                  "修改已被撤销。").arg(errorMessage));
+        
+        // 恢复配置面板显示（需要阻塞信号避免再次触发）
+        m_nameEdit->blockSignals(true);
+        m_startAddressEdit->blockSignals(true);
+        m_sizeEdit->blockSignals(true);
+        m_sizeUnitCombo->blockSignals(true);
+        
+        m_nameEdit->setText(oldRegion.name);
+        m_startAddressEdit->setText(formatAddress(oldRegion.startAddress));
+        
+        QString sizeText;
+        QString unit;
+        formatSizeForInput(oldRegion.size, sizeText, unit);
+        m_sizeEdit->setText(sizeText);
+        m_sizeUnitCombo->setCurrentText(unit);
+        
+        m_nameEdit->blockSignals(false);
+        m_startAddressEdit->blockSignals(false);
+        m_sizeEdit->blockSignals(false);
+        m_sizeUnitCombo->blockSignals(false);
+        
+        // 确保恢复后的数据sizeString是正确的
+        for (auto it = m_memoryRegions.begin(); it != m_memoryRegions.end(); ++it) {
+            it.value().sizeString = formatSize(it.value().size);
+        }
+        
+        // 恢复表格显示
+        updateSizeString(currentRow);
+        
+        // 如果是ION或RTOS_ION，需要恢复相关区域的表格显示
+        if (oldRegionName == "ION" || oldRegionName == "RTOS_ION") {
+            QStringList relatedRegions;
+            if (oldRegionName == "ION") {
+                relatedRegions = {"H26X_BITSTREAM", "H26X_ENC_BUFF", "ISP_MEM_BASE"};
+            } else {
+                relatedRegions = {"ION", "H26X_BITSTREAM", "H26X_ENC_BUFF", "ISP_MEM_BASE"};
+            }
+            
+            for (const QString& relatedName : relatedRegions) {
+                int relatedRow = m_regionOrder.indexOf(relatedName);
+                if (relatedRow >= 0) {
+                    updateSizeString(relatedRow);
+                    
+                    // 更新表格中的地址
+                    if (QTableWidgetItem* startItem = m_memoryTable->item(relatedRow, COL_START_ADDRESS)) {
+                        startItem->setText(formatAddress(m_memoryRegions[relatedName].startAddress));
+                    }
+                    if (QTableWidgetItem* endItem = m_memoryTable->item(relatedRow, COL_END_ADDRESS)) {
+                        endItem->setText(formatAddress(m_memoryRegions[relatedName].endAddress));
+                    }
+                }
+            }
+        }
+        
+        // 更新表格中的名称和地址
+        if (QTableWidgetItem* nameItem = m_memoryTable->item(currentRow, COL_NAME)) {
+            nameItem->setText(oldRegionName);
+        }
+        if (QTableWidgetItem* startItem = m_memoryTable->item(currentRow, COL_START_ADDRESS)) {
+            startItem->setText(formatAddress(oldRegion.startAddress));
+        }
+        if (QTableWidgetItem* endItem = m_memoryTable->item(currentRow, COL_END_ADDRESS)) {
+            endItem->setText(formatAddress(oldRegion.endAddress));
+        }
+        
+        // 更新内存可视化（使用回滚后的数据）
+        updateMemoryVisualization();
+        
+        return;  // 不发送信号，因为修改被撤销了
+    }
+    
+    // 验证通过，更新内存可视化
     updateMemoryVisualization();
     validateMemoryLayout();
     
@@ -1073,6 +1289,82 @@ void MemoryConfigWidget::checkMemoryOverlap()
             // 可以在这里添加UI提示
         }
     }
+}
+
+bool MemoryConfigWidget::validateMemoryConstraints(QString& errorMessage)
+{
+    // 辅助函数：获取区域的起始地址
+    auto getAddr = [this](const QString& name) -> quint64 {
+        if (m_memoryRegions.contains(name)) {
+            return m_memoryRegions[name].startAddress;
+        }
+        return 0;
+    };
+    
+    // 辅助函数：获取区域的大小
+    auto getSize = [this](const QString& name) -> quint64 {
+        if (m_memoryRegions.contains(name)) {
+            return m_memoryRegions[name].size;
+        }
+        return 0;
+    };
+    
+    // 计算RTOS_SYS_SIZE（这是一个计算值，需要根据实际情况定义）
+    // 从FSBL_C906L_START到RTOS_COMPRESS_BIN之间的区域总和
+    quint64 rtosLogSize = getSize("RTOS_LOG");
+    quint64 shareMemSize = getSize("SHARE_MEM");
+    quint64 shareParamSize = getSize("SHARE_PARAM");
+    quint64 pqbinSize = getSize("PQBIN");
+    quint64 rtosLogoSize = getSize("RTOS_LOGO");
+    quint64 cviUpdateHeaderSize = getSize("CVI_UPDATE_HEADER");
+    quint64 fsblUnzipSize = getSize("FSBL_UNZIP");
+    quint64 uimagSize = getSize("UIMAG");
+    
+    // RTOS_SYS_SIZE = 从FSBL_C906L_START到所有RTOS相关区域的总大小
+    // 简化计算：使用RTOS_COMPRESS_BIN的地址 - FSBL_C906L_START的地址作为RTOS_SYS_SIZE
+    quint64 fsblC906lStartAddr = getAddr("FSBL_C906L_START");
+    quint64 rtosCompressBinAddr = getAddr("RTOS_COMPRESS_BIN");
+    quint64 rtosSysSize = rtosCompressBinAddr > fsblC906lStartAddr ? 
+                          rtosCompressBinAddr - fsblC906lStartAddr : 0;
+    
+    // 约束1: RTOS_ION_ADDR >= FSBL_C906L_START_ADDR + RTOS_SYS_SIZE
+    quint64 rtosIonAddr = getAddr("RTOS_ION");
+    if (rtosIonAddr < fsblC906lStartAddr + rtosSysSize) {
+        errorMessage = QString("约束违反: RTOS_ION地址(0x%1) 必须 >= FSBL_C906L_START地址(0x%2) + RTOS_SYS_SIZE(0x%3)")
+                      .arg(rtosIonAddr, 0, 16)
+                      .arg(fsblC906lStartAddr, 0, 16)
+                      .arg(rtosSysSize, 0, 16);
+        return false;
+    }
+    
+    // 约束2: RTOS_COMPRESS_BIN_ADDR >= UIMAG_ADDR + UIMAG_SIZE
+    quint64 uimagAddr = getAddr("UIMAG");
+    if (rtosCompressBinAddr < uimagAddr + uimagSize) {
+        errorMessage = QString("约束违反: RTOS_COMPRESS_BIN地址(0x%1) 必须 >= UIMAG地址(0x%2) + UIMAG大小(0x%3)")
+                      .arg(rtosCompressBinAddr, 0, 16)
+                      .arg(uimagAddr, 0, 16)
+                      .arg(uimagSize, 0, 16);
+        return false;
+    }
+    
+    // 约束3: ION_ADDR >= FSBL_C906L_START_ADDR + RTOS_SYS_SIZE
+    quint64 ionAddr = getAddr("ION");
+    if (ionAddr < fsblC906lStartAddr + rtosSysSize) {
+        errorMessage = QString("约束违反: ION地址(0x%1) 必须 >= FSBL_C906L_START地址(0x%2) + RTOS_SYS_SIZE(0x%3)")
+                      .arg(ionAddr, 0, 16)
+                      .arg(fsblC906lStartAddr, 0, 16)
+                      .arg(rtosSysSize, 0, 16);
+        return false;
+    }
+    
+    // 注意：CONFIG_SYS_TEXT_BASE和CONFIG_SYS_INIT_SP_ADDR不在当前的内存区域列表中
+    // 如果需要检查这些约束，需要添加这些区域到配置中
+    // 或者假设它们与UIMAG有关联
+    
+    // 约束4和5暂时跳过，因为CONFIG_SYS_TEXT_BASE和CONFIG_SYS_INIT_SP_ADDR未定义
+    // 如果这些是固定值或需要添加到配置中，请告知
+    
+    return true;
 }
 
 QString MemoryConfigWidget::formatSize(quint64 sizeInBytes)

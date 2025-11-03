@@ -102,6 +102,7 @@ private:
     void formatSizeForInput(quint64 sizeInBytes, QString& sizeText, QString& unit);
     void searchAndSelectRegion(const QString& searchText);
     void setConfigPanelExpanded(bool expanded);
+    bool validateMemoryConstraints(QString& errorMessage);
     
     // UI组件
     QVBoxLayout* m_mainLayout;
