@@ -19,6 +19,7 @@ set(SOURCES
     src/peripheralconfigdialog.cpp
     src/clockconfig.cpp
     src/memoryconfig.cpp
+    src/flashconfig.cpp
     src/aichatdialog.cpp
 )
 
@@ -31,6 +32,7 @@ set(HEADERS
     src/peripheralconfigdialog.h
     src/clockconfig.h
     src/memoryconfig.h
+    src/flashconfig.h
     src/aichatdialog.h
     include/pinfunction.h
     include/cvi_board_init.h

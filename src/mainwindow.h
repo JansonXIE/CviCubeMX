@@ -26,6 +26,7 @@
 #include "dtsconfig.h"
 #include "clockconfig.h"
 #include "memoryconfig.h"
+#include "flashconfig.h"
 #include "aichatdialog.h"
 
 QT_BEGIN_NAMESPACE
@@ -50,6 +51,7 @@ private slots:
     void onPeripheralCheckBoxChanged(const QString& peripheral, bool enabled);
     void onClockConfigChanged();
     void onMemoryConfigChanged();
+    void onFlashConfigChanged();
     void onConfigTabChanged(int index);
     void onSelectSourcePath();
     void onShowAIChat();
@@ -61,6 +63,7 @@ private:
     void setupPinoutConfigPanel();
     void setupClockTab();
     void setupMemoryTab();
+    void setupFlashTab();
     void setupChipView();
     void createQFNLayout();
     void createBGALayout();
@@ -106,6 +109,7 @@ private:
     QWidget *m_pinoutTab;
     QWidget *m_clockTab;
     QWidget *m_memoryTab;
+    QWidget *m_flashTab;
     
     // Pinout配置页面的分隔器和布局
     QSplitter *m_pinoutSplitter;
@@ -133,6 +137,9 @@ private:
     
     // 内存配置页面
     MemoryConfigWidget *m_memoryConfigPage;
+    
+    // Flash配置页面
+    FlashConfigWidget *m_flashConfigPage;
     
     // 搜索功能组件
     QHBoxLayout *m_searchLayout;

@@ -31,6 +31,8 @@ MainWindow::MainWindow(QWidget *parent)
     , m_configTabWidget(nullptr)
     , m_pinoutTab(nullptr)
     , m_clockTab(nullptr)
+    , m_memoryTab(nullptr)
+    , m_flashTab(nullptr)
     , m_pinoutSplitter(nullptr)
     , m_pinoutConfigPanel(nullptr)
     , m_pinoutConfigLayout(nullptr)
@@ -48,6 +50,7 @@ MainWindow::MainWindow(QWidget *parent)
     , m_pinLayout(nullptr)
     , m_clockConfigPage(nullptr)
     , m_memoryConfigPage(nullptr)
+    , m_flashConfigPage(nullptr)
     , m_searchLayout(nullptr)
     , m_searchLabel(nullptr)
     , m_searchLineEdit(nullptr)
@@ -142,10 +145,14 @@ void MainWindow::setupUI()
     // 创建内存配置标签页
     setupMemoryTab();
 
+    // 创建Flash配置标签页
+    setupFlashTab();
+
     // 添加标签页
     m_configTabWidget->addTab(m_pinoutTab, "芯片引脚配置");
     m_configTabWidget->addTab(m_clockTab, "时钟配置");
     m_configTabWidget->addTab(m_memoryTab, "内存配置");
+    m_configTabWidget->addTab(m_flashTab, "Flash分区配置");
 
     // 添加到主布局
     m_mainLayout->addWidget(m_titleLabel);
@@ -165,6 +172,9 @@ void MainWindow::setupUI()
 
     // 连接内存配置信号
     connect(m_memoryConfigPage, &MemoryConfigWidget::configChanged, this, &MainWindow::onMemoryConfigChanged);
+
+    // 连接Flash配置信号
+    connect(m_flashConfigPage, &FlashConfigWidget::configChanged, this, &MainWindow::onFlashConfigChanged);
 }
 
 void MainWindow::setupMenuBar()
@@ -466,6 +476,28 @@ void MainWindow::setupMemoryTab()
     memoryLayout->addWidget(m_memoryConfigPage);
 }
 
+void MainWindow::setupFlashTab()
+{
+    // 创建Flash配置标签页
+    m_flashTab = new QWidget();
+
+    // 创建Flash配置页面
+    m_flashConfigPage = new FlashConfigWidget();
+
+    // 如果已经有源代码路径和芯片类型，设置到Flash配置页面
+    if (!m_sourcePath.isEmpty()) {
+        m_flashConfigPage->setSourcePath(m_sourcePath);
+    }
+    if (!m_selectedChip.isEmpty() && m_selectedChip != "请选择芯片型号") {
+        m_flashConfigPage->setChipType(m_selectedChip);
+    }
+
+    // 设置Flash标签页布局
+    QVBoxLayout* flashLayout = new QVBoxLayout(m_flashTab);
+    flashLayout->setContentsMargins(0, 0, 0, 0);
+    flashLayout->addWidget(m_flashConfigPage);
+}
+
 void MainWindow::setupSearchBox()
 {
     // 创建搜索布局
@@ -516,6 +548,11 @@ void MainWindow::onChipSelectionChanged()
     // 更新时钟配置页面的芯片类型
     if (m_clockConfigPage && selectedChip != "请选择芯片型号") {
         m_clockConfigPage->setChipType(selectedChip);
+    }
+
+    // 更新Flash配置页面的芯片类型
+    if (m_flashConfigPage && selectedChip != "请选择芯片型号") {
+        m_flashConfigPage->setChipType(selectedChip);
     }
 
     // 重新加载外设状态（基于新选择的芯片类型）
@@ -1488,6 +1525,16 @@ void MainWindow::onMemoryConfigChanged()
     // m_memoryConfigPage->exportToJson("memory_config.json");
 }
 
+void MainWindow::onFlashConfigChanged()
+{
+    // Flash配置更改时的处理
+    qDebug() << "Flash分区配置已更改";
+
+    // 可以在这里添加保存配置或其他处理逻辑
+    // 比如自动保存Flash配置到文件
+    // m_flashConfigPage->exportToJson("flash_config.json");
+}
+
 void MainWindow::onConfigTabChanged(int index)
 {
     // 标签页切换时的处理
@@ -1500,6 +1547,9 @@ void MainWindow::onConfigTabChanged(int index)
     } else if (index == 2) {
         // 切换到内存配置标签页
         qDebug() << "切换到内存配置页面";
+    } else if (index == 3) {
+        // 切换到Flash配置标签页
+        qDebug() << "切换到Flash分区配置页面";
     }
 }
 
@@ -1545,6 +1595,11 @@ void MainWindow::showPathSelectionDialog()
         // 更新时钟配置页面的源代码路径
         if (m_clockConfigPage) {
             m_clockConfigPage->setSourcePath(m_sourcePath);
+        }
+
+        // 更新Flash配置页面的源代码路径
+        if (m_flashConfigPage) {
+            m_flashConfigPage->setSourcePath(m_sourcePath);
         }
 
         QMessageBox::information(this, "成功",
