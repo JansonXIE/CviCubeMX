@@ -1221,10 +1221,10 @@ QString FlashConfigWidget::getDefconfigPath() const
 {
     QString chipType = m_chipType;
     if (chipType.isEmpty() || chipType == "请选择芯片型号") {
-        chipType = "cv1842hp";
+        chipType = "cv1842hp_wevb_0014a_emmc";
     }
     
-    QString defconfigPath = QString("build/boards/cv184x/%1_wevb_0014a_emmc/%1_wevb_0014a_emmc_defconfig")
+    QString defconfigPath = QString("build/boards/cv184x/%1/%1_defconfig")
                            .arg(chipType);
     
     QDir workspaceDir(m_sourcePath);

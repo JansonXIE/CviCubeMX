@@ -92,6 +92,9 @@ private:
     bool selectSourcePath();
     bool validateSourcePath(const QString& path);
     void showPathSelectionDialog();
+    
+    // 芯片选型
+    bool selectChipType();
 
     // UI Components
     QWidget *m_centralWidget;

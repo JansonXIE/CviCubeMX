@@ -346,8 +346,8 @@ QString CodeGenerator::generatePinmuxFunction(const ChipConfig& config)
     function += "    // Package type: ";
 
     QString chipType = config.getChipType();
-    bool isQFN = (chipType.endsWith('c') || chipType == "cv1842cp");
-    bool isBGA = (chipType.endsWith('h') || chipType == "cv1842hp");
+    bool isQFN = (chipType.endsWith('c') || chipType.contains("cp_"));
+    bool isBGA = (chipType.endsWith('h') || chipType.contains("hp_"));
 
     if (isQFN) {
         function += "QFN (Quad Flat No-leads)\n";
@@ -624,11 +624,11 @@ QString CodeGenerator::getDefaultBoardInitFilePath(const ChipConfig& config) con
 
     QString chipType = config.getChipType();
     if (chipType.isEmpty()) {
-        chipType = "cv1842hp"; // 默认芯片类型
+        chipType = "cv1842hp_wevb_0014a_emmc"; // 默认芯片类型
     }
 
     // 根据芯片类型构建文件路径
-    QString relativePath = QString("build/boards/cv184x/%1_wevb_0014a_emmc/u-boot/cvi_board_init.c").arg(chipType);
+    QString relativePath = QString("build/boards/cv184x/%1/u-boot/cvi_board_init.c").arg(chipType);
 
     QDir sourceDir(m_sourcePath);
     QString fullPath = sourceDir.absoluteFilePath(relativePath);

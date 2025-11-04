@@ -22,9 +22,9 @@ CviCubeMX 现在支持在启动时选择源代码目录路径，替代了之前�
 
 ### 4. 动态文件路径
 所有文件路径现在基于用户选择的根目录动态生成：
-- defconfig 文件路径：`{根目录}/build/boards/cv184x/{芯片型号}_wevb_0014a_emmc/linux/cvitek_{芯片型号}_wevb_0014a_emmc_defconfig`
+- defconfig 文件路径：`{根目录}/build/boards/cv184x/{芯片型号}/linux/cvitek_{芯片型号}_defconfig`
 - 设备树文件路径：`{根目录}/build/boards/default/dts/cv184x/cv184x_base.dtsi`
-- cvi_board_init.c 文件路径：`{根目录}/build/boards/cv184x/{芯片型号}_wevb_0014a_emmc/u-boot/cvi_board_init.c`
+- cvi_board_init.c 文件路径：`{根目录}/build/boards/cv184x/{芯片型号}/u-boot/cvi_board_init.c`
 
 ## 使用说明
 
@@ -47,9 +47,9 @@ CviCubeMX 现在支持在启动时选择源代码目录路径，替代了之前�
 ├── build/
     ├── boards/
     │   ├── cv184x/
-    │   │   ├── cv1801c_wevb_0014a_emmc/
-    │   │   ├── cv1801h_wevb_0014a_emmc/
-    │   │   ├── cv1842cp_wevb_0014a_emmc/
+    │   │   ├── cv1840cp_wevb_0015a_spinor/
+    │   │   ├── cv1841cp_wevb_0015a_spinand/
+    │   │   ├── cv1842cp_wevb_0015a_emmc/
     │   │   └── cv1842hp_wevb_0014a_emmc/
     │   │       ├── linux/
     │   │       │   └── cvitek_cv1842hp_wevb_0014a_emmc_defconfig

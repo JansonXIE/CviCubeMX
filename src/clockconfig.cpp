@@ -5352,7 +5352,7 @@ void ClockConfigWidget::resetToDefaults()
     // 导出CONFIG_OD_CLK_SEL=n到defconfig文件（如果路径和芯片类型已设置）
     if (!m_sourcePath.isEmpty() && !m_chipType.isEmpty()) {
         if (exportToDefconfig(m_sourcePath, m_chipType, "CONFIG_OD_CLK_SEL", "n")) {
-            QString defconfigPath = QString("build/boards/cv184x/%1_wevb_0014a_emmc/%1_wevb_0014a_emmc_defconfig")
+            QString defconfigPath = QString("build/boards/cv184x/%1/%1_defconfig")
                                    .arg(m_chipType);
             QMessageBox::information(this, "成功",
                                    QString("默认ND配置已应用并导出到: %1").arg(defconfigPath));
@@ -5400,7 +5400,7 @@ void ClockConfigWidget::applyOverclockConfig()
 
     // 导出CONFIG_OD_CLK_SEL=y到defconfig文件
     if (exportToDefconfig(m_sourcePath, m_chipType, "CONFIG_OD_CLK_SEL", "y")) {
-        QString defconfigPath = QString("build/boards/cv184x/%1_wevb_0014a_emmc/%1_wevb_0014a_emmc_defconfig")
+        QString defconfigPath = QString("build/boards/cv184x/%1/%1_defconfig")
                                .arg(m_chipType);
         QMessageBox::information(this, "成功",
                                QString("OD超频配置已应用并导出到: %1").arg(defconfigPath));
@@ -7277,7 +7277,7 @@ void ClockConfigWidget::setChipType(const QString& chipType)
 bool ClockConfigWidget::exportToDefconfig(const QString& sourcePath, const QString& chipType, const QString& configName, const QString& value)
 {
     // 构建defconfig文件路径
-    QString defconfigPath = QString("%1/build/boards/cv184x/%2_wevb_0014a_emmc/%2_wevb_0014a_emmc_defconfig")
+    QString defconfigPath = QString("%1/build/boards/cv184x/%2/%2_defconfig")
                            .arg(sourcePath)
                            .arg(chipType);
 

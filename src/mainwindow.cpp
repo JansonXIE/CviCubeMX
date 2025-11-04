@@ -67,6 +67,13 @@ MainWindow::MainWindow(QWidget *parent)
         return;
     }
 
+    // 显示芯片选型对话框
+    if (!selectChipType()) {
+        // 如果用户取消选择芯片，关闭应用程序
+        QTimer::singleShot(0, this, &QWidget::close);
+        return;
+    }
+
     setupUI();
 
     // 初始化引脚名称映射
@@ -222,14 +229,36 @@ void MainWindow::setupPinoutTab()
 
     // 芯片选择下拉框
     m_chipComboBox = new QComboBox(m_pinoutTab);
-    m_chipComboBox->addItems({"请选择芯片型号", "cv1801c", "cv1801h", "cv1811c", "cv1811h", "cv1842cp", "cv1842hp"});
-    m_chipComboBox->setMinimumWidth(160);
+    m_chipComboBox->addItems({
+        "请选择芯片型号",
+        "cv1840cp_wevb_0015a_spinor",
+        "cv1841cp_wevb_0015a_emmc",
+        "cv1841cp_wevb_0015a_spinand",
+        "cv1841cp_wevb_0015a_spinor",
+        "cv1842cp_wevb_0015a_spinand",
+        "cv1842cp_wevb_0015a_spinor",
+        "cv1842hp_wevb_0014a_emmc",
+        "cv1842hp_wevb_0014a_spinand",
+        "cv1842hp_wevb_0014a_spinor",
+        "cv1843hp_wevb_0014a_emmc",
+        "cv1843hp_wevb_0014a_spinand",
+        "cv1843hp_wevb_0014a_spinor"
+    });
+    // 如果已经选择了芯片，设置为当前选择
+    if (!m_selectedChip.isEmpty()) {
+        int index = m_chipComboBox->findText(m_selectedChip);
+        if (index >= 0) {
+            m_chipComboBox->setCurrentIndex(index);
+        }
+    }
+    m_chipComboBox->setMinimumWidth(200);
     m_chipComboBox->setMaximumHeight(28);
     m_chipComboBox->setStyleSheet("font-size: 11px; padding: 3px; border: 1px solid #ced4da; border-radius: 3px;");
 
     // 开始项目按钮
     m_startProjectButton = new QPushButton("开始项目", m_pinoutTab);
-    m_startProjectButton->setEnabled(false);
+    // 如果已经选择了芯片，启用按钮
+    m_startProjectButton->setEnabled(!m_selectedChip.isEmpty());
     m_startProjectButton->setMaximumHeight(28);
     m_startProjectButton->setStyleSheet(
         "QPushButton { "
@@ -597,8 +626,10 @@ void MainWindow::setupChipView()
     m_pinLayout->setSpacing(2);
 
     // 根据芯片类型创建不同的布局
-    bool isQFN = (m_selectedChip.endsWith('c') || m_selectedChip == "cv1842cp");
-    bool isBGA = (m_selectedChip.endsWith('h') || m_selectedChip == "cv1842hp");
+    // QFN封装：芯片名称包含 "cp_" (如 cv1840cp_, cv1841cp_, cv1842cp_)
+    // BGA封装：芯片名称包含 "hp_" (如 cv1842hp_, cv1843hp_)
+    bool isQFN = m_selectedChip.contains("cp_");
+    bool isBGA = m_selectedChip.contains("hp_");
 
     if (isQFN) {
         // QFN封装 - 引脚在外围
@@ -1320,10 +1351,10 @@ QString MainWindow::getDefconfigPath() const
     // 根据选择的芯片类型返回对应的defconfig文件路径
     QString chipType = m_selectedChip;
     if (chipType.isEmpty() || chipType == "请选择芯片型号") {
-        chipType = "cv1842hp"; // 默认使用cv1842hp
+        chipType = "cv1842hp_wevb_0014a_emmc"; // 默认使用cv1842hp_wevb_0014a_emmc
     }
 
-    QString defconfigPath = QString("build/boards/cv184x/%1_wevb_0014a_emmc/linux/cvitek_%1_wevb_0014a_emmc_defconfig")
+    QString defconfigPath = QString("build/boards/cv184x/%1/linux/cvitek_%1_defconfig")
                            .arg(chipType);
 
     // 使用用户选择的源代码路径
@@ -1602,8 +1633,8 @@ void MainWindow::showPathSelectionDialog()
             m_flashConfigPage->setSourcePath(m_sourcePath);
         }
 
-        QMessageBox::information(this, "成功",
-            QString("源代码路径设置成功：\n%1").arg(m_sourcePath));
+        // QMessageBox::information(this, "成功",
+        //     QString("源代码路径设置成功：\n%1").arg(m_sourcePath));
     } else {
         QMessageBox::StandardButton reply = QMessageBox::question(
             this,
@@ -1680,4 +1711,150 @@ void MainWindow::onShowAIChat()
     m_aiChatDialog->show();
     m_aiChatDialog->raise();
     m_aiChatDialog->activateWindow();
+}
+
+bool MainWindow::selectChipType()
+{
+    QDialog chipDialog(this);
+    chipDialog.setWindowTitle("CviCubeMX - 芯片选型");
+    chipDialog.setModal(true);
+    chipDialog.setMinimumWidth(400);
+
+    QVBoxLayout *mainLayout = new QVBoxLayout(&chipDialog);
+    mainLayout->setContentsMargins(20, 20, 20, 20);
+    mainLayout->setSpacing(15);
+
+    // 标题
+    QLabel *titleLabel = new QLabel("请选择芯片型号", &chipDialog);
+    titleLabel->setStyleSheet("font-size: 16px; font-weight: bold; color: #2c3e50;");
+    titleLabel->setAlignment(Qt::AlignCenter);
+    mainLayout->addWidget(titleLabel);
+
+    // 说明文字
+    QLabel *infoLabel = new QLabel("请从下方列表中选择您要配置的芯片型号", &chipDialog);
+    infoLabel->setStyleSheet("font-size: 12px; color: #7f8c8d;");
+    infoLabel->setAlignment(Qt::AlignCenter);
+    infoLabel->setWordWrap(true);
+    mainLayout->addWidget(infoLabel);
+
+    // 芯片选择下拉框
+    QComboBox *chipCombo = new QComboBox(&chipDialog);
+    chipCombo->addItems({
+        "cv1840cp_wevb_0015a_spinor",
+        "cv1841cp_wevb_0015a_emmc",
+        "cv1841cp_wevb_0015a_spinand",
+        "cv1841cp_wevb_0015a_spinor",
+        "cv1842cp_wevb_0015a_spinand",
+        "cv1842cp_wevb_0015a_spinor",
+        "cv1842hp_wevb_0014a_emmc",
+        "cv1842hp_wevb_0014a_spinand",
+        "cv1842hp_wevb_0014a_spinor",
+        "cv1843hp_wevb_0014a_emmc",
+        "cv1843hp_wevb_0014a_spinand",
+        "cv1843hp_wevb_0014a_spinor"
+    });
+    // 设置默认选择为 cv1842hp_wevb_0014a_emmc
+    chipCombo->setCurrentText("cv1842hp_wevb_0014a_emmc");
+    chipCombo->setStyleSheet(
+        "QComboBox { "
+        "font-size: 12px; "
+        "padding: 8px; "
+        "border: 2px solid #bdc3c7; "
+        "border-radius: 4px; "
+        "background-color: white; "
+        "} "
+        "QComboBox:hover { "
+        "border-color: #3498db; "
+        "} "
+        "QComboBox::drop-down { "
+        "border: none; "
+        "} "
+        "QComboBox::down-arrow { "
+        "image: url(:/icons/down-arrow.png); "
+        "}"
+    );
+    mainLayout->addWidget(chipCombo);
+
+    // 按钮区域
+    QHBoxLayout *buttonLayout = new QHBoxLayout();
+    buttonLayout->setSpacing(10);
+
+    QPushButton *okButton = new QPushButton("确定", &chipDialog);
+    okButton->setStyleSheet(
+        "QPushButton { "
+        "background-color: #3498db; "
+        "color: white; "
+        "border: none; "
+        "padding: 10px 30px; "
+        "font-size: 12px; "
+        "border-radius: 4px; "
+        "min-width: 80px; "
+        "} "
+        "QPushButton:hover { "
+        "background-color: #2980b9; "
+        "}"
+    );
+
+    QPushButton *cancelButton = new QPushButton("取消", &chipDialog);
+    cancelButton->setStyleSheet(
+        "QPushButton { "
+        "background-color: #95a5a6; "
+        "color: white; "
+        "border: none; "
+        "padding: 10px 30px; "
+        "font-size: 12px; "
+        "border-radius: 4px; "
+        "min-width: 80px; "
+        "} "
+        "QPushButton:hover { "
+        "background-color: #7f8c8d; "
+        "}"
+    );
+
+    buttonLayout->addStretch();
+    buttonLayout->addWidget(okButton);
+    buttonLayout->addWidget(cancelButton);
+    buttonLayout->addStretch();
+
+    mainLayout->addLayout(buttonLayout);
+
+    // 连接信号
+    connect(okButton, &QPushButton::clicked, &chipDialog, &QDialog::accept);
+    connect(cancelButton, &QPushButton::clicked, &chipDialog, &QDialog::reject);
+
+    // 显示对话框
+    if (chipDialog.exec() == QDialog::Accepted) {
+        m_selectedChip = chipCombo->currentText();
+        
+        // 设置到芯片下拉框
+        if (m_chipComboBox) {
+            int index = m_chipComboBox->findText(m_selectedChip);
+            if (index >= 0) {
+                m_chipComboBox->setCurrentIndex(index);
+            }
+        }
+        
+        // 更新各个配置页面的芯片类型
+        if (m_memoryConfigPage) {
+            m_memoryConfigPage->setChipType(m_selectedChip);
+        }
+        if (m_clockConfigPage) {
+            m_clockConfigPage->setChipType(m_selectedChip);
+        }
+        if (m_flashConfigPage) {
+            m_flashConfigPage->setChipType(m_selectedChip);
+        }
+        
+        // 加载外设状态
+        if (!m_sourcePath.isEmpty()) {
+            loadPeripheralStates();
+            if (m_pinoutConfigTree) {
+                updatePeripheralCheckBoxes();
+            }
+        }
+        
+        return true;
+    }
+    
+    return false;
 }

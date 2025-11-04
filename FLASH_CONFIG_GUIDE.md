@@ -75,7 +75,7 @@ Flash分区配置页面用于管理eMMC Flash的分区配置。通过此页面�
 2. 点击"导出配置"按钮
 3. 配置会**增量更新**到对应的defconfig文件（仅修改改动部分，保留其他内容）：
    ```
-   build/boards/cv184x/[芯片型号]_wevb_0014a_emmc/[芯片型号]_wevb_0014a_emmc_defconfig
+   build/boards/cv184x/[芯片型号]/[芯片型号]_defconfig
    ```
 4. 系统会智能识别修改的配置项，只更新变化的行，不会重新生成整个配置段
 
@@ -270,7 +270,7 @@ CONFIG_PARTITION_2_SIZE="3008"
 **A**: 请检查：
 1. 是否正确选择了源代码路径
 2. 是否正确选择了芯片型号
-3. defconfig文件路径是否正确：`build/boards/cv184x/[芯片型号]_wevb_0014a_emmc/[芯片型号]_wevb_0014a_emmc_defconfig`
+3. defconfig文件路径是否正确：`build/boards/cv184x/[芯片型号]/[芯片型号]_defconfig`
 
 ### Q8: 修改配置后如何应用到实际编译？
 

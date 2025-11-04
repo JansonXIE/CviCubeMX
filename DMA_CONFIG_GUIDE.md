@@ -184,7 +184,7 @@ CONFIG_DW_DMAC_CVITEK=y
 
 ### defconfig文件路径格式
 ```
-build/boards/cv184x/{芯片型号}_wevb_0014a_emmc/linux/cvitek_{芯片型号}_wevb_0014a_emmc_defconfig
+build/boards/cv184x/{芯片型号}/linux/cvitek_{芯片型号}_defconfig
 ```
 
 ### 支持的芯片型号

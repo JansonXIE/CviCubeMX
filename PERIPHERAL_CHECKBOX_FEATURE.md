@@ -70,7 +70,7 @@
 
 ### 3. defconfig文件路径
 根据选择的芯片类型，自动选择对应的defconfig文件：
-- 路径格式: `boards/cv184x/{chiptype}_wevb_0014a_emmc/linux/cvitek_{chiptype}_wevb_0014a_emmc_defconfig`
+- 路径格式: `boards/cv184x/{chiptype}/linux/cvitek_{chiptype}_defconfig`
 - 例如cv1842hp芯片: `boards/cv184x/cv1842hp_wevb_0014a_emmc/linux/cvitek_cv1842hp_wevb_0014a_emmc_defconfig`
 
 ### 4. 状态逻辑
