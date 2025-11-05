@@ -20,6 +20,7 @@
 #include <QAction>
 #include <QTabWidget>
 #include <QMenuBar>
+#include <QSettings>
 #include "chipconfig.h"
 #include "pinwidget.h"
 #include "codegenerator.h"
@@ -92,6 +93,10 @@ private:
     bool selectSourcePath();
     bool validateSourcePath(const QString& path);
     void showPathSelectionDialog();
+    
+    // 历史记录管理
+    QString loadLastSourcePath();
+    void saveLastSourcePath(const QString& path);
     
     // 芯片选型
     bool selectChipType();

@@ -60,7 +60,7 @@ MainWindow::MainWindow(QWidget *parent)
     , m_dtsConfig(nullptr)
     , m_aiChatDialog(nullptr)
 {
-    // 首先显示路径选择对话框
+    // 首先显示路径选择对话框（会自动加载上次的路径供用户确认）
     if (!selectSourcePath()) {
         // 如果用户取消选择路径，关闭应用程序
         QTimer::singleShot(0, this, &QWidget::close);
@@ -1667,22 +1667,72 @@ bool MainWindow::selectSourcePath()
 
 void MainWindow::showPathSelectionDialog()
 {
+    // 尝试加载上次使用的路径
+    QString lastPath = loadLastSourcePath();
+    
     QMessageBox msgBox;
     msgBox.setWindowTitle("CviCubeMX - 源代码路径选择");
     msgBox.setText("欢迎使用 CviCubeMX!");
-    msgBox.setInformativeText("请选择包含设备树dts文件、defconfig 和 cvi_board_init.c 的源代码根目录。\n\n"
-                             "该目录应包含以下结构：\n"
-                             "- build/");
-    msgBox.setStandardButtons(QMessageBox::Ok | QMessageBox::Cancel);
-    msgBox.setDefaultButton(QMessageBox::Ok);
-    int ret = msgBox.exec();
-    if (ret == QMessageBox::Cancel) {
-        return;
+    
+    QString infoText = "请选择包含设备树dts文件、defconfig 和 cvi_board_init.c 的源代码根目录。\n\n"
+                      "该目录应包含以下结构：\n"
+                      "- build/";
+    
+    // 如果有上次的路径且有效，显示给用户
+    if (!lastPath.isEmpty() && QDir(lastPath).exists() && validateSourcePath(lastPath)) {
+        infoText += QString("\n\n上次使用的路径：\n%1\n\n是否使用上次的路径？\n"
+                           "点击\"确定\"使用上次路径\n"
+                           "点击\"取消\"选择新路径").arg(lastPath);
+        msgBox.setInformativeText(infoText);
+        msgBox.setStandardButtons(QMessageBox::Ok | QMessageBox::Cancel);
+        msgBox.setDefaultButton(QMessageBox::Ok);
+        
+        int ret = msgBox.exec();
+        if (ret == QMessageBox::Ok) {
+            // 用户确认使用上次的路径
+            m_sourcePath = lastPath;
+            
+            // 更新CodeGenerator的路径
+            m_codeGenerator.setSourcePath(m_sourcePath);
+
+            // 更新内存配置页面的源代码路径
+            if (m_memoryConfigPage) {
+                m_memoryConfigPage->setSourcePath(m_sourcePath);
+            }
+
+            // 更新时钟配置页面的源代码路径
+            if (m_clockConfigPage) {
+                m_clockConfigPage->setSourcePath(m_sourcePath);
+            }
+
+            // 更新Flash配置页面的源代码路径
+            if (m_flashConfigPage) {
+                m_flashConfigPage->setSourcePath(m_sourcePath);
+            }
+            
+            qDebug() << "用户确认使用上次的源码路径：" << m_sourcePath;
+            return;
+        }
+        // 用户选择取消，继续下面的文件选择对话框
+    } else {
+        // 没有有效的历史路径，显示普通提示
+        msgBox.setInformativeText(infoText);
+        msgBox.setStandardButtons(QMessageBox::Ok | QMessageBox::Cancel);
+        msgBox.setDefaultButton(QMessageBox::Ok);
+        
+        int ret = msgBox.exec();
+        if (ret == QMessageBox::Cancel) {
+            return;
+        }
     }
+    
+    // 显示文件选择对话框
+    QString startPath = (!lastPath.isEmpty() && QDir(lastPath).exists()) ? lastPath : QDir::homePath();
+    
     QString selectedPath = QFileDialog::getExistingDirectory(
         this,
         "选择源代码根目录",
-        QDir::homePath(),
+        startPath,
         QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks
     );
     if (selectedPath.isEmpty()) {
@@ -1690,6 +1740,10 @@ void MainWindow::showPathSelectionDialog()
     }
     if (validateSourcePath(selectedPath)) {
         m_sourcePath = selectedPath;
+        
+        // 保存到历史记录
+        saveLastSourcePath(m_sourcePath);
+        
         // 更新CodeGenerator的路径
         m_codeGenerator.setSourcePath(m_sourcePath);
 
@@ -1786,6 +1840,20 @@ void MainWindow::onShowAIChat()
     m_aiChatDialog->show();
     m_aiChatDialog->raise();
     m_aiChatDialog->activateWindow();
+}
+
+QString MainWindow::loadLastSourcePath()
+{
+    QSettings settings("CviTek", "CviCubeMX");
+    return settings.value("lastSourcePath", "").toString();
+}
+
+void MainWindow::saveLastSourcePath(const QString& path)
+{
+    QSettings settings("CviTek", "CviCubeMX");
+    settings.setValue("lastSourcePath", path);
+    settings.sync();
+    qDebug() << "保存源码路径到配置：" << path;
 }
 
 bool MainWindow::selectChipType()
