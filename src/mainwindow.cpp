@@ -105,7 +105,7 @@ void MainWindow::setupUI()
 {
     // 设置菜单栏
     setupMenuBar();
-
+    
     // 创建中央部件
     m_centralWidget = new QWidget(this);
     setCentralWidget(m_centralWidget);
@@ -188,21 +188,21 @@ void MainWindow::setupMenuBar()
 {
     // 创建菜单栏
     m_menuBar = menuBar();
-
+    
     // 创建工具菜单
     m_toolsMenu = m_menuBar->addMenu("工具(&T)");
-
+    
     // 添加 AI 对话菜单项
     m_aiChatAction = new QAction("AI 智能助手(&A)", this);
     m_aiChatAction->setShortcut(QKeySequence("Ctrl+A"));
     m_aiChatAction->setStatusTip("打开 AI 智能助手进行问答对话");
     connect(m_aiChatAction, &QAction::triggered, this, &MainWindow::onShowAIChat);
-
+    
     m_toolsMenu->addAction(m_aiChatAction);
-
+    
     // 添加分隔符
     m_toolsMenu->addSeparator();
-
+    
     // 可以在这里添加其他工具菜单项
 }
 
@@ -434,7 +434,7 @@ void MainWindow::setupPinoutConfigPanel()
     peripheralItem->setExpanded(true);
 
     // 创建外设子项
-    QStringList peripherals = {"PWM", "I2C", "SPI", "UART", "GPIO", "ADC", "SYSDMA", "WIEGAND", "SPACC", "TRNG", "RTOS_CMDQU", "THERMAL"};
+    QStringList peripherals = {"PWM", "I2C", "SPI", "UART", "GPIO", "ADC", "SYSDMA"};
     for (const QString &peripheral : peripherals) {
         QTreeWidgetItem *subItem = new QTreeWidgetItem(peripheralItem);
 
@@ -468,7 +468,7 @@ void MainWindow::setupClockTab()
 
     // 创建时钟配置页面
     m_clockConfigPage = new ClockConfigWidget();
-
+    
     // 如果已经有源代码路径和芯片类型，设置到时钟配置页面
     if (!m_sourcePath.isEmpty()) {
         m_clockConfigPage->setSourcePath(m_sourcePath);
@@ -568,12 +568,12 @@ void MainWindow::onChipSelectionChanged()
     QString selectedChip = m_chipComboBox->currentText();
     m_startProjectButton->setEnabled(selectedChip != "请选择芯片型号");
     m_selectedChip = selectedChip;
-
+    
     // 更新内存配置页面的芯片类型
     if (m_memoryConfigPage && selectedChip != "请选择芯片型号") {
         m_memoryConfigPage->setChipType(selectedChip);
     }
-
+    
     // 更新时钟配置页面的芯片类型
     if (m_clockConfigPage && selectedChip != "请选择芯片型号") {
         m_clockConfigPage->setChipType(selectedChip);
@@ -583,7 +583,7 @@ void MainWindow::onChipSelectionChanged()
     if (m_flashConfigPage && selectedChip != "请选择芯片型号") {
         m_flashConfigPage->setChipType(selectedChip);
     }
-
+    
     // 重新加载外设状态（基于新选择的芯片类型）
     if (selectedChip != "请选择芯片型号" && !m_sourcePath.isEmpty()) {
         loadPeripheralStates();
@@ -1448,12 +1448,8 @@ QMap<QString, QStringList> MainWindow::getPeripheralConfigs() const
     configs["UART"] = {"CONFIG_SERIAL_8250", "CONFIG_SERIAL_8250_CONSOLE", "CONFIG_SERIAL_8250_DW"};
     configs["GPIO"] = {"CONFIG_GPIOLIB", "CONFIG_GPIO_SYSFS", "CONFIG_GPIO_DWAPB"};
     configs["ADC"] = {"CONFIG_IIO", "CONFIG_IIO_BUFFER", "CONFIG_IIO_TRIGGER"};
-    configs["SYSDMA"] = {"CONFIG_CVI_SYSDMA_REMAP","CONFIG_DW_DMAC_CVITEK","CONFIG_DMADEVICES","CONFIG_DMA_CMA"};
-    configs["WIEGAND"] = {"CONFIG_CVI_WIEGAND"};
-    configs["SPACC"] = {"CONFIG_CVI_SPACC"};
-    configs["TRNG"] = {"CONFIG_HW_RANDOM"};
-    configs["RTOS_CMDQU"] = {"CONFIG_RTOS_CMDQU"};
-    configs["THERMAL"] = {"CONFIG_THERMAL","CONFIG_THERMAL_NETLINK","CONFIG_THERMAL_WRITABLE_TRIPS","CONFIG_THERMAL_EMULATION","CONFIG_CV184X_THERMAL","CONFIG_CVI_CLK_COOLING"};
+    configs["SYSDMA"] = {"CONFIG_DMADEVICES", "CONFIG_DW_DMAC_CVITEK"};
+
     return configs;
 }
 
@@ -1466,7 +1462,7 @@ bool MainWindow::loadPeripheralStates()
         qDebug() << "无法打开defconfig文件：" << defconfigPath;
 
         // 如果文件不存在，设置默认状态（所有外设都禁用）
-        QStringList peripherals = {"PWM", "I2C", "SPI", "UART", "GPIO", "ADC", "SYSDMA", "WIEGAND", "SPACC", "TRNG", "RTOS_CMDQU"};
+        QStringList peripherals = {"PWM", "I2C", "SPI", "UART", "GPIO", "ADC", "SYSDMA"};
         for (const QString &peripheral : peripherals) {
             m_peripheralStates[peripheral] = false;
         }
@@ -1577,12 +1573,12 @@ void MainWindow::updatePeripheralCheckBoxes()
         if (checkBox) {
             QString peripheralType = checkBox->text();
             bool isEnabled = m_peripheralStates.value(peripheralType, false);
-
+            
             // 临时断开信号连接，避免触发onPeripheralCheckBoxChanged
             checkBox->blockSignals(true);
             checkBox->setChecked(isEnabled);
             checkBox->blockSignals(false);
-
+            
             qDebug() << QString("更新外设 %1 的复选框状态为: %2").arg(peripheralType).arg(isEnabled ? "启用" : "禁用");
         }
     }
@@ -1751,7 +1747,7 @@ void MainWindow::showPathSelectionDialog()
         if (m_memoryConfigPage) {
             m_memoryConfigPage->setSourcePath(m_sourcePath);
         }
-
+        
         // 更新时钟配置页面的源代码路径
         if (m_clockConfigPage) {
             m_clockConfigPage->setSourcePath(m_sourcePath);
@@ -1835,7 +1831,7 @@ void MainWindow::onShowAIChat()
     if (!m_aiChatDialog) {
         m_aiChatDialog = new AIChatDialog(this);
     }
-
+    
     // 显示对话窗口
     m_aiChatDialog->show();
     m_aiChatDialog->raise();

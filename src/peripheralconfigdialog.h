@@ -32,9 +32,6 @@ private slots:
     void onPwmCellsChanged();
     void onCurrentSpeedChanged();
     void onSysdmaChannelChanged();
-    void onThermalTripChanged();
-    void onTripSelectionChanged();
-
 
 private:
     void setupUI();
@@ -68,17 +65,6 @@ private:
     QSpinBox *m_currentSpeedSpinBox;
     QComboBox *m_baudRateComboBox;       // 新增：波特率下拉
     QLineEdit *m_customBaudLineEdit;     // 新增：自定义波特率输入
-    // Thermal 控件
-    QLabel *m_thermalZoneLabel;
-    QComboBox *m_thermalZoneCombo;
-    QLabel *m_pdpLabel; QSpinBox *m_pdpSpin;
-    QLabel *m_pdLabel;  QSpinBox *m_pdSpin;
-    QLabel *m_sensorLabel; QComboBox *m_sensorCombo;
-    QLabel *m_tripSelectLabel; QComboBox *m_tripSelectCombo;
-    QLabel *m_tripTempLabel; QSpinBox *m_tripTempSpin;
-    QLabel *m_tripHystLabel; QSpinBox *m_tripHystSpin;
-    QLabel *m_tripTypeLabel; QComboBox *m_tripTypeCombo;
-    QLabel *m_mapInfoLabel; // 只读显示 maps/cooling 信息
     // SYSDMA 通道控件
     QLabel *m_sysdmaChannelLabels[8];    // 8个通道的标签
     QComboBox *m_sysdmaChannelComboBoxes[8]; // 8个通道的下拉框
@@ -88,8 +74,6 @@ private:
     // 当前选中的外设信息
     QString m_currentPeripheral;
     PeripheralInfo m_currentInfo;
-    // Thermal: 记录上一次选中的 trip 名称，用于在切换时先保存旧值
-    QString m_lastTripName;
 };
 
 #endif // PERIPHERALCONFIGDIALOG_H
