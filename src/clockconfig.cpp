@@ -24,17 +24,19 @@ const double ClockConfigWidget::OSC_FREQUENCY = 25.0;  // 25MHz
 const double ClockConfigWidget::RTC_FREQUENCY = 0.032768;  // 32.768kHz
 
 const QStringList ClockConfigWidget::PLL_NAMES = {
-    "clk_cam1pll","clk_cam0pll","clk_mipimpll","clk_disppll","clk_a0pll","clk_fpll","clk_tpll","clk_mpll","clk_appll","clk_rvpll"
+    "clk_fpll", "clk_mipimpll", "clk_mpll", "clk_tpll", "clk_appll", "clk_rvpll"
 };
 
 const QStringList ClockConfigWidget::SUB_PLL_NAMES = {
-    "clk_a0pll", "clk_cam0pll", "clk_cam1pll", "clk_disppll", "clk_cyc_dsi_syn"
+    "clk_a0pll", "clk_cam0pll", "clk_cam1pll", "clk_disppll", "clk_mipimpll_d3", "clk_cyc_dsi_syn"
 };
 
 const QStringList ClockConfigWidget::OUTPUT_NAMES = {
     // osc 直接分支（匹配 clk_summary 中 osc 子节点）
-    "clk_rtc_sys_saradc1", "clk_rtc_sys_apb_saradc1", "clk_rtc_sys_irrx", "clk_rtc_sys_apb_wdt", "clk_rtc_sys_saradc","clk_rtc_sys_apb_saradc","clk_rtc_sys_i2c","clk_rtc_sys_apb_i2c","clk_rtc_sys_apb_osc","clk_rtc_sys_apb_gpio","clk_rtc_sys_apb_mbox","clk_rtc_sys_apb_ictrl","clk_rtc_sys_uart","clk_rtc_sys_apb_uart","clk_rtc_sys_timer1","clk_rtc_sys_timer0","clk_rtc_sys_apb_timer","clk_rtc_sys_rtc_spinor","clk_rtc_sys_fab_sram","clk_rtc_sys_spinor1","clk_rtc_sys_rtc2ap_slv","clk_rtc_sys_hs2rtc_mst","clk_rtc_sys_mcu","clk_pm","clk_saradc","clk_tempsen","clk_ahb_sf1","clk_dbgsys","clk_efuse_clk","clk_keyscan_xclk","clk_wgn_xclk","clk_wdt_pclk","clk_usb20_coreclkin","clk_sc","clk_dbg"
-    "clk_mipimpll_d3",
+    "clk_saradc", "clk_tempsen", "clk_ahb_sf1", "clk_dbgsys", "clk_efuse_clk",
+    "clk_keyscan_xclk", "clk_wgn_xclk", "clk_wdt_pclk", "clk_usb20_coreclkin", "clk_sc", "clk_dbg",
+    // 按现有 UI 继续保留，方便查看（非严格一一对应）
+    "clk_1M", "clk_usb20_suspend"
 };
 
 const QStringList ClockConfigWidget::CLK_1M_SUB_NODES = {
@@ -50,7 +52,7 @@ const QStringList ClockConfigWidget::CLK_RAW_AXI_SUB_NODES = {
 };
 
 const QStringList ClockConfigWidget::CLK_CAM0PLL_SUB_NODES = {
-    "clk_cam0_vip"
+    "clk_cam0_vip", "clk_vc_src0", "clk_tpu_gdma"
 };
 
 const QStringList ClockConfigWidget::CLK_DISPPLL_SUB_NODES = {
@@ -78,18 +80,7 @@ const QStringList ClockConfigWidget::CLK_FPLL_SUB_NODES = {
     "clk_xtal_misc", "clk_pwm", "clk_i2c", "clk_eth_pll", "clk_cyc_dsi_esc",
     "clk_scan_100M", "clk_video_axi", "clk_fab_500M", "clk_fab_100M"
 };
-const QStringList ClockConfigWidget::CLK_XTAL_MISC_SUB_NODES = {
-    "clk_timer7","clk_timer6","clk_timer5","clk_timer4","clk_timer3","clk_timer2","clk_timer1","clk_timer0","clk_1M","clk_usb20_suspend"
-};
-const QStringList ClockConfigWidget::CLK_APB_VC_SYS_SUB_NODES = {
-    "clk_apb_jpeg","clk_apb_ve"
-};
-const QStringList ClockConfigWidget::CLK_X2P_SUB_NODES = {
-    "clk_2de_vip","clk_csi2_rx_vip","clk_csi1_rx_vip","clk_csi0_rx_vip","clk_dsi_mac_vip"
-};
-const QStringList ClockConfigWidget::CLK_SPI_NODE_SUB_NODES = {
-    "clk_apb_spi3","clk_apb_spi2","clk_apb_spi1","clk_apb_spi0"
-};
+
 const QStringList ClockConfigWidget::CLK_TPLL_SUB_NODES = {
     "clk_tpu", "clk_tpu_gdma"
 };
@@ -100,21 +91,10 @@ const QStringList ClockConfigWidget::CLK_MPLL_SUB_NODES = {
     "clk_cyc_scan_300M", "clk_vip_sys_4", "clk_vip_sys_3", "clk_vip_sys_1", "clk_vip_sys_0",
     "clk_vc_src0", "clk_tpu_sys", "clk_gic", "clk_bus", "clk_rtc_sys", "clk_hsperi"
 };
-const QStringList ClockConfigWidget::CLK_I2C_SUB_NODES = {
-    "clk_apb_i2c4","clk_apb_i2c3","clk_apb_i2c2","clk_apb_i2c1","clk_apb_i2c0"
-};
-const QStringList ClockConfigWidget::CLK_VIP_SYS_3_SUB_NODES = {
-    "clk_csi_be_vip","clk_csi_mac0_vip"
-};
-const QStringList ClockConfigWidget::CLK_VIP_SYS_1_SUB_NODES = {
-    "clk_vpss3_vip","clk_vpss2_vip","clk_vpss1_vip","clk_vpss0_vip","clk_isp_top_vip"
-};
-const QStringList ClockConfigWidget::CLK_VIP_SYS_0_SUB_NODES = {
-    "clk_pad_vi2_clk_vip","clk_pad_vi1_clk_vip","clk_pad_vi0_clk1_vip","clk_pad_vi0_clk0_vip","clk_csi_mac2_vip"
-};
 
 const QStringList ClockConfigWidget::CLK_FAB_100M_SUB_NODES = {
-    "clk_apb_gpio", "clk_apb_wdt", "clk_apb_vcsys", "clk_fab6_100M_free", "clk_efuse_pclk", "clk_x2p"
+    "clk_apb_gpio", "clk_apb_wdt", "clk_apb_vcsys", "clk_apb_jpeg", "clk_apb_ve",
+    "clk_fab6_100M_free", "clk_efuse_pclk", "clk_x2p"
 };
 
 const QStringList ClockConfigWidget::CLK_SPI_NAND_SUB_NODES = {
@@ -168,6 +148,7 @@ ClockConfigWidget::ClockConfigWidget(QWidget *parent)
     setupUI();
     setupClockSources();
     setupPLLs();
+    setupSubPLLs();  // 新增：设置子PLL区域
     setupOutputs();
     setupClkCam1PLLSubNodes();  // 新增：设置clk_cam1pll子节点区域
     setupClkRawAxiSubNodes();  // 新增：设置clk_raw_axi子节点区域
@@ -178,19 +159,11 @@ ClockConfigWidget::ClockConfigWidget(QWidget *parent)
     setupClkRVPLLSubNodes();  // 新增：设置clk_rvpll子节点区域
     setupClkAPPLLSubNodes();  // 新增：设置clk_appll子节点区域
     setupClkFPLLSubNodes();  // 新增：设置clk_fpll子节点区域
-    setupClkXTALMISCSubNodes();  // 新增：设置clk_xtal_misc子节点区域
     setupClkTPLLSubNodes();  // 新增：设置clk_tpll子节点区域
     setupClkMPLLSubNodes();  // 新增：设置clk_mpll子节点区域
     setupClkFAB100MSubNodes();  // 新增：设置clk_fab_100M子节点区域
-    setupClkX2PSubNodes();      // 新增：设置clk_x2p子节点区域
     setupClkSPINANDSubNodes();  // 新增：设置clk_spi_nand子节点区域
     setupClkHSPeriSubNodes();  // 新增：设置clk_hsperi子节点区域
-    setupClkAPBVCSYSSubNodes(); // 新增：设置clk_apb_vcsys子节点区域
-    setupClkI2CSubNodes();      // 新增：设置clk_i2c子节点区域
-    setupClkSPINodeSubNodes();  // 新增：设置clk_spi子节点区域
-    setupClkVIPSys3SubNodes();  // 新增：设置clk_vip_sys_3子节点区域
-    setupClkVIPSys1SubNodes();  // 新增：设置clk_vip_sys_1子节点区域
-    setupClkVIPSys0SubNodes();  // 新增：设置clk_vip_sys_0子节点区域
     setupClockTree();
     connectSignals();
     updateFrequencies();
@@ -442,7 +415,7 @@ void ClockConfigWidget::setupPLLs()
 {
     // 创建PLL区域
     m_pllWidget = new QWidget();
-    m_pllWidget->setFixedWidth(200); // 固定宽度，高度由布局自适应
+    m_pllWidget->setFixedSize(200, 700); // 设置固定尺寸
     m_pllWidget->setStyleSheet(
         "QWidget { "
         "background-color: #fff3cd; "
@@ -574,7 +547,7 @@ void ClockConfigWidget::setupOutputs()
 {
     // 创建OSC输出区域
     m_outputWidget = new QWidget();
-    m_outputWidget->setFixedWidth(200); // 固定宽度，高度由布局自适应
+    m_outputWidget->setFixedSize(200, 4000); // 设置固定尺寸以容纳更多节点
     m_outputWidget->setStyleSheet(
         "QWidget { "
         "background-color: #f8d7da; "
@@ -625,6 +598,7 @@ void ClockConfigWidget::setupOutputs()
     // 创建clk_1M子节点区域
     setupClk1MSubNodes();
 }
+
 void ClockConfigWidget::setupClk1MSubNodes()
 {
     // 创建clk_1M子节点区域
@@ -776,6 +750,7 @@ void ClockConfigWidget::setupClkRawAxiSubNodes()
     m_clkRawAxiSubNodeWidget->setParent(m_flowWidget);
     // 默认位置将在initializeModulePositions中设置
 }
+
 void ClockConfigWidget::setupClkCam0PLLSubNodes()
 {
     // 创建clk_cam0pll子节点区域
@@ -1194,300 +1169,11 @@ void ClockConfigWidget::setupClkFPLLSubNodes()
     // 默认位置将在initializeModulePositions中设置
 }
 
-void ClockConfigWidget::setupClkXTALMISCSubNodes()
-{
-    // 创建clk_xtal_misc子节点区域
-    m_clkXTALMISCSubNodeWidget = new QWidget();
-    m_clkXTALMISCSubNodeWidget->setFixedSize(150, 520);
-    m_clkXTALMISCSubNodeWidget->setStyleSheet(
-        "QWidget { "
-        "background-color: #f0f8ff; "
-        "border: 2px solid #20c997; "
-        "border-radius: 8px; "
-        "}"
-    );
-
-    m_clkXTALMISCSubNodeLayout = new QVBoxLayout(m_clkXTALMISCSubNodeWidget);
-    m_clkXTALMISCSubNodeLayout->setContentsMargins(10, 10, 10, 10);
-    m_clkXTALMISCSubNodeLayout->setSpacing(5);
-
-    QLabel* subNodeTitle = new QLabel("clk_xtal_misc子节点");
-    subNodeTitle->setStyleSheet("font-size: 14px; font-weight: bold; color: #117a65; text-align: center;");
-    subNodeTitle->setAlignment(Qt::AlignCenter);
-    m_clkXTALMISCSubNodeLayout->addWidget(subNodeTitle);
-
-    for (const QString& nodeName : CLK_XTAL_MISC_SUB_NODES) {
-        createClkXTALMISCSubNodeWidget(nodeName, m_clkXTALMISCSubNodeWidget);
-
-        ClockOutput subNode;
-        subNode.name = nodeName;
-        subNode.source = "clk_xtal_misc";
-        subNode.enabled = true;
-        if (nodeName.startsWith("clk_timer")) {
-            subNode.divider = 40; // 25MHz*40=1000MHz/40=25MHz
-        } else if (nodeName == "clk_1M") {
-            subNode.divider = 250; // 25MHz/250=0.1MHz
-        } else if (nodeName == "clk_usb20_suspend") {
-            subNode.divider = 125; // 25MHz/125=0.2MHz
-        } else {
-            subNode.divider = 1;
-        }
-
-        double parentFreq = m_clkFPLLSubNodes.contains("clk_xtal_misc") ? m_clkFPLLSubNodes["clk_xtal_misc"].frequency
-                                                                         : (m_pllConfigs.contains("clk_fpll") ? m_pllConfigs["clk_fpll"].outputFreq : 1000.0) / 40.0;
-        subNode.frequency = parentFreq / subNode.divider;
-        m_clkXTALMISCSubNodes[nodeName] = subNode;
-    }
-
-    m_clkXTALMISCSubNodeLayout->addStretch();
-    m_clkXTALMISCSubNodeWidget->setParent(m_flowWidget);
-}
-void ClockConfigWidget::createClkXTALMISCSubNodeWidget(const QString& nodeName, QWidget* parent)
-{
-    QWidget* subNodeWidget = new QWidget();
-    subNodeWidget->setStyleSheet(
-        "QWidget { "
-        "background-color: #ffffff; "
-        "border: 1px solid #20c997; "
-        "border-radius: 4px; "
-        "padding: 3px; "
-        "margin: 1px; "
-        "}"
-    );
-
-    QVBoxLayout* layout = new QVBoxLayout(subNodeWidget);
-    layout->setSpacing(2);
-    layout->setContentsMargins(3, 3, 3, 3);
-
-    QLabel* nameLabel = new QLabel();
-    nameLabel->setText(formatClockTitle(nodeName));
-    nameLabel->setStyleSheet("font-weight: bold; color: #117a65; font-size: 11px;");
-    nameLabel->setAlignment(Qt::AlignCenter);
-    nameLabel->setWordWrap(true);
-
-    QHBoxLayout* divConfigLayout = new QHBoxLayout();
-    divConfigLayout->setSpacing(3);
-
-    QLabel* divLabel = new QLabel("分频：");
-    divLabel->setStyleSheet("color: #117a65; font-size: 10px; font-weight: bold;");
-
-    QSpinBox* divBox = new QSpinBox();
-    divBox->setRange(1, 1000);
-    divBox->setValue(1);
-    divBox->setEnabled(false);
-    divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
-    divBox->setFocusPolicy(Qt::NoFocus);
-    divBox->setFixedWidth(45);
-    divBox->setStyleSheet("font-size: 10px;");
-
-    divConfigLayout->addWidget(divLabel);
-    divConfigLayout->addWidget(divBox);
-
-    double parentFreq = m_clkFPLLSubNodes.contains("clk_xtal_misc") ? m_clkFPLLSubNodes["clk_xtal_misc"].frequency
-                                                                     : (m_pllConfigs.contains("clk_fpll") ? m_pllConfigs["clk_fpll"].outputFreq : 1000.0) / 40.0;
-    double calculatedFreq = parentFreq / 1;
-    QString freqText;
-    if (calculatedFreq >= 1.0) {
-        freqText = QString("%1 MHz").arg(calculatedFreq, 0, 'f', 3);
-    } else {
-        freqText = QString("%1 kHz").arg(calculatedFreq * 1000, 0, 'f', 1);
-    }
-
-    QLabel* freqLabel = new QLabel(freqText);
-    freqLabel->setStyleSheet("color: #c0392b; font-family: monospace; font-weight: bold; font-size: 11px; background: transparent;");
-    freqLabel->setAlignment(Qt::AlignCenter);
-
-    layout->addWidget(nameLabel);
-    layout->addLayout(divConfigLayout);
-    layout->addWidget(freqLabel);
-
-    m_clkXTALMISCSubNodeWidgets[nodeName] = subNodeWidget;
-    m_clkXTALMISCSubNodeFreqLabels[nodeName] = freqLabel;
-    m_clkXTALMISCSubNodeDividerBoxes[nodeName] = divBox;
-
-    m_clkXTALMISCSubNodeLayout->addWidget(subNodeWidget);
-}
-
-void ClockConfigWidget::setupClkI2CSubNodes()
-{
-    m_clkI2CSubNodeWidget = new QWidget();
-    m_clkI2CSubNodeWidget->setFixedSize(150, 200);
-    m_clkI2CSubNodeWidget->setStyleSheet(
-        "QWidget { background-color: #ffffff; border: 2px solid #6c757d; border-radius: 8px; }"
-    );
-    m_clkI2CSubNodeLayout = new QVBoxLayout(m_clkI2CSubNodeWidget);
-    m_clkI2CSubNodeLayout->setContentsMargins(10,10,10,10);
-    m_clkI2CSubNodeLayout->setSpacing(5);
-    QLabel* title = new QLabel("clk_i2c子节点");
-    title->setStyleSheet("font-size: 14px; font-weight: bold; color: #495057; text-align: center;");
-    title->setAlignment(Qt::AlignCenter);
-    m_clkI2CSubNodeLayout->addWidget(title);
-    for (const QString& nodeName : CLK_I2C_SUB_NODES) {
-        createClkI2CSubNodeWidget(nodeName, m_clkI2CSubNodeWidget);
-        ClockOutput sub; sub.name=nodeName; sub.source="clk_i2c"; sub.enabled=true; sub.divider=1;
-        double parentFreq = m_clkFPLLSubNodes.contains("clk_i2c") ? m_clkFPLLSubNodes["clk_i2c"].frequency : 100.0;
-        sub.frequency = parentFreq / sub.divider;
-        m_clkI2CSubNodes[nodeName] = sub;
-    }
-    m_clkI2CSubNodeLayout->addStretch();
-    m_clkI2CSubNodeWidget->setParent(m_flowWidget);
-}
-
-void ClockConfigWidget::setupClkSPINodeSubNodes()
-{
-    m_clkSPINodeSubNodeWidget = new QWidget();
-    m_clkSPINodeSubNodeWidget->setFixedWidth(150);
-    m_clkSPINodeSubNodeWidget->setStyleSheet(
-        "QWidget { background-color: #ffffff; border: 2px solid #6f42c1; border-radius: 8px; }"
-    );
-    m_clkSPINodeSubNodeLayout = new QVBoxLayout(m_clkSPINodeSubNodeWidget);
-    m_clkSPINodeSubNodeLayout->setContentsMargins(10,10,10,10);
-    m_clkSPINodeSubNodeLayout->setSpacing(5);
-    QLabel* title = new QLabel("clk_spi子节点");
-    title->setStyleSheet("font-size: 14px; font-weight: bold; color: #6f42c1; text-align: center;");
-    title->setAlignment(Qt::AlignCenter);
-    m_clkSPINodeSubNodeLayout->addWidget(title);
-    for (const QString& nodeName : CLK_SPI_NODE_SUB_NODES) {
-        createClkSPINodeSubNodeWidget(nodeName, m_clkSPINodeSubNodeWidget);
-        ClockOutput sub; sub.name=nodeName; sub.source="clk_spi"; sub.enabled=true; sub.divider=1;
-        double parentFreq = m_clkMPLLSubNodes.contains("clk_spi") ? m_clkMPLLSubNodes["clk_spi"].frequency : 200.0;
-        sub.frequency = parentFreq / sub.divider;
-        m_clkSPINodeSubNodes[nodeName] = sub;
-    }
-    m_clkSPINodeSubNodeLayout->addStretch();
-    m_clkSPINodeSubNodeWidget->setParent(m_flowWidget);
-}
-
-void ClockConfigWidget::setupClkX2PSubNodes()
-{
-    m_clkX2PSubNodeWidget = new QWidget();
-    m_clkX2PSubNodeWidget->setFixedWidth(150);
-    m_clkX2PSubNodeWidget->setStyleSheet(
-        "QWidget { background-color: #ffffff; border: 2px solid #28a745; border-radius: 8px; }"
-    );
-    m_clkX2PSubNodeLayout = new QVBoxLayout(m_clkX2PSubNodeWidget);
-    m_clkX2PSubNodeLayout->setContentsMargins(10,10,10,10);
-    m_clkX2PSubNodeLayout->setSpacing(5);
-    QLabel* title = new QLabel("clk_x2p子节点");
-    title->setStyleSheet("font-size: 14px; font-weight: bold; color: #1e7e34; text-align: center;");
-    title->setAlignment(Qt::AlignCenter);
-    m_clkX2PSubNodeLayout->addWidget(title);
-    for (const QString& nodeName : CLK_X2P_SUB_NODES) {
-        createClkX2PSubNodeWidget(nodeName, m_clkX2PSubNodeWidget);
-        ClockOutput sub; sub.name=nodeName; sub.source="clk_x2p"; sub.enabled=true; sub.divider=1;
-        double parentFreq = m_clkFAB100MSubNodes.contains("clk_x2p") ? m_clkFAB100MSubNodes["clk_x2p"].frequency : 100.0;
-        sub.frequency = parentFreq / sub.divider;
-        m_clkX2PSubNodes[nodeName] = sub;
-    }
-    m_clkX2PSubNodeLayout->addStretch();
-    m_clkX2PSubNodeWidget->setParent(m_flowWidget);
-}
-
-void ClockConfigWidget::setupClkAPBVCSYSSubNodes()
-{
-    m_clkAPBVCSYSSubNodeWidget = new QWidget();
-    m_clkAPBVCSYSSubNodeWidget->setFixedWidth(150);
-    m_clkAPBVCSYSSubNodeWidget->setStyleSheet(
-        "QWidget { background-color: #ffffff; border: 2px solid #17a2b8; border-radius: 8px; }"
-    );
-    m_clkAPBVCSYSSubNodeLayout = new QVBoxLayout(m_clkAPBVCSYSSubNodeWidget);
-    m_clkAPBVCSYSSubNodeLayout->setContentsMargins(10,10,10,10);
-    m_clkAPBVCSYSSubNodeLayout->setSpacing(5);
-    QLabel* title = new QLabel("clk_apb_vcsys子节点");
-    title->setStyleSheet("font-size: 14px; font-weight: bold; color: #117a8b; text-align: center;");
-    title->setAlignment(Qt::AlignCenter);
-    m_clkAPBVCSYSSubNodeLayout->addWidget(title);
-    for (const QString& nodeName : CLK_APB_VC_SYS_SUB_NODES) {
-        createClkAPBVCSYSSubNodeWidget(nodeName, m_clkAPBVCSYSSubNodeWidget);
-        ClockOutput sub; sub.name=nodeName; sub.source="clk_apb_vcsys"; sub.enabled=true; sub.divider=1;
-        double parentFreq = m_clkFAB100MSubNodes.contains("clk_apb_vcsys") ? m_clkFAB100MSubNodes["clk_apb_vcsys"].frequency : 100.0;
-        sub.frequency = parentFreq / sub.divider;
-        m_clkAPBVCSYSSubNodes[nodeName] = sub;
-    }
-    m_clkAPBVCSYSSubNodeLayout->addStretch();
-    m_clkAPBVCSYSSubNodeWidget->setParent(m_flowWidget);
-}
-
-void ClockConfigWidget::setupClkVIPSys3SubNodes()
-{
-    m_clkVIPSys3SubNodeWidget = new QWidget();
-    m_clkVIPSys3SubNodeWidget->setFixedWidth(150);
-    m_clkVIPSys3SubNodeWidget->setStyleSheet(
-        "QWidget { background-color: #ffffff; border: 2px solid #ffc107; border-radius: 8px; }"
-    );
-    m_clkVIPSys3SubNodeLayout = new QVBoxLayout(m_clkVIPSys3SubNodeWidget);
-    m_clkVIPSys3SubNodeLayout->setContentsMargins(10,10,10,10);
-    m_clkVIPSys3SubNodeLayout->setSpacing(5);
-    QLabel* title = new QLabel("clk_vip_sys_3子节点");
-    title->setStyleSheet("font-size: 14px; font-weight: bold; color: #856404; text-align: center;");
-    title->setAlignment(Qt::AlignCenter);
-    m_clkVIPSys3SubNodeLayout->addWidget(title);
-    for (const QString& nodeName : CLK_VIP_SYS_3_SUB_NODES) {
-        createClkVIPSys3SubNodeWidget(nodeName, m_clkVIPSys3SubNodeWidget);
-        ClockOutput sub; sub.name=nodeName; sub.source="clk_vip_sys_3"; sub.enabled=true; sub.divider=1;
-        double parentFreq = m_clkMPLLSubNodes.contains("clk_vip_sys_3") ? m_clkMPLLSubNodes["clk_vip_sys_3"].frequency : 600.0;
-        sub.frequency = parentFreq / sub.divider;
-        m_clkVIPSys3SubNodes[nodeName] = sub;
-    }
-    m_clkVIPSys3SubNodeLayout->addStretch();
-    m_clkVIPSys3SubNodeWidget->setParent(m_flowWidget);
-}
-
-void ClockConfigWidget::setupClkVIPSys1SubNodes()
-{
-    m_clkVIPSys1SubNodeWidget = new QWidget();
-    m_clkVIPSys1SubNodeWidget->setFixedWidth(150);
-    m_clkVIPSys1SubNodeWidget->setStyleSheet(
-        "QWidget { background-color: #ffffff; border: 2px solid #28a745; border-radius: 8px; }"
-    );
-    m_clkVIPSys1SubNodeLayout = new QVBoxLayout(m_clkVIPSys1SubNodeWidget);
-    m_clkVIPSys1SubNodeLayout->setContentsMargins(10,10,10,10);
-    m_clkVIPSys1SubNodeLayout->setSpacing(5);
-    QLabel* title = new QLabel("clk_vip_sys_1子节点");
-    title->setStyleSheet("font-size: 14px; font-weight: bold; color: #1e7e34; text-align: center;");
-    title->setAlignment(Qt::AlignCenter);
-    m_clkVIPSys1SubNodeLayout->addWidget(title);
-    for (const QString& nodeName : CLK_VIP_SYS_1_SUB_NODES) {
-        createClkVIPSys1SubNodeWidget(nodeName, m_clkVIPSys1SubNodeWidget);
-        ClockOutput sub; sub.name=nodeName; sub.source="clk_vip_sys_1"; sub.enabled=true; sub.divider=1;
-        double parentFreq = m_clkMPLLSubNodes.contains("clk_vip_sys_1") ? m_clkMPLLSubNodes["clk_vip_sys_1"].frequency : 300.0;
-        sub.frequency = parentFreq / sub.divider;
-        m_clkVIPSys1SubNodes[nodeName] = sub;
-    }
-    m_clkVIPSys1SubNodeLayout->addStretch();
-    m_clkVIPSys1SubNodeWidget->setParent(m_flowWidget);
-}
-
-void ClockConfigWidget::setupClkVIPSys0SubNodes()
-{
-    m_clkVIPSys0SubNodeWidget = new QWidget();
-    m_clkVIPSys0SubNodeWidget->setFixedWidth(150);
-    m_clkVIPSys0SubNodeWidget->setStyleSheet(
-        "QWidget { background-color: #ffffff; border: 2px solid #17a2b8; border-radius: 8px; }"
-    );
-    m_clkVIPSys0SubNodeLayout = new QVBoxLayout(m_clkVIPSys0SubNodeWidget);
-    m_clkVIPSys0SubNodeLayout->setContentsMargins(10,10,10,10);
-    m_clkVIPSys0SubNodeLayout->setSpacing(5);
-    QLabel* title = new QLabel("clk_vip_sys_0子节点");
-    title->setStyleSheet("font-size: 14px; font-weight: bold; color: #117a8b; text-align: center;");
-    title->setAlignment(Qt::AlignCenter);
-    m_clkVIPSys0SubNodeLayout->addWidget(title);
-    for (const QString& nodeName : CLK_VIP_SYS_0_SUB_NODES) {
-        createClkVIPSys0SubNodeWidget(nodeName, m_clkVIPSys0SubNodeWidget);
-        ClockOutput sub; sub.name=nodeName; sub.source="clk_vip_sys_0"; sub.enabled=true; sub.divider=1;
-        double parentFreq = m_clkMPLLSubNodes.contains("clk_vip_sys_0") ? m_clkMPLLSubNodes["clk_vip_sys_0"].frequency : 150.0;
-        sub.frequency = parentFreq / sub.divider;
-        m_clkVIPSys0SubNodes[nodeName] = sub;
-    }
-    m_clkVIPSys0SubNodeLayout->addStretch();
-    m_clkVIPSys0SubNodeWidget->setParent(m_flowWidget);
-}
-
 void ClockConfigWidget::setupClkTPLLSubNodes()
 {
     // 创建clk_tpll子节点区域
     m_clkTPLLSubNodeWidget = new QWidget();
-    m_clkTPLLSubNodeWidget->setFixedWidth(150); // 设置固定尺寸，2个子节点
+    m_clkTPLLSubNodeWidget->setFixedSize(150, 200); // 设置固定尺寸，2个子节点
     m_clkTPLLSubNodeWidget->setStyleSheet(
         "QWidget { "
         "background-color: #ffffff; "
@@ -1539,11 +1225,12 @@ void ClockConfigWidget::setupClkTPLLSubNodes()
     m_clkTPLLSubNodeWidget->setParent(m_flowWidget);
     // 默认位置将在initializeModulePositions中设置
 }
+
 void ClockConfigWidget::setupClkMPLLSubNodes()
 {
     // 创建clk_mipimpll子节点区域
     m_clkMPLLSubNodeWidget = new QWidget();
-    m_clkMPLLSubNodeWidget->setFixedWidth(150); // 设置固定尺寸，25个子节点
+    m_clkMPLLSubNodeWidget->setFixedSize(150, 1600); // 设置固定尺寸，25个子节点
     m_clkMPLLSubNodeWidget->setStyleSheet(
         "QWidget { "
         "background-color: #ffffff; "
@@ -1837,6 +1524,7 @@ void ClockConfigWidget::setupClkHSPeriSubNodes()
     m_clkHSPeriSubNodeWidget->setParent(m_flowWidget);
     // 默认位置将在initializeModulePositions中设置
 }
+
 void ClockConfigWidget::createPLLWidget(const QString& pllName, QWidget* parent)
 {
     QWidget* pllWidget = new QWidget();
@@ -1870,7 +1558,8 @@ void ClockConfigWidget::createPLLWidget(const QString& pllName, QWidget* parent)
 
     QSpinBox* multBox = new QSpinBox();
     multBox->setRange(1, 100);
-    // 只读展示：保持启用以避免系统主题将文字渲染为"禁用灰"，但锁定数值不可更改
+    // 只读显示：禁用并去掉步进按钮，防止上下调整
+    multBox->setEnabled(false);
     multBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
     multBox->setFocusPolicy(Qt::NoFocus);
 
@@ -1891,9 +1580,6 @@ void ClockConfigWidget::createPLLWidget(const QString& pllName, QWidget* parent)
     }
 
     multBox->setValue(defaultMultiplier);
-    // 锁定上下限，防止用户更改，同时保持启用态便于清晰显示
-    multBox->setMinimum(defaultMultiplier);
-    multBox->setMaximum(defaultMultiplier);
     multBox->setFixedWidth(60);
     multBox->setStyleSheet("font-size: 10px;");
 
@@ -2272,6 +1958,7 @@ void ClockConfigWidget::createClkCam1PLLSubNodeWidget(const QString& nodeName, Q
                 onClkCam1PLLSubNodeDividerChanged(nodeName, value);
             });
 }
+
 void ClockConfigWidget::createClkRawAxiSubNodeWidget(const QString& nodeName, QWidget* parent)
 {
     QWidget* subNodeWidget = new QWidget();
@@ -2423,6 +2110,7 @@ void ClockConfigWidget::createClkCam0PLLSubNodeWidget(const QString& nodeName, Q
                 onClkCam0PLLSubNodeDividerChanged(nodeName, value);
             });
 }
+
 void ClockConfigWidget::createClkDispPLLSubNodeWidget(const QString& nodeName, QWidget* parent)
 {
     QWidget* subNodeWidget = new QWidget();
@@ -2984,6 +2672,7 @@ void ClockConfigWidget::createClkTPLLSubNodeWidget(const QString& nodeName, QWid
                 onClkTPLLSubNodeDividerChanged(nodeName, value);
             });
 }
+
 void ClockConfigWidget::createClkMPLLSubNodeWidget(const QString& nodeName, QWidget* parent)
 {
     QWidget* subNodeWidget = new QWidget();
@@ -3303,285 +2992,6 @@ void ClockConfigWidget::createClkSPINANDSubNodeWidget(const QString& nodeName, Q
             });
 }
 
-void ClockConfigWidget::createClkI2CSubNodeWidget(const QString& nodeName, QWidget* parent)
-{
-    QWidget* subNodeWidget = new QWidget();
-    subNodeWidget->setStyleSheet(
-        "QWidget { background-color: #ffffff; border: 1px solid #6c757d; border-radius: 4px; padding: 3px; margin: 1px; }"
-    );
-    QVBoxLayout* layout = new QVBoxLayout(subNodeWidget);
-    layout->setSpacing(2);
-    layout->setContentsMargins(3,3,3,3);
-    QLabel* nameLabel = new QLabel(formatClockTitle(nodeName));
-    nameLabel->setStyleSheet("font-weight: bold; color: #495057; font-size: 11px;");
-    nameLabel->setAlignment(Qt::AlignCenter);
-    nameLabel->setWordWrap(true);
-    QHBoxLayout* divConfigLayout = new QHBoxLayout();
-    QLabel* divLabel = new QLabel("分频：");
-    divLabel->setStyleSheet("color: #495057; font-size: 10px; font-weight: bold;");
-    QSpinBox* divBox = new QSpinBox();
-    divBox->setRange(1, 1000);
-    divBox->setValue(1);
-    divBox->setEnabled(false);
-    divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
-    divBox->setFocusPolicy(Qt::NoFocus);
-    divBox->setFixedWidth(45);
-    divBox->setStyleSheet("font-size: 10px;");
-    divConfigLayout->addWidget(divLabel);
-    divConfigLayout->addWidget(divBox);
-    double parentFreq = m_clkFPLLSubNodes.contains("clk_i2c") ? m_clkFPLLSubNodes["clk_i2c"].frequency : 100.0;
-    QString freqText = QString("%1 MHz").arg(parentFreq, 0, 'f', 1);
-    QLabel* freqLabel = new QLabel(freqText);
-    freqLabel->setStyleSheet("color: #dc3545; font-family: monospace; font-weight: bold; font-size: 9px;");
-    freqLabel->setAlignment(Qt::AlignCenter);
-    layout->addWidget(nameLabel);
-    layout->addLayout(divConfigLayout);
-    layout->addWidget(freqLabel);
-    m_clkI2CSubNodeWidgets[nodeName] = subNodeWidget;
-    m_clkI2CSubNodeFreqLabels[nodeName] = freqLabel;
-    m_clkI2CSubNodeDividerBoxes[nodeName] = divBox;
-    m_clkI2CSubNodeLayout->addWidget(subNodeWidget);
-}
-
-void ClockConfigWidget::createClkSPINodeSubNodeWidget(const QString& nodeName, QWidget* parent)
-{
-    QWidget* subNodeWidget = new QWidget();
-    subNodeWidget->setStyleSheet(
-        "QWidget { background-color: #ffffff; border: 1px solid #6f42c1; border-radius: 4px; padding: 3px; margin: 1px; }"
-    );
-    QVBoxLayout* layout = new QVBoxLayout(subNodeWidget);
-    layout->setSpacing(2);
-    layout->setContentsMargins(3,3,3,3);
-    QLabel* nameLabel = new QLabel(formatClockTitle(nodeName));
-    nameLabel->setStyleSheet("font-weight: bold; color: #6f42c1; font-size: 11px;");
-    nameLabel->setAlignment(Qt::AlignCenter);
-    nameLabel->setWordWrap(true);
-    QHBoxLayout* divConfigLayout = new QHBoxLayout();
-    QLabel* divLabel = new QLabel("分频：");
-    divLabel->setStyleSheet("color: #6f42c1; font-size: 10px; font-weight: bold;");
-    QSpinBox* divBox = new QSpinBox();
-    divBox->setRange(1, 1000);
-    divBox->setValue(1);
-    divBox->setEnabled(false);
-    divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
-    divBox->setFocusPolicy(Qt::NoFocus);
-    divBox->setFixedWidth(45);
-    divBox->setStyleSheet("font-size: 10px;");
-    divConfigLayout->addWidget(divLabel);
-    divConfigLayout->addWidget(divBox);
-    double parentFreq = m_clkMPLLSubNodes.contains("clk_spi") ? m_clkMPLLSubNodes["clk_spi"].frequency : 200.0;
-    QString freqText = QString("%1 MHz").arg(parentFreq, 0, 'f', 1);
-    QLabel* freqLabel = new QLabel(freqText);
-    freqLabel->setStyleSheet("color: #dc3545; font-family: monospace; font-weight: bold; font-size: 9px;");
-    freqLabel->setAlignment(Qt::AlignCenter);
-    layout->addWidget(nameLabel);
-    layout->addLayout(divConfigLayout);
-    layout->addWidget(freqLabel);
-    m_clkSPINodeSubNodeWidgets[nodeName] = subNodeWidget;
-    m_clkSPINodeSubNodeFreqLabels[nodeName] = freqLabel;
-    m_clkSPINodeSubNodeDividerBoxes[nodeName] = divBox;
-    m_clkSPINodeSubNodeLayout->addWidget(subNodeWidget);
-}
-
-void ClockConfigWidget::createClkX2PSubNodeWidget(const QString& nodeName, QWidget* parent)
-{
-    QWidget* subNodeWidget = new QWidget();
-    subNodeWidget->setStyleSheet(
-        "QWidget { background-color: #ffffff; border: 1px solid #28a745; border-radius: 4px; padding: 3px; margin: 1px; }"
-    );
-    QVBoxLayout* layout = new QVBoxLayout(subNodeWidget);
-    layout->setSpacing(2);
-    layout->setContentsMargins(3,3,3,3);
-    QLabel* nameLabel = new QLabel(formatClockTitle(nodeName));
-    nameLabel->setStyleSheet("font-weight: bold; color: #1e7e34; font-size: 11px;");
-    nameLabel->setAlignment(Qt::AlignCenter);
-    nameLabel->setWordWrap(true);
-    QHBoxLayout* divConfigLayout = new QHBoxLayout();
-    QLabel* divLabel = new QLabel("分频：");
-    divLabel->setStyleSheet("color: #1e7e34; font-size: 10px; font-weight: bold;");
-    QSpinBox* divBox = new QSpinBox();
-    divBox->setRange(1, 1000);
-    divBox->setValue(1);
-    divBox->setEnabled(false);
-    divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
-    divBox->setFocusPolicy(Qt::NoFocus);
-    divBox->setFixedWidth(45);
-    divBox->setStyleSheet("font-size: 10px;");
-    divConfigLayout->addWidget(divLabel);
-    divConfigLayout->addWidget(divBox);
-    double parentFreq = m_clkFAB100MSubNodes.contains("clk_x2p") ? m_clkFAB100MSubNodes["clk_x2p"].frequency : 100.0;
-    QString freqText = QString("%1 MHz").arg(parentFreq, 0, 'f', 1);
-    QLabel* freqLabel = new QLabel(freqText);
-    freqLabel->setStyleSheet("color: #dc3545; font-family: monospace; font-weight: bold; font-size: 9px;");
-    freqLabel->setAlignment(Qt::AlignCenter);
-    layout->addWidget(nameLabel);
-    layout->addLayout(divConfigLayout);
-    layout->addWidget(freqLabel);
-    m_clkX2PSubNodeWidgets[nodeName] = subNodeWidget;
-    m_clkX2PSubNodeFreqLabels[nodeName] = freqLabel;
-    m_clkX2PSubNodeDividerBoxes[nodeName] = divBox;
-    m_clkX2PSubNodeLayout->addWidget(subNodeWidget);
-}
-
-void ClockConfigWidget::createClkAPBVCSYSSubNodeWidget(const QString& nodeName, QWidget* parent)
-{
-    QWidget* subNodeWidget = new QWidget();
-    subNodeWidget->setStyleSheet(
-        "QWidget { background-color: #ffffff; border: 1px solid #17a2b8; border-radius: 4px; padding: 3px; margin: 1px; }"
-    );
-    QVBoxLayout* layout = new QVBoxLayout(subNodeWidget);
-    layout->setSpacing(2);
-    layout->setContentsMargins(3,3,3,3);
-    QLabel* nameLabel = new QLabel(formatClockTitle(nodeName));
-    nameLabel->setStyleSheet("font-weight: bold; color: #117a8b; font-size: 11px;");
-    nameLabel->setAlignment(Qt::AlignCenter);
-    nameLabel->setWordWrap(true);
-    QHBoxLayout* divConfigLayout = new QHBoxLayout();
-    QLabel* divLabel = new QLabel("分频：");
-    divLabel->setStyleSheet("color: #117a8b; font-size: 10px; font-weight: bold;");
-    QSpinBox* divBox = new QSpinBox();
-    divBox->setRange(1, 1000);
-    divBox->setValue(1);
-    divBox->setEnabled(false);
-    divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
-    divBox->setFocusPolicy(Qt::NoFocus);
-    divBox->setFixedWidth(45);
-    divBox->setStyleSheet("font-size: 10px;");
-    divConfigLayout->addWidget(divLabel);
-    divConfigLayout->addWidget(divBox);
-    double parentFreq = m_clkFAB100MSubNodes.contains("clk_apb_vcsys") ? m_clkFAB100MSubNodes["clk_apb_vcsys"].frequency : 100.0;
-    QString freqText = QString("%1 MHz").arg(parentFreq, 0, 'f', 1);
-    QLabel* freqLabel = new QLabel(freqText);
-    freqLabel->setStyleSheet("color: #dc3545; font-family: monospace; font-weight: bold; font-size: 9px;");
-    freqLabel->setAlignment(Qt::AlignCenter);
-    layout->addWidget(nameLabel);
-    layout->addLayout(divConfigLayout);
-    layout->addWidget(freqLabel);
-    m_clkAPBVCSYSSubNodeWidgets[nodeName] = subNodeWidget;
-    m_clkAPBVCSYSSubNodeFreqLabels[nodeName] = freqLabel;
-    m_clkAPBVCSYSSubNodeDividerBoxes[nodeName] = divBox;
-    m_clkAPBVCSYSSubNodeLayout->addWidget(subNodeWidget);
-}
-
-void ClockConfigWidget::createClkVIPSys3SubNodeWidget(const QString& nodeName, QWidget* parent)
-{
-    QWidget* subNodeWidget = new QWidget();
-    subNodeWidget->setStyleSheet(
-        "QWidget { background-color: #ffffff; border: 1px solid #ffc107; border-radius: 4px; padding: 3px; margin: 1px; }"
-    );
-    QVBoxLayout* layout = new QVBoxLayout(subNodeWidget);
-    layout->setSpacing(2);
-    layout->setContentsMargins(3,3,3,3);
-    QLabel* nameLabel = new QLabel(formatClockTitle(nodeName));
-    nameLabel->setStyleSheet("font-weight: bold; color: #856404; font-size: 11px;");
-    nameLabel->setAlignment(Qt::AlignCenter);
-    nameLabel->setWordWrap(true);
-    QHBoxLayout* divConfigLayout = new QHBoxLayout();
-    QLabel* divLabel = new QLabel("分频：");
-    divLabel->setStyleSheet("color: #856404; font-size: 10px; font-weight: bold;");
-    QSpinBox* divBox = new QSpinBox();
-    divBox->setRange(1, 1000);
-    divBox->setValue(1);
-    divBox->setEnabled(false);
-    divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
-    divBox->setFocusPolicy(Qt::NoFocus);
-    divBox->setFixedWidth(45);
-    divBox->setStyleSheet("font-size: 10px;");
-    divConfigLayout->addWidget(divLabel);
-    divConfigLayout->addWidget(divBox);
-    double parentFreq = m_clkMPLLSubNodes.contains("clk_vip_sys_3") ? m_clkMPLLSubNodes["clk_vip_sys_3"].frequency : 600.0;
-    QString freqText = QString("%1 MHz").arg(parentFreq, 0, 'f', 1);
-    QLabel* freqLabel = new QLabel(freqText);
-    freqLabel->setStyleSheet("color: #dc3545; font-family: monospace; font-weight: bold; font-size: 9px;");
-    freqLabel->setAlignment(Qt::AlignCenter);
-    layout->addWidget(nameLabel);
-    layout->addLayout(divConfigLayout);
-    layout->addWidget(freqLabel);
-    m_clkVIPSys3SubNodeWidgets[nodeName] = subNodeWidget;
-    m_clkVIPSys3SubNodeFreqLabels[nodeName] = freqLabel;
-    m_clkVIPSys3SubNodeDividerBoxes[nodeName] = divBox;
-    m_clkVIPSys3SubNodeLayout->addWidget(subNodeWidget);
-}
-
-void ClockConfigWidget::createClkVIPSys1SubNodeWidget(const QString& nodeName, QWidget* parent)
-{
-    QWidget* subNodeWidget = new QWidget();
-    subNodeWidget->setStyleSheet(
-        "QWidget { background-color: #ffffff; border: 1px solid #28a745; border-radius: 4px; padding: 3px; margin: 1px; }"
-    );
-    QVBoxLayout* layout = new QVBoxLayout(subNodeWidget);
-    layout->setSpacing(2);
-    layout->setContentsMargins(3,3,3,3);
-    QLabel* nameLabel = new QLabel(formatClockTitle(nodeName));
-    nameLabel->setStyleSheet("font-weight: bold; color: #1e7e34; font-size: 11px;");
-    nameLabel->setAlignment(Qt::AlignCenter);
-    nameLabel->setWordWrap(true);
-    QHBoxLayout* divConfigLayout = new QHBoxLayout();
-    QLabel* divLabel = new QLabel("分频：");
-    divLabel->setStyleSheet("color: #1e7e34; font-size: 10px; font-weight: bold;");
-    QSpinBox* divBox = new QSpinBox();
-    divBox->setRange(1, 1000);
-    divBox->setValue(1);
-    divBox->setEnabled(false);
-    divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
-    divBox->setFocusPolicy(Qt::NoFocus);
-    divBox->setFixedWidth(45);
-    divBox->setStyleSheet("font-size: 10px;");
-    divConfigLayout->addWidget(divLabel);
-    divConfigLayout->addWidget(divBox);
-    double parentFreq = m_clkMPLLSubNodes.contains("clk_vip_sys_1") ? m_clkMPLLSubNodes["clk_vip_sys_1"].frequency : 300.0;
-    QString freqText = QString("%1 MHz").arg(parentFreq, 0, 'f', 1);
-    QLabel* freqLabel = new QLabel(freqText);
-    freqLabel->setStyleSheet("color: #dc3545; font-family: monospace; font-weight: bold; font-size: 9px;");
-    freqLabel->setAlignment(Qt::AlignCenter);
-    layout->addWidget(nameLabel);
-    layout->addLayout(divConfigLayout);
-    layout->addWidget(freqLabel);
-    m_clkVIPSys1SubNodeWidgets[nodeName] = subNodeWidget;
-    m_clkVIPSys1SubNodeFreqLabels[nodeName] = freqLabel;
-    m_clkVIPSys1SubNodeDividerBoxes[nodeName] = divBox;
-    m_clkVIPSys1SubNodeLayout->addWidget(subNodeWidget);
-}
-
-void ClockConfigWidget::createClkVIPSys0SubNodeWidget(const QString& nodeName, QWidget* parent)
-{
-    QWidget* subNodeWidget = new QWidget();
-    subNodeWidget->setStyleSheet(
-        "QWidget { background-color: #ffffff; border: 1px solid #17a2b8; border-radius: 4px; padding: 3px; margin: 1px; }"
-    );
-    QVBoxLayout* layout = new QVBoxLayout(subNodeWidget);
-    layout->setSpacing(2);
-    layout->setContentsMargins(3,3,3,3);
-    QLabel* nameLabel = new QLabel(formatClockTitle(nodeName));
-    nameLabel->setStyleSheet("font-weight: bold; color: #117a8b; font-size: 11px;");
-    nameLabel->setAlignment(Qt::AlignCenter);
-    nameLabel->setWordWrap(true);
-    QHBoxLayout* divConfigLayout = new QHBoxLayout();
-    QLabel* divLabel = new QLabel("分频：");
-    divLabel->setStyleSheet("color: #117a8b; font-size: 10px; font-weight: bold;");
-    QSpinBox* divBox = new QSpinBox();
-    divBox->setRange(1, 1000);
-    divBox->setValue(1);
-    divBox->setEnabled(false);
-    divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
-    divBox->setFocusPolicy(Qt::NoFocus);
-    divBox->setFixedWidth(45);
-    divBox->setStyleSheet("font-size: 10px;");
-    divConfigLayout->addWidget(divLabel);
-    divConfigLayout->addWidget(divBox);
-    double parentFreq = m_clkMPLLSubNodes.contains("clk_vip_sys_0") ? m_clkMPLLSubNodes["clk_vip_sys_0"].frequency : 150.0;
-    QString freqText = QString("%1 MHz").arg(parentFreq, 0, 'f', 1);
-    QLabel* freqLabel = new QLabel(freqText);
-    freqLabel->setStyleSheet("color: #dc3545; font-family: monospace; font-weight: bold; font-size: 9px;");
-    freqLabel->setAlignment(Qt::AlignCenter);
-    layout->addWidget(nameLabel);
-    layout->addLayout(divConfigLayout);
-    layout->addWidget(freqLabel);
-    m_clkVIPSys0SubNodeWidgets[nodeName] = subNodeWidget;
-    m_clkVIPSys0SubNodeFreqLabels[nodeName] = freqLabel;
-    m_clkVIPSys0SubNodeDividerBoxes[nodeName] = divBox;
-    m_clkVIPSys0SubNodeLayout->addWidget(subNodeWidget);
-}
 void ClockConfigWidget::createClkHSPeriSubNodeWidget(const QString& nodeName, QWidget* parent)
 {
     QWidget* subNodeWidget = new QWidget();
@@ -3673,32 +3083,24 @@ void ClockConfigWidget::initializeModulePositions()
 {
     // 初始化各个模块的默认位置: x, y, 宽度, 高度
     ModulePosition inputPos = {"输入源", 25, 730, 100, 350};
-    ModulePosition pllPos = {"锁相环", 240, 600, 200, 1192};
+    ModulePosition pllPos = {"锁相环", 240, 600, 200, 700};
     ModulePosition subPllPos = {"子锁相环", 980, 475, 180, 780};
-    ModulePosition outputPos = {"OSC输出", 1780, 11, 200, 3500}; // 调整高度以容纳所有输出节点
-    ModulePosition clk1MSubPos = {"clk_1M子节点", 1210, 1151, 150, 406};
-    ModulePosition clkCam1PLLSubPos = {"clk_cam1pll子节点", 901, 702, 150, 578};
-    ModulePosition clkRawAxiSubPos = {"clk_raw_axi子节点", 1500, 750, 180, 550};
-    ModulePosition clkCam0PLLSubPos = {"clk_cam0pll子节点", 487, 88, 150, 250};
-    ModulePosition clkDispPLLSubPos = {"clk_disppll子节点", 494, 1999, 150, 320};
-    ModulePosition clkSysDispSubPos = {"clk_sys_disp子节点", 1558, 1468, 150, 148};
-    ModulePosition clkA0PLLSubPos = {"clk_a0pll子节点", 1313, 108, 150, 492};
-    ModulePosition clkRVPLLSubPos = {"clk_rvpll子节点", 476, 1804, 150, 148};
-    ModulePosition clkAPPLLSubPos = {"clk_appll子节点", 468, 1562, 150, 148};
-    ModulePosition clkFPLLSubPos = {"clk_fpll子节点", 472, 432, 150, 836};
-    ModulePosition clkXTALMISCSubPos = {"clk_xtal_misc子节点", 687, 560, 150, 952};
-    ModulePosition clkTPLLSubPos = {"clk_tpu子节点", 470, 1305, 150, 234};
-    ModulePosition clkMPLLSubPos = {"clk_mpll子节点", 686, 1535, 150, 1954};
-    ModulePosition clkFAB100MSubPos = {"clk_fab100m子节点", 913, 86, 150, 578};
-    ModulePosition clkSPINANDSubPos = {"clk_spi_nand子节点", 905, 1947, 150, 148};
-    ModulePosition clkHSPISubPos = {"clk_hsperi子节点", 1215, 2994, 150, 234};
-    ModulePosition clkI2CSubPos = {"clk_i2c子节点", 688, 53, 150, 492};
-    ModulePosition clkSPINodeSubPos = {"clk_spi子节点", 908, 1518, 150, 406};
-    ModulePosition clkX2PSubPos = {"clk_x2p子节点", 1110, 450, 150, 492};
-    ModulePosition clkAPBVCSYSSubPos = {"clk_apb_vcsys子节点", 1111, 177, 150, 234};
-    ModulePosition clkVIPSys3SubPos = {"clk_vip_sys_3子节点", 906, 2122, 150, 234};
-    ModulePosition clkVIPSys1SubPos = {"clk_vip_sys_1子节点", 908, 2384, 150, 492};
-    ModulePosition clkVIPSys0SubPos = {"clk_vip_sys_0子节点", 908, 2895, 150, 492};
+    ModulePosition outputPos = {"OSC输出", 1780, 25, 200, 3500}; // 调整高度以容纳所有输出节点
+    ModulePosition clk1MSubPos = {"clk_1M子节点", 2050, 3000, 150, 350};
+    ModulePosition clkCam1PLLSubPos = {"clk_cam1pll子节点", 1280, 650, 150, 450}; // 新增clk_cam1pll子节点位置
+    ModulePosition clkRawAxiSubPos = {"clk_raw_axi子节点", 1500, 750, 180, 550}; // 新增clk_raw_axi子节点位置
+    ModulePosition clkCam0PLLSubPos = {"clk_cam0pll子节点", 1500, 480, 150, 250}; // 新增clk_cam0pll子节点位置
+    ModulePosition clkDispPLLSubPos = {"clk_disppll子节点", 1280, 1160, 150, 250}; // 新增clk_disppll子节点位置
+    ModulePosition clkSysDispSubPos = {"clk_sys_disp子节点", 1500, 1325, 150, 120}; // 新增clk_sys_disp子节点位置
+    ModulePosition clkA0PLLSubPos = {"clk_a0pll子节点", 1280, 130, 150, 450}; // 新增clk_a0pll子节点位置
+    ModulePosition clkRVPLLSubPos = {"clk_rvpll子节点", 510, 1300, 150, 120}; // 新增clk_rvpll子节点位置
+    ModulePosition clkAPPLLSubPos = {"clk_appll子节点", 510, 1130, 150, 120}; // 新增clk_appll子节点位置
+    ModulePosition clkFPLLSubPos = {"clk_fpll子节点", 510, 55, 150, 800}; // 新增clk_fpll子节点位置
+    ModulePosition clkTPLLSubPos = {"clk_tpu子节点", 510, 920, 150, 200}; // 新增clk_tpu子节点位置
+    ModulePosition clkMPLLSubPos = {"clk_mpll子节点", 750, 1250, 150, 1600}; // 新增clk_mpll子节点位置
+    ModulePosition clkFAB100MSubPos = {"clk_fab100m子节点", 750, 450, 150, 300}; // 新增clk_fab100m子节点位置
+    ModulePosition clkSPINANDSubPos = {"clk_spi_nand子节点", 984, 1335, 150, 120}; // 新增clk_spi_nand子节点位置
+    ModulePosition clkHSPISubPos = {"clk_hspi子节点", 955, 2352, 150, 210}; // 新增clk_hspi子节点位置
 
     m_modulePositions["输入源"] = inputPos;
     m_modulePositions["锁相环"] = pllPos;
@@ -3714,23 +3116,16 @@ void ClockConfigWidget::initializeModulePositions()
     m_modulePositions["clk_rvpll子节点"] = clkRVPLLSubPos;
     m_modulePositions["clk_appll子节点"] = clkAPPLLSubPos;
     m_modulePositions["clk_fpll子节点"] = clkFPLLSubPos;
-    m_modulePositions["clk_xtal_misc子节点"] = clkXTALMISCSubPos;
     m_modulePositions["clk_tpu子节点"] = clkTPLLSubPos;
     m_modulePositions["clk_mpll子节点"] = clkMPLLSubPos;
     m_modulePositions["clk_fab100m子节点"] = clkFAB100MSubPos;
     m_modulePositions["clk_spi_nand子节点"] = clkSPINANDSubPos;
-    m_modulePositions["clk_hsperi子节点"] = clkHSPISubPos;
-    m_modulePositions["clk_i2c子节点"] = clkI2CSubPos;
-    m_modulePositions["clk_spi子节点"] = clkSPINodeSubPos;
-    m_modulePositions["clk_x2p子节点"] = clkX2PSubPos;
-    m_modulePositions["clk_apb_vcsys子节点"] = clkAPBVCSYSSubPos;
-    m_modulePositions["clk_vip_sys_3子节点"] = clkVIPSys3SubPos;
-    m_modulePositions["clk_vip_sys_1子节点"] = clkVIPSys1SubPos;
-    m_modulePositions["clk_vip_sys_0子节点"] = clkVIPSys0SubPos;
+    m_modulePositions["clk_hspi子节点"] = clkHSPISubPos;
 
     // 应用默认位置
     applyModulePositions();
 }
+
 void ClockConfigWidget::applyModulePositions()
 {
     // 在应用位置前，对 clk_fab100m 子节点根据子项数量动态拉伸高度
@@ -3738,104 +3133,6 @@ void ClockConfigWidget::applyModulePositions()
         int autoHeight = m_clkFAB100MSubNodeLayout->sizeHint().height() + 20; // 额外留白
         if (autoHeight > m_modulePositions["clk_fab100m子节点"].height) {
             m_modulePositions["clk_fab100m子节点"].height = autoHeight;
-        }
-    }
-
-    // 动态拉伸：OSC输出容器
-    if (m_outputLayout && m_outputWidget && m_modulePositions.contains("OSC输出")) {
-        int autoHeight = m_outputLayout->sizeHint().height() + 20; // 额外留白
-        if (autoHeight > m_modulePositions["OSC输出"].height) {
-            m_modulePositions["OSC输出"].height = autoHeight;
-        }
-    }
-
-    // 动态拉伸"锁相环(PLLs)"高度，避免子项被挤压
-    if (m_pllLayout && m_pllWidget && m_modulePositions.contains("锁相环")) {
-        int autoHeight = m_pllLayout->sizeHint().height() + 20; // 额外留白
-        if (autoHeight > m_modulePositions["锁相环"].height) {
-            m_modulePositions["锁相环"].height = autoHeight;
-        }
-    }
-
-    // 通用子节点区域：统一按布局 sizeHint 动态调整各容器高度
-    auto growIfNeeded = [this](QVBoxLayout* layout, const char* key){
-        if (layout && m_modulePositions.contains(key)) {
-            int autoHeight = layout->sizeHint().height() + 20; // 额外留白
-            if (autoHeight > m_modulePositions[key].height) {
-                m_modulePositions[key].height = autoHeight;
-            }
-        }
-    };
-
-    growIfNeeded(m_clk1MSubNodeLayout, "clk_1M子节点");
-    growIfNeeded(m_clkCam1PLLSubNodeLayout, "clk_cam1pll子节点");
-    growIfNeeded(m_clkRawAxiSubNodeLayout, "clk_raw_axi子节点");
-    growIfNeeded(m_clkCam0PLLSubNodeLayout, "clk_cam0pll子节点");
-    growIfNeeded(m_clkDispPLLSubNodeLayout, "clk_disppll子节点");
-    growIfNeeded(m_clkSysDispSubNodeLayout, "clk_sys_disp子节点");
-    growIfNeeded(m_clkA0PLLSubNodeLayout, "clk_a0pll子节点");
-    growIfNeeded(m_clkRVPLLSubNodeLayout, "clk_rvpll子节点");
-    growIfNeeded(m_clkAPPLLSubNodeLayout, "clk_appll子节点");
-    growIfNeeded(m_clkFPLLSubNodeLayout, "clk_fpll子节点");
-    growIfNeeded(m_clkTPLLSubNodeLayout, "clk_tpu子节点");
-    growIfNeeded(m_clkMPLLSubNodeLayout, "clk_mpll子节点");
-    growIfNeeded(m_clkFAB100MSubNodeLayout, "clk_fab100m子节点");
-    growIfNeeded(m_clkSPINANDSubNodeLayout, "clk_spi_nand子节点");
-    growIfNeeded(m_clkHSPeriSubNodeLayout, "clk_hsperi子节点");
-    growIfNeeded(m_clkXTALMISCSubNodeLayout, "clk_xtal_misc子节点");
-    growIfNeeded(m_clkI2CSubNodeLayout, "clk_i2c子节点");
-    growIfNeeded(m_clkSPINodeSubNodeLayout, "clk_spi子节点");
-    growIfNeeded(m_clkX2PSubNodeLayout, "clk_x2p子节点");
-    growIfNeeded(m_clkAPBVCSYSSubNodeLayout, "clk_apb_vcsys子节点");
-    growIfNeeded(m_clkVIPSys3SubNodeLayout, "clk_vip_sys_3子节点");
-    growIfNeeded(m_clkVIPSys1SubNodeLayout, "clk_vip_sys_1子节点");
-    growIfNeeded(m_clkVIPSys0SubNodeLayout, "clk_vip_sys_0子节点");
-
-    // 动态拉伸：clk_i2c 子节点
-    if (m_clkI2CSubNodeLayout && m_clkI2CSubNodeWidget && m_modulePositions.contains("clk_i2c子节点")) {
-        int autoHeight = m_clkI2CSubNodeLayout->sizeHint().height() + 20;
-        if (autoHeight > m_modulePositions["clk_i2c子节点"].height) {
-            m_modulePositions["clk_i2c子节点"].height = autoHeight;
-        }
-    }
-
-    // 动态拉伸：clk_vip_sys_1 子节点
-    if (m_clkVIPSys1SubNodeLayout && m_clkVIPSys1SubNodeWidget && m_modulePositions.contains("clk_vip_sys_1子节点")) {
-        int autoHeight = m_clkVIPSys1SubNodeLayout->sizeHint().height() + 20;
-        if (autoHeight > m_modulePositions["clk_vip_sys_1子节点"].height) {
-            m_modulePositions["clk_vip_sys_1子节点"].height = autoHeight;
-        }
-    }
-
-    // 动态拉伸：clk_vip_sys_0 子节点
-    if (m_clkVIPSys0SubNodeLayout && m_clkVIPSys0SubNodeWidget && m_modulePositions.contains("clk_vip_sys_0子节点")) {
-        int autoHeight = m_clkVIPSys0SubNodeLayout->sizeHint().height() + 20;
-        if (autoHeight > m_modulePositions["clk_vip_sys_0子节点"].height) {
-            m_modulePositions["clk_vip_sys_0子节点"].height = autoHeight;
-        }
-    }
-
-    // 动态拉伸：clk_xtal_misc 子节点
-    if (m_clkXTALMISCSubNodeLayout && m_clkXTALMISCSubNodeWidget && m_modulePositions.contains("clk_xtal_misc子节点")) {
-        int autoHeight = m_clkXTALMISCSubNodeLayout->sizeHint().height() + 20;
-        if (autoHeight > m_modulePositions["clk_xtal_misc子节点"].height) {
-            m_modulePositions["clk_xtal_misc子节点"].height = autoHeight;
-        }
-    }
-
-    // 动态拉伸：clk_spi 子节点
-    if (m_clkSPINodeSubNodeLayout && m_clkSPINodeSubNodeWidget && m_modulePositions.contains("clk_spi子节点")) {
-        int autoHeight = m_clkSPINodeSubNodeLayout->sizeHint().height() + 20;
-        if (autoHeight > m_modulePositions["clk_spi子节点"].height) {
-            m_modulePositions["clk_spi子节点"].height = autoHeight;
-        }
-    }
-
-    // 动态拉伸：clk_vip_sys_3 子节点
-    if (m_clkVIPSys3SubNodeLayout && m_clkVIPSys3SubNodeWidget && m_modulePositions.contains("clk_vip_sys_3子节点")) {
-        int autoHeight = m_clkVIPSys3SubNodeLayout->sizeHint().height() + 20;
-        if (autoHeight > m_modulePositions["clk_vip_sys_3子节点"].height) {
-            m_modulePositions["clk_vip_sys_3子节点"].height = autoHeight;
         }
     }
 
@@ -3923,12 +3220,6 @@ void ClockConfigWidget::applyModulePositions()
         m_clkFPLLSubNodeWidget->setFixedSize(pos.width, pos.height);
     }
 
-    if (m_modulePositions.contains("clk_xtal_misc子节点") && m_clkXTALMISCSubNodeWidget) {
-        ModulePosition pos = m_modulePositions["clk_xtal_misc子节点"];
-        m_clkXTALMISCSubNodeWidget->move(pos.x, pos.y);
-        m_clkXTALMISCSubNodeWidget->setFixedSize(pos.width, pos.height);
-    }
-
     if (m_modulePositions.contains("clk_tpu子节点") && m_clkTPLLSubNodeWidget) {
         ModulePosition pos = m_modulePositions["clk_tpu子节点"];
         m_clkTPLLSubNodeWidget->move(pos.x, pos.y);
@@ -3953,52 +3244,10 @@ void ClockConfigWidget::applyModulePositions()
         m_clkSPINANDSubNodeWidget->setFixedSize(pos.width, pos.height);
     }
 
-    if (m_modulePositions.contains("clk_hsperi子节点") && m_clkHSPeriSubNodeWidget) {
-        ModulePosition pos = m_modulePositions["clk_hsperi子节点"];
+    if (m_modulePositions.contains("clk_hspi子节点") && m_clkHSPeriSubNodeWidget) {
+        ModulePosition pos = m_modulePositions["clk_hspi子节点"];
         m_clkHSPeriSubNodeWidget->move(pos.x, pos.y);
         m_clkHSPeriSubNodeWidget->setFixedSize(pos.width, pos.height);
-    }
-
-    if (m_modulePositions.contains("clk_i2c子节点") && m_clkI2CSubNodeWidget) {
-        ModulePosition pos = m_modulePositions["clk_i2c子节点"];
-        m_clkI2CSubNodeWidget->move(pos.x, pos.y);
-        m_clkI2CSubNodeWidget->setFixedSize(pos.width, pos.height);
-    }
-
-    if (m_modulePositions.contains("clk_spi子节点") && m_clkSPINodeSubNodeWidget) {
-        ModulePosition pos = m_modulePositions["clk_spi子节点"];
-        m_clkSPINodeSubNodeWidget->move(pos.x, pos.y);
-        m_clkSPINodeSubNodeWidget->setFixedSize(pos.width, pos.height);
-    }
-
-    if (m_modulePositions.contains("clk_x2p子节点") && m_clkX2PSubNodeWidget) {
-        ModulePosition pos = m_modulePositions["clk_x2p子节点"];
-        m_clkX2PSubNodeWidget->move(pos.x, pos.y);
-        m_clkX2PSubNodeWidget->setFixedSize(pos.width, pos.height);
-    }
-
-    if (m_modulePositions.contains("clk_apb_vcsys子节点") && m_clkAPBVCSYSSubNodeWidget) {
-        ModulePosition pos = m_modulePositions["clk_apb_vcsys子节点"];
-        m_clkAPBVCSYSSubNodeWidget->move(pos.x, pos.y);
-        m_clkAPBVCSYSSubNodeWidget->setFixedSize(pos.width, pos.height);
-    }
-
-    if (m_modulePositions.contains("clk_vip_sys_3子节点") && m_clkVIPSys3SubNodeWidget) {
-        ModulePosition pos = m_modulePositions["clk_vip_sys_3子节点"];
-        m_clkVIPSys3SubNodeWidget->move(pos.x, pos.y);
-        m_clkVIPSys3SubNodeWidget->setFixedSize(pos.width, pos.height);
-    }
-
-    if (m_modulePositions.contains("clk_vip_sys_1子节点") && m_clkVIPSys1SubNodeWidget) {
-        ModulePosition pos = m_modulePositions["clk_vip_sys_1子节点"];
-        m_clkVIPSys1SubNodeWidget->move(pos.x, pos.y);
-        m_clkVIPSys1SubNodeWidget->setFixedSize(pos.width, pos.height);
-    }
-
-    if (m_modulePositions.contains("clk_vip_sys_0子节点") && m_clkVIPSys0SubNodeWidget) {
-        ModulePosition pos = m_modulePositions["clk_vip_sys_0子节点"];
-        m_clkVIPSys0SubNodeWidget->move(pos.x, pos.y);
-        m_clkVIPSys0SubNodeWidget->setFixedSize(pos.width, pos.height);
     }
 
     // 重绘连接线
@@ -4022,10 +3271,7 @@ void ClockConfigWidget::ensureFlowCanvasFitsContent()
                << m_clkCam0PLLSubNodeWidget << m_clkDispPLLSubNodeWidget << m_clkSysDispSubNodeWidget
                << m_clkA0PLLSubNodeWidget << m_clkRVPLLSubNodeWidget << m_clkAPPLLSubNodeWidget
                << m_clkFPLLSubNodeWidget << m_clkTPLLSubNodeWidget << m_clkMPLLSubNodeWidget
-               << m_clkFAB100MSubNodeWidget << m_clkSPINANDSubNodeWidget << m_clkHSPeriSubNodeWidget
-               << m_clkXTALMISCSubNodeWidget << m_clkI2CSubNodeWidget << m_clkSPINodeSubNodeWidget
-               << m_clkX2PSubNodeWidget << m_clkAPBVCSYSSubNodeWidget
-               << m_clkVIPSys3SubNodeWidget << m_clkVIPSys1SubNodeWidget << m_clkVIPSys0SubNodeWidget;
+               << m_clkFAB100MSubNodeWidget << m_clkSPINANDSubNodeWidget << m_clkHSPeriSubNodeWidget;
 
     for (QWidget* w : allWidgets) {
         if (!w) continue;
@@ -4071,6 +3317,7 @@ void ClockConfigWidget::showPositionConfigDialog()
     QMap<QString, QString> displayNameToModuleKey = {
         {"输入源", "input"},
         {"锁相环", "pll"},
+        {"子锁相环", "subpll"},
         {"OSC输出", "output"},
         {"clk_1M子节点", "clk_1M"},
         {"clk_cam1pll子节点", "clk_cam1pll"},
@@ -4086,15 +3333,7 @@ void ClockConfigWidget::showPositionConfigDialog()
         {"clk_mpll子节点", "clk_mpll"},
         {"clk_fab100m子节点", "clk_fab_100M"},
         {"clk_spi_nand子节点", "clk_spi_nand"},
-        {"clk_hsperi子节点", "clk_hsperi"},
-        {"clk_i2c子节点", "clk_i2c"},
-        {"clk_spi子节点", "clk_spi"},
-        {"clk_x2p子节点", "clk_x2p"},
-        {"clk_apb_vcsys子节点", "clk_apb_vcsys"},
-        {"clk_vip_sys_3子节点", "clk_vip_sys_3"},
-        {"clk_vip_sys_1子节点", "clk_vip_sys_1"},
-        {"clk_vip_sys_0子节点", "clk_vip_sys_0"},
-        {"clk_xtal_misc子节点", "clk_xtal_misc"}
+        {"clk_hspi子节点", "clk_hsperi"}
     };
 
     QStringList moduleNames = displayNameToModuleKey.keys();
@@ -4228,10 +3467,12 @@ ModulePosition ClockConfigWidget::getModulePosition(const QString& moduleName) c
 {
     return m_modulePositions.value(moduleName, ModulePosition());
 }
+
 void ClockConfigWidget::resetModulePositions()
 {
     initializeModulePositions();
 }
+
 void ClockConfigWidget::connectSignals()
 {
     // 连接PLL控制信号
@@ -4527,6 +3768,7 @@ void ClockConfigWidget::onClkTPLLSubNodeDividerChanged(const QString& nodeName, 
         emit configChanged();
     }
 }
+
 void ClockConfigWidget::onClkMPLLSubNodeDividerChanged(const QString& nodeName, int divider)
 {
     if (m_clkMPLLSubNodes.contains(nodeName)) {
@@ -4869,6 +4111,7 @@ void ClockConfigWidget::updateAllClkSysDispSubNodeFrequencies()
         updateClkSysDispSubNodeFrequency(nodeName);
     }
 }
+
 void ClockConfigWidget::updateClkA0PLLSubNodeFrequency(const QString& nodeName)
 {
     if (!m_clkA0PLLSubNodes.contains(nodeName)) return;
@@ -5243,6 +4486,7 @@ void ClockConfigWidget::updateFrequencies()
         updateClkHSPeriSubNodeFrequency(nodeName);
     }
 }
+
 void ClockConfigWidget::resetToDefaults()
 {
     // 重置PLL配置
@@ -5500,70 +4744,6 @@ bool ClockConfigWidget::eventFilter(QObject* obj, QEvent* event)
 
     return QWidget::eventFilter(obj, event);
 }
-QPoint ClockConfigWidget::getClkI2CSubNodeConnectionPoint() const {
-    if (!m_clkI2CSubNodeWidget || !m_flowWidget) return QPoint();
-    QPoint p = m_clkI2CSubNodeWidget->pos(); QRect r = m_clkI2CSubNodeWidget->rect();
-    return QPoint(p.x(), p.y() + r.height()/2); // 目标：左侧中点
-}
-
-QPoint ClockConfigWidget::getClkXTALMISCSubNodeConnectionPoint() const {
-    if (!m_clkXTALMISCSubNodeWidget || !m_flowWidget) return QPoint();
-    QPoint p = m_clkXTALMISCSubNodeWidget->pos(); QRect r = m_clkXTALMISCSubNodeWidget->rect();
-    return QPoint(p.x(), p.y() + r.height()/2);
-}
-
-QPoint ClockConfigWidget::getClkSPINodeSubNodeConnectionPoint() const {
-    if (!m_clkSPINodeSubNodeWidget || !m_flowWidget) return QPoint();
-    QPoint p = m_clkSPINodeSubNodeWidget->pos(); QRect r = m_clkSPINodeSubNodeWidget->rect();
-    return QPoint(p.x(), p.y() + r.height()/2);
-}
-QPoint ClockConfigWidget::getClkX2PSubNodeConnectionPoint() const {
-    if (!m_clkX2PSubNodeWidget || !m_flowWidget) return QPoint();
-    QPoint p = m_clkX2PSubNodeWidget->pos(); QRect r = m_clkX2PSubNodeWidget->rect();
-    return QPoint(p.x(), p.y() + r.height()/2);
-}
-
-QPoint ClockConfigWidget::getClkAPBVCSYSSubNodeConnectionPoint() const {
-    if (!m_clkAPBVCSYSSubNodeWidget || !m_flowWidget) return QPoint();
-    QPoint p = m_clkAPBVCSYSSubNodeWidget->pos(); QRect r = m_clkAPBVCSYSSubNodeWidget->rect();
-    return QPoint(p.x(), p.y() + r.height()/2);
-}
-
-QPoint ClockConfigWidget::getClkVIPSys3SubNodeConnectionPoint() const {
-    if (!m_clkVIPSys3SubNodeWidget || !m_flowWidget) return QPoint();
-    QPoint p = m_clkVIPSys3SubNodeWidget->pos(); QRect r = m_clkVIPSys3SubNodeWidget->rect();
-    return QPoint(p.x(), p.y() + r.height()/2);
-}
-
-QPoint ClockConfigWidget::getClkVIPSys1SubNodeConnectionPoint() const {
-    if (!m_clkVIPSys1SubNodeWidget || !m_flowWidget) return QPoint();
-    QPoint p = m_clkVIPSys1SubNodeWidget->pos(); QRect r = m_clkVIPSys1SubNodeWidget->rect();
-    return QPoint(p.x(), p.y() + r.height()/2);
-}
-
-QPoint ClockConfigWidget::getClkVIPSys0SubNodeConnectionPoint() const {
-    if (!m_clkVIPSys0SubNodeWidget || !m_flowWidget) return QPoint();
-    QPoint p = m_clkVIPSys0SubNodeWidget->pos(); QRect r = m_clkVIPSys0SubNodeWidget->rect();
-    return QPoint(p.x(), p.y() + r.height()/2);
-}
-
-QPoint ClockConfigWidget::getPanelRightAlignedToChildY(QWidget* panel, QWidget* child) const {
-    if (!panel || !child || !m_flowWidget) return QPoint();
-    // panel 在 flow 中的位置
-    QPoint panelPos = panel->pos(); QRect panelRect = panel->rect();
-    // child 相对 panel 的位置
-    QPoint childPos = child->pos(); QRect childRect = child->rect();
-    // 右侧出点，y 与 child 垂直对齐
-    return QPoint(panelPos.x() + panelRect.width(), panelPos.y() + childPos.y() + childRect.height()/2);
-}
-
-QPoint ClockConfigWidget::getPanelLeftAlignedToChildY(QWidget* panel, QWidget* child) const {
-    if (!panel || !child || !m_flowWidget) return QPoint();
-    QPoint panelPos = panel->pos();
-    QPoint childPos = child->pos(); QRect childRect = child->rect();
-    // 左侧入点，y 与 child 垂直对齐
-    return QPoint(panelPos.x(), panelPos.y() + childPos.y() + childRect.height()/2);
-}
 
 void ClockConfigWidget::mousePressEvent(QMouseEvent* event)
 {
@@ -5716,6 +4896,7 @@ void ClockConfigWidget::mouseReleaseEvent(QMouseEvent* event)
 
     QWidget::mouseReleaseEvent(event);
 }
+
 void ClockConfigWidget::drawConnectionLines(QPainter& painter)
 {
     // 确保flow widget已经布局完成
@@ -5785,16 +4966,18 @@ void ClockConfigWidget::drawConnectionLines(QPainter& painter)
         }
     }
 
-    // 绘制 XTAL_MISC → clk_1M 子节点的连接线
-    if (m_clkXTALMISCSubNodeWidget && m_clk1MSubNodeWidget && m_clkXTALMISCSubNodeWidgets.contains("clk_1M")) {
-        QWidget* child = m_clkXTALMISCSubNodeWidgets["clk_1M"]; // 父面板内的具体子条目
-        QPoint start = getPanelRightAlignedToChildY(m_clkXTALMISCSubNodeWidget, child); // 父右出，y对齐child
-        QPoint end = getClk1MSubNodeConnectionPoint(); // 子面板左入
-        if (!start.isNull() && !end.isNull()) {
+    // 绘制clk_1M到其子节点的连接线
+    if (m_clk1MSubNodeWidget) {
+        QPoint clk1MPoint = getClk1MConnectionPoint();
+        QPoint subNodePoint = getClk1MSubNodeConnectionPoint();
+        if (!subNodePoint.isNull() && !clk1MPoint.isNull()) {
+            // 使用紫色来表示clk_1M到子节点的连接
             QColor lineColor = QColor(102, 16, 242);  // 紫色
+
+            // 计算肘形拐点
             QPoint elbow1, elbow2;
-            calculateElbowPoints(start, end, elbow1, elbow2);
-            drawElbowArrowLine(painter, start, elbow1, elbow2, end, lineColor);
+            calculateElbowPoints(clk1MPoint, subNodePoint, elbow1, elbow2);
+            drawElbowArrowLine(painter, clk1MPoint, elbow1, elbow2, subNodePoint, lineColor);
         }
     }
 
@@ -5932,33 +5115,6 @@ void ClockConfigWidget::drawConnectionLines(QPainter& painter)
             drawElbowArrowLine(painter, fPLLPoint, elbow1, elbow2, subNodePoint, lineColor);
         }
     }
-    // FPLL 子面板中具体子项 → 对应下游子面板（根据子项垂直对齐）
-    if (m_clkFPLLSubNodeWidget) {
-        // 1) xtal_misc → xtal_misc 子节点面板
-        if (m_clkFPLLSubNodeWidgets.contains("clk_xtal_misc") && m_clkFPLLSubNodeWidgets["clk_xtal_misc"]) {
-            QWidget* child = m_clkFPLLSubNodeWidgets["clk_xtal_misc"];
-            QPoint start = getPanelRightAlignedToChildY(m_clkFPLLSubNodeWidget, child);
-            if (m_clkXTALMISCSubNodeWidget) {
-                QPoint end = getClkXTALMISCSubNodeConnectionPoint();
-                if (!start.isNull() && !end.isNull()) {
-                    QPoint e1, e2; calculateElbowPoints(start, end, e1, e2);
-                    drawElbowArrowLine(painter, start, e1, e2, end, QColor(32,201,151));
-                }
-            }
-        }
-        // 2) i2c → i2c 子节点面板
-        if (m_clkFPLLSubNodeWidgets.contains("clk_i2c") && m_clkFPLLSubNodeWidgets["clk_i2c"]) {
-            QWidget* child = m_clkFPLLSubNodeWidgets["clk_i2c"];
-            QPoint start = getPanelRightAlignedToChildY(m_clkFPLLSubNodeWidget, child);
-            if (m_clkI2CSubNodeWidget) {
-                QPoint end = getClkI2CSubNodeConnectionPoint();
-                if (!start.isNull() && !end.isNull()) {
-                    QPoint e1, e2; calculateElbowPoints(start, end, e1, e2);
-                    drawElbowArrowLine(painter, start, e1, e2, end, QColor(108,117,125));
-                }
-            }
-        }
-    }
 
     // 绘制clk_tpll到其子节点的连接线
     if (m_clkTPLLSubNodeWidget) {
@@ -5989,57 +5145,6 @@ void ClockConfigWidget::drawConnectionLines(QPainter& painter)
             drawElbowArrowLine(painter, mPLLPoint, elbow1, elbow2, subNodePoint, lineColor);
         }
     }
-    // MPLL 子面板中具体子项 → 对应下游子面板
-    if (m_clkMPLLSubNodeWidget) {
-        // spi
-        if (m_clkMPLLSubNodeWidgets.contains("clk_spi") && m_clkMPLLSubNodeWidgets["clk_spi"]) {
-            QWidget* child = m_clkMPLLSubNodeWidgets["clk_spi"];
-            QPoint start = getPanelRightAlignedToChildY(m_clkMPLLSubNodeWidget, child);
-            if (m_clkSPINodeSubNodeWidget) {
-                QPoint end = getClkSPINodeSubNodeConnectionPoint();
-                if (!start.isNull() && !end.isNull()) {
-                    QPoint e1, e2; calculateElbowPoints(start, end, e1, e2);
-                    drawElbowArrowLine(painter, start, e1, e2, end, QColor(111,66,193));
-                }
-            }
-        }
-        // vip_sys_3
-        if (m_clkMPLLSubNodeWidgets.contains("clk_vip_sys_3") && m_clkMPLLSubNodeWidgets["clk_vip_sys_3"]) {
-            QWidget* child = m_clkMPLLSubNodeWidgets["clk_vip_sys_3"];
-            QPoint start = getPanelRightAlignedToChildY(m_clkMPLLSubNodeWidget, child);
-            if (m_clkVIPSys3SubNodeWidget) {
-                QPoint end = getClkVIPSys3SubNodeConnectionPoint();
-                if (!start.isNull() && !end.isNull()) {
-                    QPoint e1, e2; calculateElbowPoints(start, end, e1, e2);
-                    drawElbowArrowLine(painter, start, e1, e2, end, QColor(255,193,7));
-                }
-            }
-        }
-        // vip_sys_1
-        if (m_clkMPLLSubNodeWidgets.contains("clk_vip_sys_1") && m_clkMPLLSubNodeWidgets["clk_vip_sys_1"]) {
-            QWidget* child = m_clkMPLLSubNodeWidgets["clk_vip_sys_1"];
-            QPoint start = getPanelRightAlignedToChildY(m_clkMPLLSubNodeWidget, child);
-            if (m_clkVIPSys1SubNodeWidget) {
-                QPoint end = getClkVIPSys1SubNodeConnectionPoint();
-                if (!start.isNull() && !end.isNull()) {
-                    QPoint e1, e2; calculateElbowPoints(start, end, e1, e2);
-                    drawElbowArrowLine(painter, start, e1, e2, end, QColor(30,126,52));
-                }
-            }
-        }
-        // vip_sys_0
-        if (m_clkMPLLSubNodeWidgets.contains("clk_vip_sys_0") && m_clkMPLLSubNodeWidgets["clk_vip_sys_0"]) {
-            QWidget* child = m_clkMPLLSubNodeWidgets["clk_vip_sys_0"];
-            QPoint start = getPanelRightAlignedToChildY(m_clkMPLLSubNodeWidget, child);
-            if (m_clkVIPSys0SubNodeWidget) {
-                QPoint end = getClkVIPSys0SubNodeConnectionPoint();
-                if (!start.isNull() && !end.isNull()) {
-                    QPoint e1, e2; calculateElbowPoints(start, end, e1, e2);
-                    drawElbowArrowLine(painter, start, e1, e2, end, QColor(17,122,139));
-                }
-            }
-        }
-    }
 
     // 绘制clk_fab_100m到其子节点的连接线
     if (m_clkFAB100MSubNodeWidget) {
@@ -6053,33 +5158,6 @@ void ClockConfigWidget::drawConnectionLines(QPainter& painter)
             QPoint elbow1, elbow2;
             calculateElbowPoints(fab100MPoint, subNodePoint, elbow1, elbow2);
             drawElbowArrowLine(painter, fab100MPoint, elbow1, elbow2, subNodePoint, lineColor);
-        }
-    }
-    // FAB_100M 子面板中具体子项 → 对应下游子面板
-    if (m_clkFAB100MSubNodeWidget) {
-        // x2p
-        if (m_clkFAB100MSubNodeWidgets.contains("clk_x2p") && m_clkFAB100MSubNodeWidgets["clk_x2p"]) {
-            QWidget* child = m_clkFAB100MSubNodeWidgets["clk_x2p"];
-            QPoint start = getPanelRightAlignedToChildY(m_clkFAB100MSubNodeWidget, child);
-            if (m_clkX2PSubNodeWidget) {
-                QPoint end = getClkX2PSubNodeConnectionPoint();
-                if (!start.isNull() && !end.isNull()) {
-                    QPoint e1, e2; calculateElbowPoints(start, end, e1, e2);
-                    drawElbowArrowLine(painter, start, e1, e2, end, QColor(40,167,69));
-                }
-            }
-        }
-        // apb_vcsys
-        if (m_clkFAB100MSubNodeWidgets.contains("clk_apb_vcsys") && m_clkFAB100MSubNodeWidgets["clk_apb_vcsys"]) {
-            QWidget* child = m_clkFAB100MSubNodeWidgets["clk_apb_vcsys"];
-            QPoint start = getPanelRightAlignedToChildY(m_clkFAB100MSubNodeWidget, child);
-            if (m_clkAPBVCSYSSubNodeWidget) {
-                QPoint end = getClkAPBVCSYSSubNodeConnectionPoint();
-                if (!start.isNull() && !end.isNull()) {
-                    QPoint e1, e2; calculateElbowPoints(start, end, e1, e2);
-                    drawElbowArrowLine(painter, start, e1, e2, end, QColor(23,162,184));
-                }
-            }
         }
     }
 
@@ -6141,6 +5219,7 @@ void ClockConfigWidget::drawArrowLine(QPainter& painter, const QPoint& start, co
     arrowHead << end << arrow1 << arrow2;
     painter.drawPolygon(arrowHead);
 }
+
 void ClockConfigWidget::drawElbowArrowLine(QPainter& painter, const QPoint& start, const QPoint& elbow1, const QPoint& elbow2, const QPoint& end, const QColor& color)
 {
     painter.setPen(QPen(color, 2));
@@ -6193,6 +5272,7 @@ void ClockConfigWidget::calculateElbowPoints(const QPoint& start, const QPoint& 
         elbow2 = QPoint(elbow1.x(), end.y());
     }
 }
+
 QPoint ClockConfigWidget::getOSCConnectionPoint() const
 {
     if (!m_inputWidget || !m_flowWidget) {
@@ -6211,6 +5291,7 @@ QPoint ClockConfigWidget::getOSCConnectionPoint() const
 
     return oscPoint;
 }
+
 QPoint ClockConfigWidget::getPLLConnectionPoint(const QString& pllName) const
 {
     if (!m_pllWidget || !m_flowWidget || !m_pllWidgets.contains(pllName)) {
@@ -6237,6 +5318,7 @@ QPoint ClockConfigWidget::getPLLConnectionPoint(const QString& pllName) const
 
     return pllPoint;
 }
+
 QPoint ClockConfigWidget::getMIPIMPLLConnectionPoint() const
 {
     // 获取MIPIMPLL的连接点，作为输出点位于右侧
@@ -6262,6 +5344,7 @@ QPoint ClockConfigWidget::getMIPIMPLLConnectionPoint() const
         pllAreaPos.y() + pllPos.y() + pllRect.height() / 2
     );
 }
+
 QPoint ClockConfigWidget::getSubPLLConnectionPoint() const
 {
     if (!m_subPllWidget || !m_flowWidget) {
@@ -6295,14 +5378,30 @@ QPoint ClockConfigWidget::getOutputAreaConnectionPoint() const
         outputAreaPos.y() + 20 // 考虑标题栏高度20px
     );
 }
+
 QPoint ClockConfigWidget::getClk1MConnectionPoint() const
 {
-    // 父侧：XTAL_MISC 面板内的 clk_1M 子条目右侧出点
-    if (!m_clkXTALMISCSubNodeWidget || !m_flowWidget || !m_clkXTALMISCSubNodeWidgets.contains("clk_1M")) {
+    if (!m_outputWidget || !m_flowWidget || !m_outputWidgets.contains("clk_1M")) {
         return QPoint();
     }
-    QWidget* child = m_clkXTALMISCSubNodeWidgets.value("clk_1M");
-    return getPanelRightAlignedToChildY(m_clkXTALMISCSubNodeWidget, child);
+
+    QWidget* clk1MWidget = m_outputWidgets["clk_1M"];
+    if (!clk1MWidget) {
+        return QPoint();
+    }
+
+    // 获取clk_1M widget在其父widget中的位置
+    QPoint clk1MPos = clk1MWidget->pos();
+    QRect clk1MRect = clk1MWidget->rect();
+
+    // 获取输出区域在flow widget中的位置
+    QPoint outputAreaPos = m_outputWidget->pos();
+
+    // clk_1M连接点位于widget的右侧中央
+    return QPoint(
+        outputAreaPos.x() + clk1MPos.x() + clk1MRect.width(),
+        outputAreaPos.y() + clk1MPos.y() + clk1MRect.height() / 2
+    );
 }
 
 QPoint ClockConfigWidget::getClk1MSubNodeConnectionPoint() const
@@ -6322,14 +5421,29 @@ QPoint ClockConfigWidget::getClk1MSubNodeConnectionPoint() const
     );
 }
 
-QPoint ClockConfigWidget::getClkCam1PLLConnectionPoint() const {
-    if (!m_pllWidget || !m_flowWidget || !m_pllWidgets.contains("clk_cam1pll")) return QPoint();
-    QWidget* cam1PLLWidget = m_pllWidgets["clk_cam1pll"];
-    // 取父条目的右侧中点作为“右出”
-    QPoint cam1PLLPos = cam1PLLWidget->pos(); QRect cam1PLLRect = cam1PLLWidget->rect();
-    QPoint subPllAreaPos = m_pllWidget->pos();
-    return QPoint(subPllAreaPos.x() + cam1PLLPos.x() + cam1PLLRect.width(),
-                  subPllAreaPos.y() + cam1PLLPos.y() + cam1PLLRect.height() / 2);
+QPoint ClockConfigWidget::getClkCam1PLLConnectionPoint() const
+{
+    if (!m_subPllWidget || !m_flowWidget || !m_subPllWidgets.contains("clk_cam1pll")) {
+        return QPoint();
+    }
+
+    QWidget* cam1PLLWidget = m_subPllWidgets["clk_cam1pll"];
+    if (!cam1PLLWidget) {
+        return QPoint();
+    }
+
+    // 获取clk_cam1pll widget在其父widget中的位置
+    QPoint cam1PLLPos = cam1PLLWidget->pos();
+    QRect cam1PLLRect = cam1PLLWidget->rect();
+
+    // 获取子PLL区域在flow widget中的位置
+    QPoint subPllAreaPos = m_subPllWidget->pos();
+
+    // clk_cam1pll连接点位于widget的右侧中央
+    return QPoint(
+        subPllAreaPos.x() + cam1PLLPos.x() + cam1PLLRect.width(),
+        subPllAreaPos.y() + cam1PLLPos.y() + cam1PLLRect.height() / 2
+    );
 }
 
 QPoint ClockConfigWidget::getClkCam1PLLSubNodeConnectionPoint() const
@@ -6393,11 +5507,11 @@ QPoint ClockConfigWidget::getClkRawAxiSubNodeConnectionPoint() const
 
 QPoint ClockConfigWidget::getClkCam0PLLConnectionPoint() const
 {
-    if (!m_pllWidget || !m_flowWidget || !m_pllWidgets.contains("clk_cam0pll")) {
+    if (!m_subPllWidget || !m_flowWidget || !m_subPllWidgets.contains("clk_cam0pll")) {
         return QPoint();
     }
 
-    QWidget* cam0PLLWidget = m_pllWidgets["clk_cam0pll"];
+    QWidget* cam0PLLWidget = m_subPllWidgets["clk_cam0pll"];
     if (!cam0PLLWidget) {
         return QPoint();
     }
@@ -6407,7 +5521,7 @@ QPoint ClockConfigWidget::getClkCam0PLLConnectionPoint() const
     QRect cam0PLLRect = cam0PLLWidget->rect();
 
     // 获取子PLL区域在flow widget中的位置
-    QPoint subPllAreaPos = m_pllWidget->pos();
+    QPoint subPllAreaPos = m_subPllWidget->pos();
 
     // clk_cam0pll连接点位于widget的右侧中央
     QPoint cam0PLLPoint = QPoint(
@@ -6439,11 +5553,11 @@ QPoint ClockConfigWidget::getClkCam0PLLSubNodeConnectionPoint() const
 
 QPoint ClockConfigWidget::getClkDispPLLConnectionPoint() const
 {
-    if (!m_pllWidget || !m_flowWidget || !m_pllWidgets.contains("clk_disppll")) {
+    if (!m_subPllWidget || !m_flowWidget || !m_subPllWidgets.contains("clk_disppll")) {
         return QPoint();
     }
 
-    QWidget* dispPLLWidget = m_pllWidgets["clk_disppll"];
+    QWidget* dispPLLWidget = m_subPllWidgets["clk_disppll"];
     if (!dispPLLWidget) {
         return QPoint();
     }
@@ -6453,7 +5567,7 @@ QPoint ClockConfigWidget::getClkDispPLLConnectionPoint() const
     QRect dispPLLRect = dispPLLWidget->rect();
 
     // 获取子PLL区域在flow widget中的位置
-    QPoint subPllAreaPos = m_pllWidget->pos();
+    QPoint subPllAreaPos = m_subPllWidget->pos();
 
     // clk_disppll连接点位于widget的右侧中央
     QPoint dispPLLPoint = QPoint(
@@ -6482,6 +5596,7 @@ QPoint ClockConfigWidget::getClkDispPLLSubNodeConnectionPoint() const
 
     return subNodePoint;
 }
+
 QPoint ClockConfigWidget::getClkSysDispConnectionPoint() const
 {
     if (!m_clkDispPLLSubNodeWidget || !m_flowWidget || !m_clkDispPLLSubNodeWidgets.contains("clk_sys_disp")) {
@@ -6530,11 +5645,11 @@ QPoint ClockConfigWidget::getClkSysDispSubNodeConnectionPoint() const
 
 QPoint ClockConfigWidget::getClkA0PLLConnectionPoint() const
 {
-    if (!m_pllWidget || !m_flowWidget || !m_pllWidgets.contains("clk_a0pll")) {
+    if (!m_subPllWidget || !m_flowWidget || !m_subPllWidgets.contains("clk_a0pll")) {
         return QPoint();
     }
 
-    QWidget* a0pllWidget = m_pllWidgets["clk_a0pll"];
+    QWidget* a0pllWidget = m_subPllWidgets["clk_a0pll"];
     if (!a0pllWidget) {
         return QPoint();
     }
@@ -6544,7 +5659,7 @@ QPoint ClockConfigWidget::getClkA0PLLConnectionPoint() const
     QRect a0pllRect = a0pllWidget->rect();
 
     // 获取子PLL区域在flow widget中的位置
-    QPoint subPllAreaPos = m_pllWidget->pos();
+    QPoint subPllAreaPos = m_subPllWidget->pos();
 
     // clk_a0pll连接点位于widget的右侧中央
     QPoint a0pllPoint = QPoint(
@@ -6757,6 +5872,7 @@ QPoint ClockConfigWidget::getClkTPLLSubNodeConnectionPoint() const
 
     return subNodePoint;
 }
+
 QPoint ClockConfigWidget::getClkMPLLConnectionPoint() const
 {
     if (!m_pllWidget || !m_flowWidget || !m_pllWidgets.contains("clk_mpll")) {
@@ -6800,6 +5916,7 @@ QPoint ClockConfigWidget::getClkMPLLSubNodeConnectionPoint() const
         subNodePos.y() + 20
     );
 }
+
 QPoint ClockConfigWidget::getClkFAB100MConnectionPoint() const
 {
     if (!m_clkFPLLSubNodeWidget || !m_flowWidget || !m_clkFPLLSubNodeWidgets.contains("clk_fab_100M")) {
@@ -6826,6 +5943,7 @@ QPoint ClockConfigWidget::getClkFAB100MConnectionPoint() const
 
     return fab100MPoint;
 }
+
 QPoint ClockConfigWidget::getClkFAB100MSubNodeConnectionPoint() const
 {
     if (!m_clkFAB100MSubNodeWidget || !m_flowWidget) {
@@ -6842,6 +5960,7 @@ QPoint ClockConfigWidget::getClkFAB100MSubNodeConnectionPoint() const
         subNodePos.y() + subNodeRect.height() / 2
     );
 }
+
 QPoint ClockConfigWidget::getClkSPINANDConnectionPoint() const
 {
     if (!m_clkMPLLSubNodeWidget || !m_flowWidget || !m_clkMPLLSubNodeWidgets.contains("clk_spi_nand")) {
@@ -6868,6 +5987,7 @@ QPoint ClockConfigWidget::getClkSPINANDConnectionPoint() const
 
     return spinandPoint;
 }
+
 QPoint ClockConfigWidget::getClkSPINANDSubNodeConnectionPoint() const
 {
     if (!m_clkSPINANDSubNodeWidget || !m_flowWidget) {
@@ -6886,6 +6006,7 @@ QPoint ClockConfigWidget::getClkSPINANDSubNodeConnectionPoint() const
 
     return subNodePoint;
 }
+
 QPoint ClockConfigWidget::getClkHSPeriConnectionPoint() const
 {
     if (!m_clkMPLLSubNodeWidget || !m_flowWidget || !m_clkMPLLSubNodeWidgets.contains("clk_hsperi")) {
@@ -7049,9 +6170,7 @@ QWidget* ClockConfigWidget::getWidgetAt(const QPoint& pos)
                << m_clkCam0PLLSubNodeWidget << m_clkDispPLLSubNodeWidget << m_clkSysDispSubNodeWidget
                << m_clkA0PLLSubNodeWidget << m_clkRVPLLSubNodeWidget << m_clkAPPLLSubNodeWidget
                << m_clkFPLLSubNodeWidget << m_clkTPLLSubNodeWidget << m_clkMPLLSubNodeWidget
-               << m_clkFAB100MSubNodeWidget << m_clkSPINANDSubNodeWidget << m_clkHSPeriSubNodeWidget<<m_clkXTALMISCSubNodeWidget
-               << m_clkI2CSubNodeWidget << m_clkSPINodeSubNodeWidget << m_clkX2PSubNodeWidget << m_clkAPBVCSYSSubNodeWidget
-               << m_clkVIPSys3SubNodeWidget << m_clkVIPSys1SubNodeWidget << m_clkVIPSys0SubNodeWidget;
+               << m_clkFAB100MSubNodeWidget << m_clkSPINANDSubNodeWidget << m_clkHSPeriSubNodeWidget;
 
     for (QWidget* widget : allWidgets) {
         if (widget && widget->geometry().contains(pos)) {
@@ -7181,14 +6300,6 @@ QString ClockConfigWidget::getWidgetModuleName(QWidget* widget)
     if (widget == m_clkFAB100MSubNodeWidget) return "clk_fab_100M";
     if (widget == m_clkSPINANDSubNodeWidget) return "clk_spi_nand";
     if (widget == m_clkHSPeriSubNodeWidget) return "clk_hsperi";
-    if (widget == m_clkXTALMISCSubNodeWidget) return "clk_xtal_misc";
-    if (widget == m_clkI2CSubNodeWidget) return "clk_i2c";
-    if (widget == m_clkSPINodeSubNodeWidget) return "clk_spi";
-    if (widget == m_clkX2PSubNodeWidget) return "clk_x2p";
-    if (widget == m_clkAPBVCSYSSubNodeWidget) return "clk_apb_vcsys";
-    if (widget == m_clkVIPSys3SubNodeWidget) return "clk_vip_sys_3";
-    if (widget == m_clkVIPSys1SubNodeWidget) return "clk_vip_sys_1";
-    if (widget == m_clkVIPSys0SubNodeWidget) return "clk_vip_sys_0";
 
     return QString();
 }
@@ -7214,14 +6325,7 @@ QWidget* ClockConfigWidget::getWidgetByModuleName(const QString& moduleName)
     if (moduleName == "clk_fab_100M") return m_clkFAB100MSubNodeWidget;
     if (moduleName == "clk_spi_nand") return m_clkSPINANDSubNodeWidget;
     if (moduleName == "clk_hsperi") return m_clkHSPeriSubNodeWidget;
-    if (moduleName == "clk_xtal_misc") return m_clkXTALMISCSubNodeWidget;
-    if (moduleName == "clk_i2c") return m_clkI2CSubNodeWidget;
-    if (moduleName == "clk_spi") return m_clkSPINodeSubNodeWidget;
-    if (moduleName == "clk_x2p") return m_clkX2PSubNodeWidget;
-    if (moduleName == "clk_apb_vcsys") return m_clkAPBVCSYSSubNodeWidget;
-    if (moduleName == "clk_vip_sys_3") return m_clkVIPSys3SubNodeWidget;
-    if (moduleName == "clk_vip_sys_1") return m_clkVIPSys1SubNodeWidget;
-    if (moduleName == "clk_vip_sys_0") return m_clkVIPSys0SubNodeWidget;
+
     return nullptr;
 }
 
@@ -7274,6 +6378,7 @@ void ClockConfigWidget::setChipType(const QString& chipType)
 {
     m_chipType = chipType;
 }
+
 bool ClockConfigWidget::exportToDefconfig(const QString& sourcePath, const QString& chipType, const QString& configName, const QString& value)
 {
     // 构建defconfig文件路径
