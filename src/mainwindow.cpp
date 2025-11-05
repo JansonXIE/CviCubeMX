@@ -538,8 +538,8 @@ void MainWindow::setupSearchBox()
 
     // 创建搜索输入框
     m_searchLineEdit = new QLineEdit(this);
-    m_searchLineEdit->setPlaceholderText("输入管脚号 (例如: A2, 15)");
-    m_searchLineEdit->setMaximumWidth(200);
+    m_searchLineEdit->setPlaceholderText("搜索管脚或功能 (例如: A2, UART1_TX, I2C0)");
+    m_searchLineEdit->setMaximumWidth(300);
     m_searchLineEdit->setStyleSheet(
         "QLineEdit { "
         "border: 2px solid #bdc3c7; "
@@ -855,15 +855,40 @@ void MainWindow::onPinFunctionChanged(const QString& pinName, const QString& fun
     // 更新引脚功能映射
     m_chipConfig.setPinFunction(pinName, function);
 
+    // 检查是否有高亮的引脚被配置了
+    bool shouldClearHighlight = false;
+    
     // 如果当前正在高亮这个引脚，且功能不是默认GPIO，则取消高亮
     if (m_highlightedPin &&
         (m_highlightedPin->getPinName() == pinName || m_highlightedPin->getDisplayName() == pinName) &&
         function != "GPIO") {
+        shouldClearHighlight = true;
+    }
+    
+    // 检查多个高亮引脚中是否有被配置的
+    for (PinWidget* pin : m_highlightedPins) {
+        if (pin && (pin->getPinName() == pinName || pin->getDisplayName() == pinName) &&
+            function != "GPIO") {
+            shouldClearHighlight = true;
+            break;
+        }
+    }
 
-        // 停止闪烁并清除高亮
+    if (shouldClearHighlight) {
+        // 停止闪烁并清除所有高亮
         m_blinkTimer->stop();
-        m_highlightedPin->setHighlight(false);
-        m_highlightedPin = nullptr;
+        
+        if (m_highlightedPin) {
+            m_highlightedPin->setHighlight(false);
+            m_highlightedPin = nullptr;
+        }
+        
+        for (PinWidget* pin : m_highlightedPins) {
+            if (pin) {
+                pin->setHighlight(false);
+            }
+        }
+        m_highlightedPins.clear();
 
         // 清空搜索框
         m_searchLineEdit->clear();
@@ -1064,6 +1089,14 @@ void MainWindow::onSearchTextChanged(const QString& text)
         m_highlightedPin->setHighlight(false);
         m_highlightedPin = nullptr;
     }
+    
+    // 清除所有之前高亮的引脚
+    for (PinWidget* pin : m_highlightedPins) {
+        if (pin) {
+            pin->setHighlight(false);
+        }
+    }
+    m_highlightedPins.clear();
 
     // 停止闪烁定时器
     m_blinkTimer->stop();
@@ -1077,36 +1110,78 @@ void MainWindow::onSearchTextChanged(const QString& text)
     }
 
     // 查找匹配的引脚
-    PinWidget* foundPin = nullptr;
+    QList<PinWidget*> matchedPins;
 
     // 在引脚部件映射中查找
     for (auto it = m_pinWidgets.begin(); it != m_pinWidgets.end(); ++it) {
         const QString& pinKey = it.key();
         PinWidget* pinWidget = it.value();
 
-        // 检查是否匹配（支持部分匹配）
+        // 如果引脚被禁用，跳过
+        if (!pinWidget->isEnabled()) {
+            continue;
+        }
+
+        bool isMatched = false;
+
+        // 1. 检查是否匹配引脚号或显示名称
         if (pinKey.contains(m_currentSearchText, Qt::CaseInsensitive) ||
             pinWidget->getDisplayName().contains(m_currentSearchText, Qt::CaseInsensitive)) {
-            foundPin = pinWidget;
-            break;
+            isMatched = true;
+        }
+
+        // 2. 检查是否匹配引脚支持的功能
+        if (!isMatched) {
+            QStringList supportedFunctions = pinWidget->getSupportedFunctions();
+            for (const QString& func : supportedFunctions) {
+                if (func.contains(m_currentSearchText, Qt::CaseInsensitive)) {
+                    isMatched = true;
+                    break;
+                }
+            }
+        }
+
+        if (isMatched) {
+            matchedPins.append(pinWidget);
         }
     }
 
     // 如果找到匹配的引脚
-    if (foundPin && foundPin->isEnabled()) {
-        m_highlightedPin = foundPin;
+    if (!matchedPins.isEmpty()) {
+        m_highlightedPins = matchedPins;
+        
         // 开始闪烁效果
         m_blinkState = true;
-        m_highlightedPin->setHighlight(true, m_blinkState);
+        for (PinWidget* pin : m_highlightedPins) {
+            pin->setHighlight(true, m_blinkState);
+        }
+        
+        // 为了兼容旧代码，设置第一个匹配的引脚为主高亮引脚
+        m_highlightedPin = matchedPins.first();
+        
         m_blinkTimer->start();
+        
+        // 在状态栏或标题显示找到的引脚数量
+        if (matchedPins.size() > 1) {
+            qDebug() << "找到" << matchedPins.size() << "个支持" << m_currentSearchText << "的引脚";
+        }
     }
 }
 
 void MainWindow::onBlinkTimeout()
 {
+    // 切换闪烁状态
+    m_blinkState = !m_blinkState;
+    
+    // 更新所有高亮引脚的闪烁状态
+    for (PinWidget* pin : m_highlightedPins) {
+        if (pin) {
+            pin->setHighlight(true, m_blinkState);
+        }
+    }
+    
+    // 为了兼容旧代码，也更新主高亮引脚
     if (m_highlightedPin) {
-        // 切换闪烁状态
-        m_blinkState = !m_blinkState;
         m_highlightedPin->setHighlight(true, m_blinkState);
     }
 }

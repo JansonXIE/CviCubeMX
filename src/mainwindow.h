@@ -163,6 +163,7 @@ private:
     QString m_currentSearchText;
     PinWidget* m_highlightedPin;
     bool m_blinkState;
+    QList<PinWidget*> m_highlightedPins;  // 存储所有高亮的引脚
     
     // 外设配置状态
     QMap<QString, bool> m_peripheralStates;

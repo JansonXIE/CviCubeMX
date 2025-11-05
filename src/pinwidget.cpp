@@ -11,9 +11,10 @@ PinWidget::PinWidget(const QString& pinName, bool isSquare, QWidget *parent)
     , m_blinkState(false)
     , m_userConfigured(false)
 {
-    // 设置基本属性：为底部标签预留额外高度（不改变圆圈尺寸）
-    setMinimumSize(60, 25);
-    setMaximumSize(60, 25);
+    // 设置基本属性：高度固定，宽度可以扩展以容纳文本
+    setMinimumSize(25, 25);
+    setMaximumHeight(25);
+    setMaximumWidth(200);  // 设置最大宽度，避免文本太长时过度扩展
 
     // 初始化显示名称为引脚名称
     m_displayName = m_pinName;
@@ -117,67 +118,57 @@ void PinWidget::paintEvent(QPaintEvent *event)
         color = color.lighter(150);  // 调亮70%
     }
 
-    // 绘制形状
+    // 绘制形状（固定在左侧25x25区域）
     painter.setBrush(color);
     painter.setPen(QPen(QColor("#ffffffff"), 2));
 
-    // 记录是否需要高亮，避免修改圆圈边框笔画（保持白边），高亮改为外部矩形框
-    const bool needHighlightBorder = (m_isHighlighted && isEnabled());
-
-    // 圆圈以高度为基准（与未配置相同），文字绘制在圆圈右侧
-    const int shapeSize = qMax(4, height() - 4);
+    if (m_isHighlighted && isEnabled()) {
+        if (m_blinkState) {
+            painter.setPen(QPen(QColor("#000000"), 4)); // 黑色粗边框
+        } else {
+            painter.setPen(QPen(QColor("#000000"), 2)); // 黑色细边框
+        }
+    }
 
     if (m_isSquare) {
         // 绘制方形（QFN封装）：固定为正方形，不随控件加宽变大
-        painter.drawRect(2, 2, shapeSize, shapeSize);
+        painter.drawRect(2, 2, 21, 21);
     } else {
         // 绘制圆形（BGA封装）：固定为正圆，不随控件加宽变椭圆
-        painter.drawEllipse(2, 2, shapeSize, shapeSize);
+        painter.drawEllipse(2, 2, 21, 21);
     }
 
     // 如果引脚被禁用，绘制×标记（与圆圈尺寸一致，落在圆圈内框）
     if (!isEnabled()) {
         painter.setPen(QPen(QColor("#e74c3c"), 2));  // 红色×
-        const int inset = 4; // 留出与白色边框一致的内缩
-        QRect shapeRect(2, 2, shapeSize, shapeSize);
-        QPoint a(shapeRect.left() + inset, shapeRect.top() + inset);
-        QPoint b(shapeRect.right() - inset, shapeRect.bottom() - inset);
-        QPoint c(shapeRect.right() - inset, shapeRect.top() + inset);
-        QPoint d(shapeRect.left() + inset, shapeRect.bottom() - inset);
-        painter.drawLine(a, b);
-        painter.drawLine(c, d);
+        int margin = 4;
+        // 绘制×的两条线
+        painter.drawLine(margin, margin, 21 + 2, 21 + 2);
+        painter.drawLine(21 + 2, margin, margin, 21 + 2);
     }
 
-    // 绘制悬停效果：仅绘制矩形边框，避免出现椭圆圈
+    // 绘制悬停效果
     if (underMouse() && isEnabled()) {
-        painter.setBrush(Qt::NoBrush);
-        painter.setPen(QPen(QColor("#34495e"), 2));
-        painter.drawRect(1, 1, width() - 2, height() - 2);
+        painter.setBrush(QBrush());
+        painter.setPen(QPen(QColor("#34495e"), 3));
+        if (m_isSquare) {
+            painter.drawRect(1, 1, 23, 23);
+        } else {
+            painter.drawEllipse(1, 1, 23, 23);
+        }
     }
 
-    // 已配置时在右侧显示功能名（与选择框高度齐平），避免省略
-    if (isConfigured) {
+    // 如果引脚已配置，在右侧绘制功能名称
+    if (isConfigured && isEnabled()) {
+        painter.setPen(QColor("#2c3e50"));  // 深色文字
         QFont font = painter.font();
-        int ps = font.pointSize();
-        if (ps <= 0) ps = 9; // 兜底
-        int newPs = ps - 5; // 小号字体
-        if (newPs < 4) newPs = 4;
-        if (newPs > 9) newPs = 9;
-        font.setPointSize(newPs);
+        font.setPointSize(8);
+        font.setBold(true);
         painter.setFont(font);
-        painter.setPen(QPen(QColor("#000000")));
-        QString text = m_function; // 显示所选功能名（如 VO_D_8）
-        // 在圆圈右侧绘制，垂直居中
-        const int margin = 4;
-        QRect textRect(2 + shapeSize + margin, 2, width() - (2 + shapeSize + margin) - 2, shapeSize);
-        painter.drawText(textRect, Qt::AlignVCenter | Qt::AlignLeft | Qt::TextWrapAnywhere, text);
-    }
 
-    // 绘制高亮边框（矩形），避免椭圆外圈
-    if (needHighlightBorder) {
-        painter.setBrush(Qt::NoBrush);
-        painter.setPen(QPen(QColor("#000000"), m_blinkState ? 4 : 2));
-        painter.drawRect(1, 1, width() - 2, height() - 2);
+        // 计算文本绘制区域（在圆圈/方框右侧）
+        QRect textRect(28, 0, width() - 30, height());
+        painter.drawText(textRect, Qt::AlignLeft | Qt::AlignVCenter, m_function);
     }
 }
 
@@ -247,6 +238,25 @@ void PinWidget::onFunctionSelected()
 
 void PinWidget::updateButtonStyle()
 {
+    // 根据是否配置了功能来调整控件宽度
+    const bool isConfigured = (m_userConfigured && !(m_function.compare("reset_state", Qt::CaseInsensitive) == 0));
+    
+    if (isConfigured && isEnabled()) {
+        // 计算文本所需宽度
+        QFont font;
+        font.setPointSize(8);
+        font.setBold(true);
+        QFontMetrics fm(font);
+        int textWidth = fm.horizontalAdvance(m_function);
+        
+        // 控件宽度 = 圆圈/方框宽度(25) + 间距(5) + 文本宽度 + 右边距(5)
+        int totalWidth = 25 + 5 + textWidth + 5;
+        setMinimumWidth(totalWidth);
+    } else {
+        // 未配置时，恢复为正方形
+        setMinimumWidth(25);
+    }
+    
     // 强制重绘
     update();
 }
