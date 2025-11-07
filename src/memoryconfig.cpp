@@ -981,17 +981,18 @@ void MemoryConfigWidget::onConfigFieldChanged()
         
         // 特殊处理：ION和RTOS_ION区域在size改变时需要调整Start Address
         if (regionName == "ION") {
-            // ION区域：End Address固定不变，通过调整Start Address来适应新的size
-            // 保持当前的End Address，向前调整Start Address
-            // 如果是初始化状态，使用默认的End Address
-            if (region.endAddress == 0 || region.endAddress == region.startAddress + oldSize) {
-                // 使用当前的End Address（如果已经设置）或计算默认值
-                if (region.endAddress == 0) {
-                    // 初始化：使用BOOTLOGO的起始地址作为ION的End Address
-                    region.endAddress = 0x89e3e000;
-                }
+            // ION区域：End Address基于RTOS_ION的Start Address
+            // 根据 memmap.py 第67行：ION_ADDR = RTOS_ION_ADDR - ION_SIZE
+            // 这意味着 ION 的 End Address = RTOS_ION 的 Start Address
+            if (m_memoryRegions.contains("RTOS_ION")) {
+                region.endAddress = m_memoryRegions["RTOS_ION"].startAddress;
+            } else {
+                // 如果没有RTOS_ION，使用默认的256M边界计算
+                const quint64 FIXED_256M_BOUNDARY = MEMORY_BASE_ADDRESS + 256 * 1024 * 1024;
+                quint64 defaultRtosIonSize = 96 * 1024 * 1024;  // 默认96M
+                region.endAddress = FIXED_256M_BOUNDARY - defaultRtosIonSize;
             }
-            // 基于固定的End Address和新的size计算Start Address
+            // 基于End Address和新的size计算Start Address
             region.startAddress = region.endAddress - actualSize;
             
             // 同步更新H26X_BITSTREAM、H26X_ENC_BUFF、ISP_MEM_BASE的Start Address
@@ -1006,10 +1007,11 @@ void MemoryConfigWidget::onConfigFieldChanged()
                 }
             }
         } else if (regionName == "RTOS_ION" && actualSize != oldSize) {
-            // RTOS_ION区域：调整Start Address，End Address固定在总内存末尾
-            // 总内存末尾：0x80000000 + 0x10000000 = 0x90000000
-            quint64 memoryEnd = MEMORY_BASE_ADDRESS + TOTAL_MEMORY_SIZE;
-            region.endAddress = memoryEnd;
+            // RTOS_ION区域：调整Start Address，End Address固定在256M边界
+            // 根据 memmap.py 第56行：RTOS_ION_ADDR = DRAM_BASE + 256 * SIZE_1M - RTOS_ION_SIZE
+            // 这意味着 RTOS_ION 的结束地址固定在 256M 处，起始地址向前调整
+            const quint64 FIXED_256M_BOUNDARY = MEMORY_BASE_ADDRESS + 256 * 1024 * 1024;  // 0x90000000
+            region.endAddress = FIXED_256M_BOUNDARY;
             region.startAddress = region.endAddress - actualSize;
             
             // 当RTOS_ION改变时，需要调整ION及相关区域的Start Address
@@ -1309,8 +1311,7 @@ bool MemoryConfigWidget::validateMemoryConstraints(QString& errorMessage)
         return 0;
     };
     
-    // 计算RTOS_SYS_SIZE（这是一个计算值，需要根据实际情况定义）
-    // 从FSBL_C906L_START到RTOS_COMPRESS_BIN之间的区域总和
+    // 获取相关区域的大小和地址
     quint64 rtosLogSize = getSize("RTOS_LOG");
     quint64 shareMemSize = getSize("SHARE_MEM");
     quint64 shareParamSize = getSize("SHARE_PARAM");
@@ -1320,16 +1321,23 @@ bool MemoryConfigWidget::validateMemoryConstraints(QString& errorMessage)
     quint64 fsblUnzipSize = getSize("FSBL_UNZIP");
     quint64 uimagSize = getSize("UIMAG");
     
-    // RTOS_SYS_SIZE = 从FSBL_C906L_START到所有RTOS相关区域的总大小
-    // 简化计算：使用RTOS_COMPRESS_BIN的地址 - FSBL_C906L_START的地址作为RTOS_SYS_SIZE
     quint64 fsblC906lStartAddr = getAddr("FSBL_C906L_START");
     quint64 rtosCompressBinAddr = getAddr("RTOS_COMPRESS_BIN");
-    quint64 rtosSysSize = rtosCompressBinAddr > fsblC906lStartAddr ? 
-                          rtosCompressBinAddr - fsblC906lStartAddr : 0;
+    
+    // RTOS_SYS_SIZE：固定为 4M（参考 memmap.py 第37行）
+    // 注意：虽然可以从 .config 读取覆盖，但默认值和大多数情况下都是 4M
+    const quint64 DEFAULT_RTOS_SYS_SIZE = 4 * 1024 * 1024;  // 4M
+    quint64 rtosSysSize = DEFAULT_RTOS_SYS_SIZE;
+    
+    // 如果配置了RTOS_SYS区域，使用配置值
+    if (m_memoryRegions.contains("RTOS_SYS") && getSize("RTOS_SYS") > 0) {
+        rtosSysSize = getSize("RTOS_SYS");
+    }
     
     // 约束1: RTOS_ION_ADDR >= FSBL_C906L_START_ADDR + RTOS_SYS_SIZE
+    // 注意：memmap.py 中此约束只在 RTOS_SYS_SIZE > 0 时检查（第186行）
     quint64 rtosIonAddr = getAddr("RTOS_ION");
-    if (rtosIonAddr < fsblC906lStartAddr + rtosSysSize) {
+    if (rtosSysSize > 0 && rtosIonAddr < fsblC906lStartAddr + rtosSysSize) {
         errorMessage = QString("约束违反: RTOS_ION地址(0x%1) 必须 >= FSBL_C906L_START地址(0x%2) + RTOS_SYS_SIZE(0x%3)")
                       .arg(rtosIonAddr, 0, 16)
                       .arg(fsblC906lStartAddr, 0, 16)
@@ -1338,8 +1346,9 @@ bool MemoryConfigWidget::validateMemoryConstraints(QString& errorMessage)
     }
     
     // 约束2: RTOS_COMPRESS_BIN_ADDR >= UIMAG_ADDR + UIMAG_SIZE
+    // 注意：memmap.py 中此约束只在 RTOS_SYS_SIZE > 0 时检查（第189行）
     quint64 uimagAddr = getAddr("UIMAG");
-    if (rtosCompressBinAddr < uimagAddr + uimagSize) {
+    if (rtosSysSize > 0 && rtosCompressBinAddr < uimagAddr + uimagSize) {
         errorMessage = QString("约束违反: RTOS_COMPRESS_BIN地址(0x%1) 必须 >= UIMAG地址(0x%2) + UIMAG大小(0x%3)")
                       .arg(rtosCompressBinAddr, 0, 16)
                       .arg(uimagAddr, 0, 16)
@@ -1348,12 +1357,39 @@ bool MemoryConfigWidget::validateMemoryConstraints(QString& errorMessage)
     }
     
     // 约束3: ION_ADDR >= FSBL_C906L_START_ADDR + RTOS_SYS_SIZE
-    quint64 ionAddr = getAddr("ION");
-    if (ionAddr < fsblC906lStartAddr + rtosSysSize) {
-        errorMessage = QString("约束违反: ION地址(0x%1) 必须 >= FSBL_C906L_START地址(0x%2) + RTOS_SYS_SIZE(0x%3)")
-                      .arg(ionAddr, 0, 16)
+    // 注意：memmap.py 中此约束只在 enable_alios == 'y' 时检查（第199行）
+    // 并且 ION_ADDR 在 memmap.py 中是通过公式计算的：
+    // RTOS_ION_ADDR = DRAM_BASE + 256M - RTOS_ION_SIZE (第56行)
+    // ION_ADDR = RTOS_ION_ADDR - ION_SIZE (第67行)
+    quint64 ionSize = getSize("ION");
+    quint64 rtosIonSize = getSize("RTOS_ION");
+    
+    // 按照 memmap.py 的公式计算 RTOS_ION_ADDR 和 ION_ADDR
+    // RTOS_ION 的结束地址固定在 256M 边界处
+    const quint64 FIXED_256M_BOUNDARY = MEMORY_BASE_ADDRESS + 256 * 1024 * 1024;  // 0x90000000
+    quint64 calculatedRtosIonAddr = FIXED_256M_BOUNDARY - rtosIonSize;
+    quint64 calculatedIonAddr = calculatedRtosIonAddr - ionSize;
+    
+    // 假设默认启用 ALIOS（enable_alios == 'y'）
+    // TODO: 如果需要支持动态配置，应从配置文件读取 enable_alios 标志
+    bool enableAlios = true;  // 默认启用
+    
+    if (enableAlios && calculatedIonAddr < fsblC906lStartAddr + rtosSysSize) {
+        errorMessage = QString("约束违反: ION地址计算不符合要求\n"
+                              "计算过程:\n"
+                              "  256M边界 = 0x%1\n"
+                              "  RTOS_ION地址 = 256M边界 - RTOS_ION_SIZE = 0x%1 - 0x%2 = 0x%3\n"
+                              "  ION地址 = RTOS_ION地址 - ION_SIZE = 0x%3 - 0x%4 = 0x%5\n"
+                              "约束要求: ION地址(0x%5) >= FSBL_C906L_START(0x%6) + RTOS_SYS_SIZE(0x%7) = 0x%8\n"
+                              "提示: 尝试减小 ION_SIZE 或 RTOS_ION_SIZE")
+                      .arg(FIXED_256M_BOUNDARY, 0, 16)
+                      .arg(rtosIonSize, 0, 16)
+                      .arg(calculatedRtosIonAddr, 0, 16)
+                      .arg(ionSize, 0, 16)
+                      .arg(calculatedIonAddr, 0, 16)
                       .arg(fsblC906lStartAddr, 0, 16)
-                      .arg(rtosSysSize, 0, 16);
+                      .arg(rtosSysSize, 0, 16)
+                      .arg(fsblC906lStartAddr + rtosSysSize, 0, 16);
         return false;
     }
     
