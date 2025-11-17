@@ -64,7 +64,7 @@ int ChipConfig::getPinCountForChip(const QString& chipType) const
             return 84; // BGA封装，自适应网格，去掉四个角
         }
         return 88; // QFN封装
-    } else if (chipType == "cv1842cp") {
+    } else if (chipType.contains("cp_")) {
         return 88;  // QFN封装，每边22个引脚，4*22=88
     } else if (chipType.contains("hp_")) {
         return 221; // BGA封装，15x15=225，去掉四个角 = 221

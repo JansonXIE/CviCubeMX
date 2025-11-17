@@ -662,25 +662,28 @@ void MainWindow::createQFNLayout()
     // 1. 左侧引脚（从上到下）
     for (int i = 1; i < gridSize - 1; i++) {
         if (pinNumber <= totalPins) {
-            QString pinName = QString("%1").arg(pinNumber);
+            QString qfnPosition = QString("%1").arg(pinNumber);
 
             // 检查是否有映射关系
-            bool hasMappingRelation = m_pinNameMappings.contains(pinName);
+            bool hasMappingRelation = m_pinNameMappings.contains(qfnPosition);
 
-            PinWidget *pinWidget = new PinWidget(pinName, true, this); // true表示方形
+            // 映射到实际的PAD名称
+            QString actualPinName = mapPinName(qfnPosition);
 
-            // QFN的显示名称就是引脚编号，所以设置为相同
-            pinWidget->setDisplayName(pinName);
+            PinWidget *pinWidget = new PinWidget(actualPinName, true, this); // true表示方形
+
+            // QFN的显示名称是引脚编号
+            pinWidget->setDisplayName(qfnPosition);
 
             // 如果没有映射关系，禁用该引脚
             if (!hasMappingRelation) {
                 pinWidget->setEnabled(false);
-                pinWidget->setToolTip(QString("%1 - 未映射引脚（禁用）").arg(pinName));
+                pinWidget->setToolTip(QString("%1 - 未映射引脚（禁用）").arg(qfnPosition));
             }
 
             connect(pinWidget, &PinWidget::functionChanged, this, &MainWindow::onPinFunctionChanged);
             m_pinLayout->addWidget(pinWidget, i, 0);
-            m_pinWidgets[pinName] = pinWidget;
+            m_pinWidgets[qfnPosition] = pinWidget;
             pinNumber++;
         }
     }
@@ -688,25 +691,28 @@ void MainWindow::createQFNLayout()
     // 2. 底部引脚（从左到右）
     for (int i = 1; i < gridSize - 1; i++) {
         if (pinNumber <= totalPins) {
-            QString pinName = QString("%1").arg(pinNumber);
+            QString qfnPosition = QString("%1").arg(pinNumber);
 
             // 检查是否有映射关系
-            bool hasMappingRelation = m_pinNameMappings.contains(pinName);
+            bool hasMappingRelation = m_pinNameMappings.contains(qfnPosition);
 
-            PinWidget *pinWidget = new PinWidget(pinName, true, this);
+            // 映射到实际的PAD名称
+            QString actualPinName = mapPinName(qfnPosition);
 
-            // QFN的显示名称就是引脚编号，所以设置为相同
-            pinWidget->setDisplayName(pinName);
+            PinWidget *pinWidget = new PinWidget(actualPinName, true, this);
+
+            // QFN的显示名称是引脚编号
+            pinWidget->setDisplayName(qfnPosition);
 
             // 如果没有映射关系，禁用该引脚
             if (!hasMappingRelation) {
                 pinWidget->setEnabled(false);
-                pinWidget->setToolTip(QString("%1 - 未映射引脚（禁用）").arg(pinName));
+                pinWidget->setToolTip(QString("%1 - 未映射引脚（禁用）").arg(qfnPosition));
             }
 
             connect(pinWidget, &PinWidget::functionChanged, this, &MainWindow::onPinFunctionChanged);
             m_pinLayout->addWidget(pinWidget, gridSize - 1, i);
-            m_pinWidgets[pinName] = pinWidget;
+            m_pinWidgets[qfnPosition] = pinWidget;
             pinNumber++;
         }
     }
@@ -714,25 +720,28 @@ void MainWindow::createQFNLayout()
     // 3. 右侧引脚（从下到上）
     for (int i = gridSize - 2; i > 0; i--) {
         if (pinNumber <= totalPins) {
-            QString pinName = QString("%1").arg(pinNumber);
+            QString qfnPosition = QString("%1").arg(pinNumber);
 
             // 检查是否有映射关系
-            bool hasMappingRelation = m_pinNameMappings.contains(pinName);
+            bool hasMappingRelation = m_pinNameMappings.contains(qfnPosition);
 
-            PinWidget *pinWidget = new PinWidget(pinName, true, this);
+            // 映射到实际的PAD名称
+            QString actualPinName = mapPinName(qfnPosition);
 
-            // QFN的显示名称就是引脚编号，所以设置为相同
-            pinWidget->setDisplayName(pinName);
+            PinWidget *pinWidget = new PinWidget(actualPinName, true, this);
+
+            // QFN的显示名称是引脚编号
+            pinWidget->setDisplayName(qfnPosition);
 
             // 如果没有映射关系，禁用该引脚
             if (!hasMappingRelation) {
                 pinWidget->setEnabled(false);
-                pinWidget->setToolTip(QString("%1 - 未映射引脚（禁用）").arg(pinName));
+                pinWidget->setToolTip(QString("%1 - 未映射引脚（禁用）").arg(qfnPosition));
             }
 
             connect(pinWidget, &PinWidget::functionChanged, this, &MainWindow::onPinFunctionChanged);
             m_pinLayout->addWidget(pinWidget, i, gridSize - 1);
-            m_pinWidgets[pinName] = pinWidget;
+            m_pinWidgets[qfnPosition] = pinWidget;
             pinNumber++;
         }
     }
@@ -740,25 +749,28 @@ void MainWindow::createQFNLayout()
     // 4. 顶部引脚（从右到左）
     for (int i = gridSize - 2; i > 0; i--) {
         if (pinNumber <= totalPins) {
-            QString pinName = QString("%1").arg(pinNumber);
+            QString qfnPosition = QString("%1").arg(pinNumber);
 
             // 检查是否有映射关系
-            bool hasMappingRelation = m_pinNameMappings.contains(pinName);
+            bool hasMappingRelation = m_pinNameMappings.contains(qfnPosition);
 
-            PinWidget *pinWidget = new PinWidget(pinName, true, this);
+            // 映射到实际的PAD名称
+            QString actualPinName = mapPinName(qfnPosition);
 
-            // QFN的显示名称就是引脚编号，所以设置为相同
-            pinWidget->setDisplayName(pinName);
+            PinWidget *pinWidget = new PinWidget(actualPinName, true, this);
+
+            // QFN的显示名称是引脚编号
+            pinWidget->setDisplayName(qfnPosition);
 
             // 如果没有映射关系，禁用该引脚
             if (!hasMappingRelation) {
                 pinWidget->setEnabled(false);
-                pinWidget->setToolTip(QString("%1 - 未映射引脚（禁用）").arg(pinName));
+                pinWidget->setToolTip(QString("%1 - 未映射引脚（禁用）").arg(qfnPosition));
             }
 
             connect(pinWidget, &PinWidget::functionChanged, this, &MainWindow::onPinFunctionChanged);
             m_pinLayout->addWidget(pinWidget, 0, i);
-            m_pinWidgets[pinName] = pinWidget;
+            m_pinWidgets[qfnPosition] = pinWidget;
             pinNumber++;
         }
     }
@@ -1055,24 +1067,71 @@ void MainWindow::initializePinNameMappings()
     m_pinNameMappings["R13"] = "XTAL_XIN";
 
     // QFN引脚映射（数字格式）
-    m_pinNameMappings["1"] = "PAD_UART0_TX";
-    m_pinNameMappings["2"] = "PAD_UART0_RX";
-    m_pinNameMappings["5"] = "PAD_I2C0_SCL";
-    m_pinNameMappings["6"] = "PAD_I2C0_SDA";
-    m_pinNameMappings["10"] = "PAD_SPI0_CLK";
-    m_pinNameMappings["11"] = "PAD_SPI0_MOSI";
-    m_pinNameMappings["12"] = "PAD_SPI0_MISO";
-    m_pinNameMappings["15"] = "PAD_PWM0";
-    m_pinNameMappings["16"] = "PAD_PWM1";
-    // 可以在这里添加更多引脚映射
-    // BGA格式：
-    // m_pinNameMappings["B3"] = "PAD_MIPI_TXP4";
-    // m_pinNameMappings["D5"] = "PAD_I2C1_SCL";
-    // m_pinNameMappings["E6"] = "PAD_I2C1_SDA";
-    // QFN格式：
-    // m_pinNameMappings["20"] = "PAD_GPIO0";
-    // m_pinNameMappings["21"] = "PAD_GPIO1";
-    // 等等...
+    m_pinNameMappings["2"] = "PAD_AUD_AINL_MIC";
+    m_pinNameMappings["4"] = "PAD_AUD_AOUTR";
+    m_pinNameMappings["6"] = "SD0_CLK";
+    m_pinNameMappings["7"] = "SD0_CMD";
+    m_pinNameMappings["8"] = "SD0_D0";
+    m_pinNameMappings["10"] = "SD0_D1";
+    m_pinNameMappings["11"] = "SD0_D2";
+    m_pinNameMappings["12"] = "SD0_D3";
+    m_pinNameMappings["14"] = "SD0_CD";
+    m_pinNameMappings["15"] = "SD0_PWR_EN";
+    m_pinNameMappings["17"] = "SPK_EN";
+    m_pinNameMappings["18"] = "UART0_TX";
+    m_pinNameMappings["19"] = "UART0_RX";
+    m_pinNameMappings["20"] = "EMMC_DAT2";
+    m_pinNameMappings["21"] = "EMMC_CLK";
+    m_pinNameMappings["22"] = "EMMC_DAT0";
+    m_pinNameMappings["23"] = "EMMC_DAT3";
+    m_pinNameMappings["24"] = "EMMC_CMD";
+    m_pinNameMappings["25"] = "EMMC_DAT1";
+    m_pinNameMappings["26"] = "JTAG_CPU_TMS";
+    m_pinNameMappings["27"] = "JTAG_CPU_TCK";
+    m_pinNameMappings["28"] = "IIC0_SCL";
+    m_pinNameMappings["29"] = "IIC0_SDA";
+    m_pinNameMappings["30"] = "AUX0";
+    m_pinNameMappings["35"] = "GPIO_ZQ";
+    m_pinNameMappings["38"] = "PWR_VBAT_DET";
+    m_pinNameMappings["39"] = "PWR_RSTN";
+    m_pinNameMappings["40"] = "PWR_SEQ1";
+    m_pinNameMappings["41"] = "PWR_SEQ2";
+    m_pinNameMappings["43"] = "PWR_WAKEUP0";
+    m_pinNameMappings["44"] = "PWR_BUTTON1";
+    m_pinNameMappings["45"] = "XTAL_XIN";
+    m_pinNameMappings["47"] = "PWR_GPIO0";
+    m_pinNameMappings["48"] = "PWR_GPIO1";
+    m_pinNameMappings["49"] = "PWR_GPIO2";
+    m_pinNameMappings["51"] = "SD1_D3";
+    m_pinNameMappings["52"] = "SD1_D2";
+    m_pinNameMappings["53"] = "SD1_D1";
+    m_pinNameMappings["54"] = "SD1_D0";
+    m_pinNameMappings["55"] = "SD1_CMD";
+    m_pinNameMappings["56"] = "SD1_CLK";
+    m_pinNameMappings["58"] = "PWM0_BUCK";
+    m_pinNameMappings["59"] = "ADC1";
+    m_pinNameMappings["60"] = "USB_VBUS_DET";
+    m_pinNameMappings["62"] = "PAD_ETH_TXP";
+    m_pinNameMappings["63"] = "PAD_ETH_TXM";
+    m_pinNameMappings["64"] = "PAD_ETH_RXP";
+    m_pinNameMappings["65"] = "PAD_ETH_RXM";
+    m_pinNameMappings["67"] = "GPIO_RTX";
+    m_pinNameMappings["72"] = "PAD_MIPIRX4N";
+    m_pinNameMappings["73"] = "PAD_MIPIRX4P";
+    m_pinNameMappings["74"] = "PAD_MIPIRX3N";
+    m_pinNameMappings["75"] = "PAD_MIPIRX3P";
+    m_pinNameMappings["76"] = "PAD_MIPIRX2N";
+    m_pinNameMappings["77"] = "PAD_MIPIRX2P";
+    m_pinNameMappings["78"] = "PAD_MIPIRX1N";
+    m_pinNameMappings["79"] = "PAD_MIPIRX1P";
+    m_pinNameMappings["80"] = "PAD_MIPIRX0N";
+    m_pinNameMappings["81"] = "PAD_MIPIRX0P";
+    m_pinNameMappings["83"] = "PAD_MIPI_TXM2";
+    m_pinNameMappings["84"] = "PAD_MIPI_TXP2";
+    m_pinNameMappings["85"] = "PAD_MIPI_TXM1";
+    m_pinNameMappings["86"] = "PAD_MIPI_TXP1";
+    m_pinNameMappings["87"] = "PAD_MIPI_TXM0";
+    m_pinNameMappings["88"] = "PAD_MIPI_TXP0";
 }
 
 QString MainWindow::mapPinName(const QString& bgaPosition) const
