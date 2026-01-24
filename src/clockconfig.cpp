@@ -493,7 +493,7 @@ void ClockConfigWidget::setupSubPLLs()
     m_subPllLayout->setSpacing(8);
 
     // 添加标题
-    QLabel* subPllTitle = new QLabel("子锁相环(PLLs)");
+    QLabel* subPllTitle = new QLabel("子锁相环(SubPLLs)");
     subPllTitle->setStyleSheet("font-size: 14px; font-weight: bold; color: #0c5460; text-align: center;");
     subPllTitle->setAlignment(Qt::AlignCenter);
     m_subPllLayout->addWidget(subPllTitle);
@@ -1558,11 +1558,10 @@ void ClockConfigWidget::createPLLWidget(const QString& pllName, QWidget* parent)
 
     QSpinBox* multBox = new QSpinBox();
     multBox->setRange(1, 100);
-    // 只读显示：禁用并去掉步进按钮，防止上下调整
-    multBox->setEnabled(false);
-    multBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
-    multBox->setFocusPolicy(Qt::NoFocus);
-
+    multBox->setButtonSymbols(QAbstractSpinBox::NoButtons);  // 禁用上下按钮
+    multBox->setReadOnly(true);  // 设置为只读，禁止编辑
+    multBox->installEventFilter(this);  // 安装事件过滤器以禁用滚轮
+    
     // 根据PLL名称设置不同的默认倍频值
     int defaultMultiplier = 20;  // 默认值
     if (pllName == "clk_fpll") {
@@ -1654,10 +1653,10 @@ void ClockConfigWidget::createSubPLLWidget(const QString& pllName, QWidget* pare
     QDoubleSpinBox* divBox = new QDoubleSpinBox();
     divBox->setRange(0.00000001, 256.0);  // 支持小数范围
     divBox->setDecimals(8);  // 保留8位小数
-    // 只读显示
-    divBox->setEnabled(false);
-    divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
-    divBox->setFocusPolicy(Qt::NoFocus);
+    divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);  // 禁用上下按钮
+    divBox->setReadOnly(true);  // 设置为只读，禁止编辑
+    divBox->installEventFilter(this);  // 安装事件过滤器以禁用滚轮
+    
     // 根据PLL名称设置不同的默认分频值
     double defaultDivider = 1.0;
     if (pllName == "clk_a0pll") {
@@ -1690,10 +1689,10 @@ void ClockConfigWidget::createSubPLLWidget(const QString& pllName, QWidget* pare
 
     QSpinBox* multBox = new QSpinBox();
     multBox->setRange(1, 100);
-    // 只读显示
-    multBox->setEnabled(false);
-    multBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
-    multBox->setFocusPolicy(Qt::NoFocus);
+    multBox->setButtonSymbols(QAbstractSpinBox::NoButtons);  // 禁用上下按钮
+    multBox->setReadOnly(true);  // 设置为只读，禁止编辑
+    multBox->installEventFilter(this);  // 安装事件过滤器以禁用滚轮
+    
     // 根据PLL名称设置不同的默认倍频值
     int defaultMultiplier = 1;
     if (pllName == "clk_a0pll") {
@@ -1773,11 +1772,10 @@ void ClockConfigWidget::createOutputWidget(const QString& outputName, QWidget* p
 
     QSpinBox* divBox = new QSpinBox();
     divBox->setRange(1, 1000);
-    // 只读显示
-    divBox->setEnabled(false);
-    divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
-    divBox->setFocusPolicy(Qt::NoFocus);
-
+    divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);  // 禁用上下按钮
+    divBox->setReadOnly(true);  // 设置为只读，禁止编辑
+    divBox->installEventFilter(this);  // 安装事件过滤器以禁用滚轮
+    
     // 根据输出名称设置不同的默认分频值
     int defaultDivider = 1;
     if (outputName == "clk_usb20_suspend") {
@@ -1858,7 +1856,10 @@ void ClockConfigWidget::createClk1MSubNodeWidget(const QString& nodeName, QWidge
     divBox->setFocusPolicy(Qt::NoFocus);
     divBox->setFixedWidth(45);
     divBox->setStyleSheet("font-size: 10px;");
-
+    divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);  // 禁用上下按钮
+    divBox->setReadOnly(true);  // 设置为只读，禁止编辑
+    divBox->installEventFilter(this);  // 安装事件过滤器以禁用滚轮
+    
     divConfigLayout->addWidget(divLabel);
     divConfigLayout->addWidget(divBox);
 
@@ -1928,7 +1929,9 @@ void ClockConfigWidget::createClkCam1PLLSubNodeWidget(const QString& nodeName, Q
     divBox->setFocusPolicy(Qt::NoFocus);
     divBox->setFixedWidth(45);
     divBox->setStyleSheet("font-size: 10px;");
-
+    divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);  // 禁用上下按钮
+    divBox->setReadOnly(true);  // 设置为只读，禁止编辑
+    divBox->installEventFilter(this);  // 安装事件过滤器以禁用滚轮
     divConfigLayout->addWidget(divLabel);
     divConfigLayout->addWidget(divBox);
 
@@ -1999,7 +2002,10 @@ void ClockConfigWidget::createClkRawAxiSubNodeWidget(const QString& nodeName, QW
     divBox->setFocusPolicy(Qt::NoFocus);
     divBox->setFixedWidth(45);
     divBox->setStyleSheet("font-size: 10px;");
-
+    divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);  // 禁用上下按钮
+    divBox->setReadOnly(true);  // 设置为只读，禁止编辑
+    divBox->installEventFilter(this);  // 安装事件过滤器以禁用滚轮
+    
     divConfigLayout->addWidget(divLabel);
     divConfigLayout->addWidget(divBox);
 
@@ -2075,7 +2081,10 @@ void ClockConfigWidget::createClkCam0PLLSubNodeWidget(const QString& nodeName, Q
     divBox->setFocusPolicy(Qt::NoFocus);
     divBox->setFixedWidth(45);
     divBox->setStyleSheet("font-size: 10px;");
-
+    divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);  // 禁用上下按钮
+    divBox->setReadOnly(true);  // 设置为只读，禁止编辑
+    divBox->installEventFilter(this);  // 安装事件过滤器以禁用滚轮
+    
     divConfigLayout->addWidget(divLabel);
     divConfigLayout->addWidget(divBox);
 
@@ -2158,7 +2167,10 @@ void ClockConfigWidget::createClkDispPLLSubNodeWidget(const QString& nodeName, Q
     divBox->setFocusPolicy(Qt::NoFocus);
     divBox->setFixedWidth(45);
     divBox->setStyleSheet("font-size: 10px;");
-
+    divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);  // 禁用上下按钮
+    divBox->setReadOnly(true);  // 设置为只读，禁止编辑
+    divBox->installEventFilter(this);  // 安装事件过滤器以禁用滚轮
+    
     divConfigLayout->addWidget(divLabel);
     divConfigLayout->addWidget(divBox);
 
@@ -2236,7 +2248,10 @@ void ClockConfigWidget::createClkSysDispSubNodeWidget(const QString& nodeName, Q
     divBox->setFocusPolicy(Qt::NoFocus);
     divBox->setFixedWidth(45);
     divBox->setStyleSheet("font-size: 10px;");
-
+    divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);  // 禁用上下按钮
+    divBox->setReadOnly(true);  // 设置为只读，禁止编辑
+    divBox->installEventFilter(this);  // 安装事件过滤器以禁用滚轮
+    
     divConfigLayout->addWidget(divLabel);
     divConfigLayout->addWidget(divBox);
 
@@ -2307,7 +2322,10 @@ void ClockConfigWidget::createClkA0PLLSubNodeWidget(const QString& nodeName, QWi
     divBox->setFocusPolicy(Qt::NoFocus);
     divBox->setFixedWidth(45);
     divBox->setStyleSheet("font-size: 10px;");
-
+    divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);  // 禁用上下按钮
+    divBox->setReadOnly(true);  // 设置为只读，禁止编辑
+    divBox->installEventFilter(this);  // 安装事件过滤器以禁用滚轮
+    
     divConfigLayout->addWidget(divLabel);
     divConfigLayout->addWidget(divBox);
 
@@ -2378,6 +2396,9 @@ void ClockConfigWidget::createClkRVPLLSubNodeWidget(const QString& nodeName, QWi
     divBox->setFocusPolicy(Qt::NoFocus);
     divBox->setFixedWidth(45);
     divBox->setStyleSheet("font-size: 10px;");
+    divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);  // 禁用上下按钮
+    divBox->setReadOnly(true);  // 设置为只读，禁止编辑
+    divBox->installEventFilter(this);  // 安装事件过滤器以禁用滚轮
 
     divConfigLayout->addWidget(divLabel);
     divConfigLayout->addWidget(divBox);
@@ -2452,7 +2473,10 @@ void ClockConfigWidget::createClkAPPLLSubNodeWidget(const QString& nodeName, QWi
     divBox->setFocusPolicy(Qt::NoFocus);
     divBox->setFixedWidth(45);
     divBox->setStyleSheet("font-size: 10px;");
-
+    divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);  // 禁用上下按钮
+    divBox->setReadOnly(true);  // 设置为只读，禁止编辑
+    divBox->installEventFilter(this);  // 安装事件过滤器以禁用滚轮
+    
     divConfigLayout->addWidget(divLabel);
     divConfigLayout->addWidget(divBox);
 
@@ -2542,7 +2566,10 @@ void ClockConfigWidget::createClkFPLLSubNodeWidget(const QString& nodeName, QWid
     divBox->setFocusPolicy(Qt::NoFocus);
     divBox->setFixedWidth(45);
     divBox->setStyleSheet("font-size: 10px;");
-
+    divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);  // 禁用上下按钮
+    divBox->setReadOnly(true);  // 设置为只读，禁止编辑
+    divBox->installEventFilter(this);  // 安装事件过滤器以禁用滚轮
+    
     divConfigLayout->addWidget(divLabel);
     divConfigLayout->addWidget(divBox);
 
@@ -2637,7 +2664,10 @@ void ClockConfigWidget::createClkTPLLSubNodeWidget(const QString& nodeName, QWid
     divBox->setFocusPolicy(Qt::NoFocus);
     divBox->setFixedWidth(45);
     divBox->setStyleSheet("font-size: 10px;");
-
+    divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);  // 禁用上下按钮
+    divBox->setReadOnly(true);  // 设置为只读，禁止编辑
+    divBox->installEventFilter(this);  // 安装事件过滤器以禁用滚轮
+    
     divConfigLayout->addWidget(divLabel);
     divConfigLayout->addWidget(divBox);
 
@@ -2758,7 +2788,10 @@ void ClockConfigWidget::createClkMPLLSubNodeWidget(const QString& nodeName, QWid
     divBox->setFocusPolicy(Qt::NoFocus);
     divBox->setFixedWidth(45);
     divBox->setStyleSheet("font-size: 10px;");
-
+    divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);  // 禁用上下按钮
+    divBox->setReadOnly(true);  // 设置为只读，禁止编辑
+    divBox->installEventFilter(this);  // 安装事件过滤器以禁用滚轮
+    
     divConfigLayout->addWidget(divLabel);
     divConfigLayout->addWidget(divBox);
 
@@ -2883,7 +2916,10 @@ void ClockConfigWidget::createClkFAB100MSubNodeWidget(const QString& nodeName, Q
     divBox->setFocusPolicy(Qt::NoFocus);
     divBox->setFixedWidth(45);
     divBox->setStyleSheet("font-size: 10px;");
-
+    divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);  // 禁用上下按钮
+    divBox->setReadOnly(true);  // 设置为只读，禁止编辑
+    divBox->installEventFilter(this);  // 安装事件过滤器以禁用滚轮
+    
     divConfigLayout->addWidget(divLabel);
     divConfigLayout->addWidget(divBox);
 
@@ -2961,7 +2997,10 @@ void ClockConfigWidget::createClkSPINANDSubNodeWidget(const QString& nodeName, Q
     divBox->setFocusPolicy(Qt::NoFocus);
     divBox->setFixedWidth(45);
     divBox->setStyleSheet("font-size: 10px;");
-
+    divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);  // 禁用上下按钮
+    divBox->setReadOnly(true);  // 设置为只读，禁止编辑
+    divBox->installEventFilter(this);  // 安装事件过滤器以禁用滚轮
+    
     divConfigLayout->addWidget(divLabel);
     divConfigLayout->addWidget(divBox);
 
@@ -3037,7 +3076,10 @@ void ClockConfigWidget::createClkHSPeriSubNodeWidget(const QString& nodeName, QW
     divBox->setFocusPolicy(Qt::NoFocus);
     divBox->setFixedWidth(45);
     divBox->setStyleSheet("font-size: 10px;");
-
+    divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);  // 禁用上下按钮
+    divBox->setReadOnly(true);  // 设置为只读，禁止编辑
+    divBox->installEventFilter(this);  // 安装事件过滤器以禁用滚轮
+    
     divConfigLayout->addWidget(divLabel);
     divConfigLayout->addWidget(divBox);
 
