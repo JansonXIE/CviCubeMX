@@ -110,7 +110,11 @@ const QStringList ClockConfigWidget::CLK_RTC_SYS_SUB_NODES = {
 };
 
 const QStringList ClockConfigWidget::CLK_HSPERI_SUB_NODES = {
-    "clk_sdma1_axi", "clk_sdma0_axi"
+    "clk_apb_usb", "clk_axi4_usb", "clk_apb_i2s3", "clk_apb_i2s2",
+    "clk_apb_i2s1", "clk_apb_i2s0", "clk_apb_uart4", "clk_apb_uart3",
+    "clk_apb_uart2", "clk_apb_uart1", "clk_apb_uart0", "clk_sdma1_axi",
+    "clk_sdma0_axi", "clk_ahb_sf", "clk_axi4_eth0", "clk_spi_nand_gate",
+    "clk_axi4_sd1", "clk_axi4_sd0", "clk_axi4_emmc", "clk_apb_audsrc",
 };
 
 ClockConfigWidget::ClockConfigWidget(QWidget *parent)
@@ -1602,6 +1606,8 @@ void ClockConfigWidget::setupClkHSPeriSubNodes()
             subNode.divider = 1;  // clk_sdma1_axi默认分频系数是1
         } else if (nodeName == "clk_sdma0_axi") {
             subNode.divider = 1;  // clk_sdma0_axi默认分频系数是1
+        } else {
+            subNode.divider = 1;  // 所有子节点默认分频系数都是1
         }
 
         // 计算频率：clk_hsperi的频率 / 分频器
@@ -3297,6 +3303,8 @@ void ClockConfigWidget::createClkHSPeriSubNodeWidget(const QString& nodeName, QW
         divBox->setValue(1);  // clk_sdma1_axi默认分频系数是1
     } else if (nodeName == "clk_sdma0_axi") {
         divBox->setValue(1);  // clk_sdma0_axi默认分频系数是1
+    } else {
+        divBox->setValue(1);  // 所有子节点默认分频系数是1
     }
     // 只读显示
     divBox->setEnabled(false);
@@ -3318,6 +3326,8 @@ void ClockConfigWidget::createClkHSPeriSubNodeWidget(const QString& nodeName, QW
         calculatedFreq = clkHSPeriFreq / 1;  // clk_sdma1_axi默认分频系数是1
     } else if (nodeName == "clk_sdma0_axi") {
         calculatedFreq = clkHSPeriFreq / 1;  // clk_sdma0_axi默认分频系数是1
+    } else {
+        calculatedFreq = clkHSPeriFreq / 1;  // 所有子节点默认分频系数是1
     }
     QString freqText = QString("%1 MHz").arg(calculatedFreq, 0, 'f', 1);
 
@@ -3371,7 +3381,7 @@ void ClockConfigWidget::initializeModulePositions()
     ModulePosition clkFAB100MSubPos = {"clk_fab100m子节点", 750, 450, 150, 300}; // 新增clk_fab100m子节点位置
     ModulePosition clkSPINANDSubPos = {"clk_spi_nand子节点", 984, 1335, 150, 120}; // 新增clk_spi_nand子节点位置
     ModulePosition clkRTCSYSSubPos = {"clk_rtc_sys子节点", 1150, 1335, 150, 1400}; // 新增clk_rtc_sys子节点位置
-    ModulePosition clkHSPISubPos = {"clk_hspi子节点", 955, 2352, 150, 210}; // 新增clk_hspi子节点位置
+    ModulePosition clkHSPISubPos = {"clk_hspi子节点", 955, 2352, 150, 2000}; // 新增clk_hspi子节点位置
     
 
     m_modulePositions["输入源"] = inputPos;
