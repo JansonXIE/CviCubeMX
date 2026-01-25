@@ -131,6 +131,7 @@ private slots:
     void onClkMPLLSubNodeDividerChanged(const QString& nodeName, int divider);  // 新增：clk_mpll子节点分频器变化
     void onClkFAB100MSubNodeDividerChanged(const QString& nodeName, int divider);  // 新增：clk_fab_100M子节点分频器变化
     void onClkSPINANDSubNodeDividerChanged(const QString& nodeName, int divider);  // 新增：clk_spi_nand子节点分频器变化
+    void onClkRTCSYSSubNodeDividerChanged(const QString& nodeName, int divider);  // 新增：clk_rtc_sys子节点分频器变化
     void onClkHSPeriSubNodeDividerChanged(const QString& nodeName, int divider);  // 新增：clk_hsperi子节点分频器变化
     void updateFrequencies();
     void resetToDefaults();
@@ -157,6 +158,7 @@ private:
     void setupClkMPLLSubNodes();  // 新增：设置clk_mpll子节点区域
     void setupClkFAB100MSubNodes();  // 新增：设置clk_fab_100M子节点区域
     void setupClkSPINANDSubNodes();  // 新增：设置clk_spi_nand子节点区域
+    void setupClkRTCSYSSubNodes();  // 新增：设置clk_rtc_sys子节点区域
     void setupClkHSPeriSubNodes();  // 新增：设置clk_hsperi子节点区域
     void setupClockTree();
     void initializeModulePositions();  // 新增：初始化模块位置
@@ -177,6 +179,7 @@ private:
     void createClkMPLLSubNodeWidget(const QString& nodeName, QWidget* parent);  // 新增：创建clk_mpll子节点widget
     void createClkFAB100MSubNodeWidget(const QString& nodeName, QWidget* parent);  // 新增：创建clk_fab_100M子节点widget
     void createClkSPINANDSubNodeWidget(const QString& nodeName, QWidget* parent);  // 新增：创建clk_spi_nand子节点widget
+    void createClkRTCSYSSubNodeWidget(const QString& nodeName, QWidget* parent);  // 新增：创建clk_rtc_sys子节点widget
     void createClkHSPeriSubNodeWidget(const QString& nodeName, QWidget* parent);  // 新增：创建clk_hsperi子节点widget
     void updatePLLFrequency(const QString& pllName);
     void updateSubPLLFrequency(const QString& pllName);  // 新增：更新子锁相环(clk_mipimpll)子节点频率
@@ -212,6 +215,8 @@ private:
     void updateAllClkSPINANDSubNodeFrequencies();  // 新增：更新所有clk_spi_nand子节点频率
     void updateClkHSPeriSubNodeFrequency(const QString& nodeName);  // 新增：更新clk_hsperi子节点频率
     void updateAllClkHSPeriSubNodeFrequencies();  // 新增：更新所有clk_hsperi子节点频率
+    void updateClkRTCSYSSubNodeFrequency(const QString& nodeName);  // 新增：更新clk_rtc_sys子节点频率
+    void updateAllClkRTCSYSSubNodeFrequencies();  // 新增：更新所有clk_rtc_sys子节点频率
 
     void connectSignals();
 
@@ -255,6 +260,8 @@ private:
     QPoint getClkSPINANDSubNodeConnectionPoint() const;  // 新增：获取clk_spi_nand子节点连接点
     QPoint getClkHSPeriConnectionPoint() const;  // 新增：获取clk_hsperi连接点
     QPoint getClkHSPeriSubNodeConnectionPoint() const;  // 新增：获取clk_hsperi子节点连接点
+    QPoint getClkRTCSYSConnectionPoint() const;  // 新增：获取clk_rtc_sys连接点
+    QPoint getClkRTCSYSSubNodeConnectionPoint() const;  // 新增：获取clk_rtc_sys子节点连接点
     void updateConnectionOverlay();
     QWidget* findClockWidgetByName(const QString& key, QString* resolvedName = nullptr) const; // 新增：根据名称查找控件
     void centerOnWidget(QWidget* w);  // 新增：将视角定位到控件
@@ -346,6 +353,10 @@ private:
     QWidget* m_clkHSPeriSubNodeWidget;
     QVBoxLayout* m_clkHSPeriSubNodeLayout;
 
+    // clk_rtc_sys子节点区域
+    QWidget* m_clkRTCSYSSubNodeWidget;
+    QVBoxLayout* m_clkRTCSYSSubNodeLayout;
+
     // 左侧时钟树面板
     QWidget* m_clockTreeWidget;
     QVBoxLayout* m_clockTreeLayout;
@@ -427,6 +438,9 @@ private:
     QMap<QString, QWidget*> m_clkHSPeriSubNodeWidgets;
     QMap<QString, QLabel*> m_clkHSPeriSubNodeFreqLabels;
     QMap<QString, QSpinBox*> m_clkHSPeriSubNodeDividerBoxes;
+    QMap<QString, QWidget*> m_clkRTCSYSSubNodeWidgets;
+    QMap<QString, QLabel*> m_clkRTCSYSSubNodeFreqLabels;
+    QMap<QString, QSpinBox*> m_clkRTCSYSSubNodeDividerBoxes;
 
     // 控制按钮
     QHBoxLayout* m_buttonLayout;
@@ -454,6 +468,8 @@ private:
     QMap<QString, ClockOutput> m_clkFAB100MSubNodes;  // 新增：clk_fab_100M子节点数据
     QMap<QString, ClockOutput> m_clkSPINANDSubNodes;  // 新增：clk_spi_nand子节点数据
     QMap<QString, ClockOutput> m_clkHSPeriSubNodes;  // 新增：clk_hsperi子节点数据
+    QMap<QString, ClockOutput> m_clkRTCSYSSubNodes;  // 新增：clk_rtc_sys子节点位置配置
+
     QMap<QString, ModulePosition> m_modulePositions;  // 新增：模块位置配置
 
     // 源代码路径和芯片类型
@@ -481,6 +497,7 @@ private:
     static const QStringList CLK_FAB_100M_SUB_NODES;  // 新增：clk_fab_100M子节点列表
     static const QStringList CLK_SPI_NAND_SUB_NODES;  // 新增：clk_spi_nand子节点列表
     static const QStringList CLK_HSPERI_SUB_NODES;  // 新增：clk_hsperi子节点列表
+    static const QStringList CLK_RTC_SYS_SUB_NODES;  // 新增：clk_rtc_sys子节点列表
 
     // 拖拽和缩放相关的成员变量
     bool m_isDragging;              // 是否正在拖拽
