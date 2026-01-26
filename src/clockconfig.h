@@ -130,6 +130,8 @@ private slots:
     void onClkTPLLSubNodeDividerChanged(const QString& nodeName, int divider);  // 新增：clk_tpll子节点分频器变化
     void onClkMPLLSubNodeDividerChanged(const QString& nodeName, int divider);  // 新增：clk_mpll子节点分频器变化
     void onClkFAB100MSubNodeDividerChanged(const QString& nodeName, int divider);  // 新增：clk_fab_100M子节点分频器变化
+    void onClkXtalMiscSubNodeDividerChanged(const QString& nodeName, int divider);  // 新增：clk_xtal_misc子节点分频器变化
+    void onClkI2CSubNodeDividerChanged(const QString& nodeName, int divider);  // 新增：clk_i2c子节点分频器变化
     void onClkRTCSYSSubNodeDividerChanged(const QString& nodeName, int divider);  // 新增：clk_rtc_sys子节点分频器变化
     void onClkHSPeriSubNodeDividerChanged(const QString& nodeName, int divider);  // 新增：clk_hsperi子节点分频器变化
     void onClkVIPSYS0SubNodeDividerChanged(const QString& nodeName, int divider);  // 新增：clk_vip_sys_0子节点分频器变化
@@ -161,6 +163,8 @@ private:
     void setupClkTPLLSubNodes();  // 新增：设置clk_tpll子节点区域
     void setupClkMPLLSubNodes();  // 新增：设置clk_mpll子节点区域
     void setupClkFAB100MSubNodes();  // 新增：设置clk_fab_100M子节点区域
+    void setupClkXtalMiscSubNodes();  // 新增：设置clk_xtal_misc子节点区域
+    void setupClkI2CSubNodes();  // 新增：设置clk_i2c子节点区域
     void setupClkRTCSYSSubNodes();  // 新增：设置clk_rtc_sys子节点区域
     void setupClkHSPeriSubNodes();  // 新增：设置clk_hsperi子节点区域
     void setupClkVIPSYS0SubNodes();  // 新增：设置clk_vip_sys_0子节点区域
@@ -186,6 +190,8 @@ private:
     void createClkTPLLSubNodeWidget(const QString& nodeName, QWidget* parent);  // 新增：创建clk_tpll子节点widget
     void createClkMPLLSubNodeWidget(const QString& nodeName, QWidget* parent);  // 新增：创建clk_mpll子节点widget
     void createClkFAB100MSubNodeWidget(const QString& nodeName, QWidget* parent);  // 新增：创建clk_fab_100M子节点widget
+    void createClkXtalMiscSubNodeWidget(const QString& nodeName, QWidget* parent);  // 新增：创建clk_xtal_misc子节点widget
+    void createClkI2CSubNodeWidget(const QString& nodeName, QWidget* parent);  // 新增：创建clk_i2c子节点widget
     void createClkRTCSYSSubNodeWidget(const QString& nodeName, QWidget* parent);  // 新增：创建clk_rtc_sys子节点widget
     void createClkHSPeriSubNodeWidget(const QString& nodeName, QWidget* parent);  // 新增：创建clk_hsperi子节点widget
     void createClkVIPSYS0SubNodeWidget(const QString& nodeName, QWidget* parent);  // 新增：创建clk_vip_sys_0子节点widget
@@ -223,6 +229,10 @@ private:
     void updateAllClkMPLLSubNodeFrequencies();  // 新增：更新所有clk_mpll子节点频率
     void updateClkFAB100MSubNodeFrequency(const QString& nodeName);  // 新增：更新clk_fab_100M子节点频率
     void updateAllClkFAB100MSubNodeFrequencies();  // 新增：更新所有clk_fab_100M子节点频率
+    void updateClkXtalMiscSubNodeFrequency(const QString& nodeName);  // 新增：更新clk_xtal_misc子节点频率
+    void updateAllClkXtalMiscSubNodeFrequencies();  // 新增：更新所有clk_xtal_misc子节点频率
+    void updateClkI2CSubNodeFrequency(const QString& nodeName);  // 新增：更新clk_i2c子节点频率
+    void updateAllClkI2CSubNodeFrequencies();  // 新增：更新所有clk_i2c子节点频率
     void updateClkHSPeriSubNodeFrequency(const QString& nodeName);  // 新增：更新clk_hsperi子节点频率
     void updateAllClkHSPeriSubNodeFrequencies();  // 新增：更新所有clk_hsperi子节点频率
     void updateClkRTCSYSSubNodeFrequency(const QString& nodeName);  // 新增：更新clk_rtc_sys子节点频率
@@ -274,6 +284,10 @@ private:
     QPoint getClkMPLLSubNodeConnectionPoint() const;  // 新增：获取clk_mpll子节点连接点
     QPoint getClkFAB100MConnectionPoint() const;  // 新增：获取clk_fab_100M连接点
     QPoint getClkFAB100MSubNodeConnectionPoint() const;  // 新增：获取clk_fab_100M子节点连接点
+    QPoint getClkXtalMiscConnectionPoint() const;  // 新增：获取clk_xtal_misc连接点
+    QPoint getClkXtalMiscSubNodeConnectionPoint() const;  // 新增：获取clk_xtal_misc子节点连接点
+    QPoint getClkI2CConnectionPoint() const;  // 新增：获取clk_i2c连接点
+    QPoint getClkI2CSubNodeConnectionPoint() const;  // 新增：获取clk_i2c子节点连接点
     QPoint getClkHSPeriConnectionPoint() const;  // 新增：获取clk_hsperi连接点
     QPoint getClkHSPeriSubNodeConnectionPoint() const;  // 新增：获取clk_hsperi子节点连接点
     QPoint getClkRTCSYSConnectionPoint() const;  // 新增：获取clk_rtc_sys连接点
@@ -369,6 +383,14 @@ private:
     // clk_fab_100M子节点区域
     QWidget* m_clkFAB100MSubNodeWidget;
     QVBoxLayout* m_clkFAB100MSubNodeLayout;
+
+    // clk_xtal_misc子节点区域
+    QWidget* m_clkXtalMiscSubNodeWidget;
+    QVBoxLayout* m_clkXtalMiscSubNodeLayout;
+
+    // clk_i2c子节点区域
+    QWidget* m_clkI2CSubNodeWidget;
+    QVBoxLayout* m_clkI2CSubNodeLayout;
 
     // clk_hsperi子节点区域
     QWidget* m_clkHSPeriSubNodeWidget;
@@ -469,6 +491,12 @@ private:
     QMap<QString, QWidget*> m_clkFAB100MSubNodeWidgets;
     QMap<QString, QLabel*> m_clkFAB100MSubNodeFreqLabels;
     QMap<QString, QSpinBox*> m_clkFAB100MSubNodeDividerBoxes;
+    QMap<QString, QWidget*> m_clkXtalMiscSubNodeWidgets;
+    QMap<QString, QLabel*> m_clkXtalMiscSubNodeFreqLabels;
+    QMap<QString, QSpinBox*> m_clkXtalMiscSubNodeDividerBoxes;
+    QMap<QString, QWidget*> m_clkI2CSubNodeWidgets;
+    QMap<QString, QLabel*> m_clkI2CSubNodeFreqLabels;
+    QMap<QString, QSpinBox*> m_clkI2CSubNodeDividerBoxes;
     QMap<QString, QWidget*> m_clkHSPeriSubNodeWidgets;
     QMap<QString, QLabel*> m_clkHSPeriSubNodeFreqLabels;
     QMap<QString, QSpinBox*> m_clkHSPeriSubNodeDividerBoxes;
@@ -512,6 +540,8 @@ private:
     QMap<QString, ClockOutput> m_clkTPLLSubNodes;  // 新增：clk_tpll子节点数据
     QMap<QString, ClockOutput> m_clkMPLLSubNodes;  // 新增：clk_mpll子节点数据
     QMap<QString, ClockOutput> m_clkFAB100MSubNodes;  // 新增：clk_fab_100M子节点数据
+    QMap<QString, ClockOutput> m_clkXtalMiscSubNodes;  // 新增：clk_xtal_misc子节点数据
+    QMap<QString, ClockOutput> m_clkI2CSubNodes;  // 新增：clk_i2c子节点数据
     QMap<QString, ClockOutput> m_clkHSPeriSubNodes;  // 新增：clk_hsperi子节点数据
     QMap<QString, ClockOutput> m_clkRTCSYSSubNodes;  // 新增：clk_rtc_sys子节点位置配置
     QMap<QString, ClockOutput> m_clkVIPSYS0SubNodes;  // 新增：clk_vip_sys_0子节点位置配置
@@ -544,6 +574,8 @@ private:
     static const QStringList CLK_TPLL_SUB_NODES;  // 新增：clk_tpll子节点列表
     static const QStringList CLK_MPLL_SUB_NODES;  // 新增：clk_mpll子节点列表
     static const QStringList CLK_FAB_100M_SUB_NODES;  // 新增：clk_fab_100M子节点列表
+    static const QStringList CLK_XTAL_MISC_SUB_NODES;  // 新增：clk_xtal_misc子节点列表
+    static const QStringList CLK_I2C_SUB_NODES;  // 新增：clk_i2c子节点列表
     static const QStringList CLK_HSPERI_SUB_NODES;  // 新增：clk_hsperi子节点列表
     static const QStringList CLK_RTC_SYS_SUB_NODES;  // 新增：clk_rtc_sys子节点列表
     static const QStringList CLK_VIP_SYS_0_SUB_NODES;  // 新增：clk_vip_sys_0子节点列表

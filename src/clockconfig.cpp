@@ -97,6 +97,16 @@ const QStringList ClockConfigWidget::CLK_FAB_100M_SUB_NODES = {
     "clk_fab6_100M_free", "clk_efuse_pclk", "clk_x2p"
 };
 
+const QStringList ClockConfigWidget::CLK_XTAL_MISC_SUB_NODES = {
+    "clk_timer7", "clk_timer6", "clk_timer5", "clk_timer4",
+    "clk_timer3", "clk_timer2", "clk_timer1", "clk_timer0",
+    "clk_1M", "clk_usb20_suspend"
+};
+
+const QStringList ClockConfigWidget::CLK_I2C_SUB_NODES = {
+    "clk_apb_i2c"
+};
+
 const QStringList ClockConfigWidget::CLK_RTC_SYS_SUB_NODES = {
     "clk_rtc_sys_apb_saradc1", "clk_rtc_sys_apb_wdt", "clk_rtc_sys_apb_saradc",
     "clk_rtc_sys_apb_i2c", "clk_rtc_sys_apb_osc", "clk_rtc_sys_apb_gpio",
@@ -188,6 +198,8 @@ ClockConfigWidget::ClockConfigWidget(QWidget *parent)
     setupClkTPLLSubNodes();  // 新增：设置clk_tpll子节点区域
     setupClkMPLLSubNodes();  // 新增：设置clk_mpll子节点区域
     setupClkFAB100MSubNodes();  // 新增：设置clk_fab_100M子节点区域
+    setupClkXtalMiscSubNodes();  // 新增：设置clk_xtal_misc子节点区域
+    setupClkI2CSubNodes();  // 新增：设置clk_i2c子节点区域
     setupClkRTCSYSSubNodes();  // 新增：设置clk_rtc_sys子节点区域
     setupClkHSPeriSubNodes();  // 新增：设置clk_hsperi子节点区域
     setupClkVIPSYS0SubNodes();  // 新增：设置clk_vip_sys_0子节点区域
@@ -1193,6 +1205,28 @@ void ClockConfigWidget::setupClkFPLLSubNodes()
         m_pllConfigs["clk_scan_100M"] = scan100MConfig;
     }
 
+    // 将clk_xtal_misc的配置同步到m_pllConfigs中，以便其子节点能正确访问
+    if (m_clkFPLLSubNodes.contains("clk_xtal_misc")) {
+        PLLConfig xtalMiscConfig;
+        xtalMiscConfig.name = "clk_xtal_misc";
+        xtalMiscConfig.enabled = true;
+        xtalMiscConfig.inputFreq = 1000.0; // clk_fpll频率
+        xtalMiscConfig.multiplier = 1;
+        xtalMiscConfig.outputFreq = m_clkFPLLSubNodes["clk_xtal_misc"].frequency;
+        m_pllConfigs["clk_xtal_misc"] = xtalMiscConfig;
+    }
+
+    // 将clk_i2c的配置同步到m_pllConfigs中，以便其子节点能正确访问
+    if (m_clkFPLLSubNodes.contains("clk_i2c")) {
+        PLLConfig i2cConfig;
+        i2cConfig.name = "clk_i2c";
+        i2cConfig.enabled = true;
+        i2cConfig.inputFreq = 1000.0; // clk_fpll频率
+        i2cConfig.multiplier = 1;
+        i2cConfig.outputFreq = m_clkFPLLSubNodes["clk_i2c"].frequency;
+        m_pllConfigs["clk_i2c"] = i2cConfig;
+    }
+
     // 设置父widget为m_flowWidget并使用绝对定位
     m_clkFPLLSubNodeWidget->setParent(m_flowWidget);
     // 默认位置将在initializeModulePositions中设置
@@ -1488,6 +1522,114 @@ QString ClockConfigWidget::formatClockTitle(const QString& text) const
     QString s = text;
     s.replace("_", "_\u200b");
     return s;
+}
+
+void ClockConfigWidget::setupClkXtalMiscSubNodes()
+{
+    // 创建clk_xtal_misc子节点区域
+    m_clkXtalMiscSubNodeWidget = new QWidget();
+    m_clkXtalMiscSubNodeWidget->setFixedSize(150, 200); // 设置固定尺寸，2个子节点
+    m_clkXtalMiscSubNodeWidget->setStyleSheet(
+        "QWidget { "
+        "background-color: #ffffff; "
+        "border: 2px solid #17a2b8; "
+        "border-radius: 8px; "
+        "}"
+    );
+
+    m_clkXtalMiscSubNodeLayout = new QVBoxLayout(m_clkXtalMiscSubNodeWidget);
+    m_clkXtalMiscSubNodeLayout->setContentsMargins(10, 10, 10, 10);
+    m_clkXtalMiscSubNodeLayout->setSpacing(5);
+
+    // 添加标题
+    QLabel* subNodeTitle = new QLabel("clk_xtal_misc子节点");
+    subNodeTitle->setStyleSheet("font-size: 14px; font-weight: bold; color: #117a8b; text-align: center;");
+    subNodeTitle->setAlignment(Qt::AlignCenter);
+    m_clkXtalMiscSubNodeLayout->addWidget(subNodeTitle);
+    // 为每个clk_xtal_misc子节点创建显示界面
+    for (const QString& nodeName : CLK_XTAL_MISC_SUB_NODES) {
+        createClkXtalMiscSubNodeWidget(nodeName, m_clkXtalMiscSubNodeWidget);
+        // 初始化clk_xtal_misc子节点配置
+        ClockOutput subNode;
+        subNode.name = nodeName;
+        subNode.source = "clk_xtal_misc";
+        subNode.enabled = true;
+        // 根据子节点设置不同的默认分频值
+        if (nodeName == "clk_1M") {
+            subNode.divider = 250;  // clk_1M默认分频系数是250
+        } else if (nodeName == "clk_usb20_suspend") {
+            subNode.divider = 125;  // clk_usb20_suspend默认分频系数是1
+        } else {
+            subNode.divider = 1;  // 所有子节点默认分频系数都是1
+        }
+
+        // 计算频率：clk_xtal_misc的频率 / 分频器
+        // 从clk_xtal_misc的配置中获取正确的频率
+        double clkXtalMiscFreq = 25.0; // 默认25MHz
+        if (m_pllConfigs.contains("clk_xtal_misc")) {
+            clkXtalMiscFreq = m_pllConfigs["clk_xtal_misc"].outputFreq;
+        }
+        subNode.frequency = clkXtalMiscFreq / subNode.divider;
+
+        m_clkXtalMiscSubNodes[nodeName] = subNode;
+    }
+
+    m_clkXtalMiscSubNodeLayout->addStretch();
+
+    // 设置父widget为m_flowWidget并使用绝对定位
+    m_clkXtalMiscSubNodeWidget->setParent(m_flowWidget);
+    // 默认位置将在initializeModulePositions中设置
+}
+
+void ClockConfigWidget::setupClkI2CSubNodes()
+{
+    // 创建clk_i2c子节点区域
+    m_clkI2CSubNodeWidget = new QWidget();
+    m_clkI2CSubNodeWidget->setFixedSize(150, 120); // 设置固定尺寸，1个子节点
+    m_clkI2CSubNodeWidget->setStyleSheet(
+        "QWidget { "
+        "background-color: #ffffff; "
+        "border: 2px solid #17a2b8; "
+        "border-radius: 8px; "
+        "}"
+    );
+
+    m_clkI2CSubNodeLayout = new QVBoxLayout(m_clkI2CSubNodeWidget);
+    m_clkI2CSubNodeLayout->setContentsMargins(10, 10, 10, 10);
+    m_clkI2CSubNodeLayout->setSpacing(5);
+
+    // 添加标题
+    QLabel* subNodeTitle = new QLabel("clk_i2c子节点");
+    subNodeTitle->setStyleSheet("font-size: 14px; font-weight: bold; color: #117a8b; text-align: center;");
+    subNodeTitle->setAlignment(Qt::AlignCenter);
+    m_clkI2CSubNodeLayout->addWidget(subNodeTitle);
+    // 为每个clk_i2c子节点创建显示界面
+    for (const QString& nodeName : CLK_I2C_SUB_NODES) {
+        createClkI2CSubNodeWidget(nodeName, m_clkI2CSubNodeWidget);
+        // 初始化clk_i2c子节点配置
+        ClockOutput subNode;
+        subNode.name = nodeName;
+        subNode.source = "clk_xtal_misc";
+        subNode.enabled = true;
+        // 根据子节点设置不同的默认分频值
+        subNode.divider = 1;  // 只有clk_apb_i2c子节点默认分频系数是1
+
+        // 计算频率：clk_xtal_misc的频率 / 分频器
+        // 从clk_xtal_misc的配置中获取正确的频率
+        double clkXtalMiscFreq = 100.0; // 默认100MHz
+        if (m_pllConfigs.contains("clk_xtal_misc")) {
+            clkXtalMiscFreq = m_pllConfigs["clk_xtal_misc"].outputFreq;
+        }
+        subNode.frequency = clkXtalMiscFreq / subNode.divider;
+
+        m_clkI2CSubNodes[nodeName] = subNode;
+    }
+
+    m_clkI2CSubNodeLayout->addStretch();
+
+    // 设置父widget为m_flowWidget并使用绝对定位
+    m_clkI2CSubNodeWidget->setParent(m_flowWidget);
+    // 默认位置将在initializeModulePositions中设置
 }
 
 void ClockConfigWidget::setupClkRTCSYSSubNodes()
@@ -3267,6 +3409,172 @@ void ClockConfigWidget::createClkFAB100MSubNodeWidget(const QString& nodeName, Q
             });
 }
 
+void ClockConfigWidget::createClkXtalMiscSubNodeWidget(const QString& nodeName, QWidget* parent)
+{
+    QWidget* subNodeWidget = new QWidget();
+    subNodeWidget->setStyleSheet(
+        "QWidget { "
+        "background-color: #ffffff; "
+        "border: 1px solid #17a2b8; "
+        "border-radius: 4px; "
+        "padding: 3px; "
+        "margin: 1px; "
+        "}"
+    );
+
+    QVBoxLayout* layout = new QVBoxLayout(subNodeWidget);
+    layout->setSpacing(2);
+    layout->setContentsMargins(3, 3, 3, 3);
+
+    // 子节点名称标签
+    QLabel* nameLabel = new QLabel();
+    nameLabel->setText(formatClockTitle(nodeName));
+    nameLabel->setStyleSheet("font-weight: bold; color: #117a8b; font-size: 11px;");
+    nameLabel->setAlignment(Qt::AlignCenter);
+    nameLabel->setWordWrap(true);
+
+    // 分频器配置
+    QHBoxLayout* divConfigLayout = new QHBoxLayout();
+    divConfigLayout->setSpacing(3);
+
+    QLabel* divLabel = new QLabel("分频：");
+    divLabel->setStyleSheet("color: #117a8b; font-size: 10px; font-weight: bold;");
+
+    QSpinBox* divBox = new QSpinBox();
+    divBox->setRange(1, 1000);
+    // 根据子节点设置不同的默认分频值
+    if (nodeName == "clk_1M") {
+        divBox->setValue(250);  // clk_1M默认分频系数是250
+    } else if (nodeName == "clk_usb20_suspend") {
+        divBox->setValue(125);  // clk_usb20_suspend默认分频系数是125
+    } else {
+        divBox->setValue(1);  // 所有子节点默认分频系数是1
+    }
+    // 只读显示
+    divBox->setEnabled(false);
+    divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
+    divBox->setFocusPolicy(Qt::NoFocus);
+    divBox->setFixedWidth(45);
+    divBox->setStyleSheet("font-size: 10px;");
+    divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);  // 禁用上下按钮
+    divBox->setReadOnly(true);  // 设置为只读，禁止编辑
+    divBox->installEventFilter(this);  // 安装事件过滤器以禁用滚轮
+    
+    divConfigLayout->addWidget(divLabel);
+    divConfigLayout->addWidget(divBox);
+
+    // 频率显示
+    double clkXtalMiscFreq = 25.0;  // 假设clk_xtal_misc = 25MHz
+    double calculatedFreq;
+    if (nodeName == "clk_1M") {
+        calculatedFreq = clkXtalMiscFreq / 250;  // clk_1M默认分频系数是250
+    } else if (nodeName == "clk_usb20_suspend") {
+        calculatedFreq = clkXtalMiscFreq / 125;  // clk_usb20_suspend默认分频系数是125
+    } else {
+        calculatedFreq = clkXtalMiscFreq / 1;  // 所有子节点默认分频系数是1
+    }
+    QString freqText = QString("%1 MHz").arg(calculatedFreq, 0, 'f', 1);
+
+    QLabel* freqLabel = new QLabel(freqText);
+    freqLabel->setStyleSheet("color: #dc3545; font-family: monospace; font-weight: bold; font-size: 9px;");
+    freqLabel->setAlignment(Qt::AlignCenter);
+
+    layout->addWidget(nameLabel);
+    layout->addLayout(divConfigLayout);
+    layout->addWidget(freqLabel);
+
+    // 存储控件引用
+    m_clkXtalMiscSubNodeWidgets[nodeName] = subNodeWidget;
+    m_clkXtalMiscSubNodeFreqLabels[nodeName] = freqLabel;
+    m_clkXtalMiscSubNodeDividerBoxes[nodeName] = divBox;
+
+    m_clkXtalMiscSubNodeLayout->addWidget(subNodeWidget);
+
+    // 连接分频器变化信号
+    connect(divBox, QOverload<int>::of(&QSpinBox::valueChanged),
+            [this, nodeName](int value) {
+                onClkXtalMiscSubNodeDividerChanged(nodeName, value);
+            });
+}
+
+void ClockConfigWidget::createClkI2CSubNodeWidget(const QString& nodeName, QWidget* parent)
+{
+    QWidget* subNodeWidget = new QWidget();
+    subNodeWidget->setStyleSheet(
+        "QWidget { "
+        "background-color: #ffffff; "
+        "border: 1px solid #17a2b8; "
+        "border-radius: 4px; "
+        "padding: 3px; "
+        "margin: 1px; "
+        "}"
+    );
+
+    QVBoxLayout* layout = new QVBoxLayout(subNodeWidget);
+    layout->setSpacing(2);
+    layout->setContentsMargins(3, 3, 3, 3);
+
+    // 子节点名称标签
+    QLabel* nameLabel = new QLabel();
+    nameLabel->setText(formatClockTitle(nodeName));
+    nameLabel->setStyleSheet("font-weight: bold; color: #117a8b; font-size: 11px;");
+    nameLabel->setAlignment(Qt::AlignCenter);
+    nameLabel->setWordWrap(true);
+
+    // 分频器配置
+    QHBoxLayout* divConfigLayout = new QHBoxLayout();
+    divConfigLayout->setSpacing(3);
+
+    QLabel* divLabel = new QLabel("分频：");
+    divLabel->setStyleSheet("color: #117a8b; font-size: 10px; font-weight: bold;");
+
+    QSpinBox* divBox = new QSpinBox();
+    divBox->setRange(1, 1000);
+    // 根据子节点设置不同的默认分频值
+    divBox->setValue(1);  // 子节点默认分频系数是1
+
+    // 只读显示
+    divBox->setEnabled(false);
+    divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
+    divBox->setFocusPolicy(Qt::NoFocus);
+    divBox->setFixedWidth(45);
+    divBox->setStyleSheet("font-size: 10px;");
+    divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);  // 禁用上下按钮
+    divBox->setReadOnly(true);  // 设置为只读，禁止编辑
+    divBox->installEventFilter(this);  // 安装事件过滤器以禁用滚轮
+    
+    divConfigLayout->addWidget(divLabel);
+    divConfigLayout->addWidget(divBox);
+
+    // 频率显示
+    double clkI2CFreq = 100.0;  // 假设clk_xtal_misc = 100MHz
+    double calculatedFreq;
+    calculatedFreq = clkI2CFreq / 1;  // 子节点默认分频系数是1
+
+    QString freqText = QString("%1 MHz").arg(calculatedFreq, 0, 'f', 1);
+
+    QLabel* freqLabel = new QLabel(freqText);
+    freqLabel->setStyleSheet("color: #dc3545; font-family: monospace; font-weight: bold; font-size: 9px;");
+    freqLabel->setAlignment(Qt::AlignCenter);
+
+    layout->addWidget(nameLabel);
+    layout->addLayout(divConfigLayout);
+    layout->addWidget(freqLabel);
+
+    // 存储控件引用
+    m_clkI2CSubNodeWidgets[nodeName] = subNodeWidget;
+    m_clkI2CSubNodeFreqLabels[nodeName] = freqLabel;
+    m_clkI2CSubNodeDividerBoxes[nodeName] = divBox;
+
+    m_clkI2CSubNodeLayout->addWidget(subNodeWidget);
+
+    // 连接分频器变化信号
+    connect(divBox, QOverload<int>::of(&QSpinBox::valueChanged),
+            [this, nodeName](int value) {
+                onClkI2CSubNodeDividerChanged(nodeName, value);
+            });
+}
+
 void ClockConfigWidget::createClkRTCSYSSubNodeWidget(const QString& nodeName, QWidget* parent)
 {
     QWidget* subNodeWidget = new QWidget();
@@ -3814,6 +4122,8 @@ void ClockConfigWidget::initializeModulePositions()
     ModulePosition clkTPLLSubPos = {"clk_tpu子节点", 510, 920, 150, 200}; // 新增clk_tpu子节点位置
     ModulePosition clkMPLLSubPos = {"clk_mpll子节点", 750, 1250, 150, 1900}; // 新增clk_mpll子节点位置
     ModulePosition clkFAB100MSubPos = {"clk_fab100m子节点", 750, 450, 150, 300}; // 新增clk_fab100m子节点位置
+    ModulePosition clkXtalMiscSubPos = {"clk_xtal_misc子节点", 650, 55, 150, 1000}; // 新增clk_xtal_misc子节点位置
+    ModulePosition clkI2CSubPos = {"clk_i2c子节点", 800, 55, 150, 120}; // 新增clk_i2c子节点位置
     ModulePosition clkRTCSYSSubPos = {"clk_rtc_sys子节点", 1150, 1335, 150, 1400}; // 新增clk_rtc_sys子节点位置
     ModulePosition clkHSPISubPos = {"clk_hspi子节点", 955, 2352, 150, 2000}; // 新增clk_hspi子节点位置
     ModulePosition clkVIPSYS0SubPos = {"clk_vip_sys_0子节点", 1300, 2352, 150, 500}; // 新增clk_vip_sys_0子节点位置
@@ -3838,6 +4148,8 @@ void ClockConfigWidget::initializeModulePositions()
     m_modulePositions["clk_tpu子节点"] = clkTPLLSubPos;
     m_modulePositions["clk_mpll子节点"] = clkMPLLSubPos;
     m_modulePositions["clk_fab100m子节点"] = clkFAB100MSubPos;
+    m_modulePositions["clk_xtal_misc子节点"] = clkXtalMiscSubPos;
+    m_modulePositions["clk_i2c子节点"] = clkI2CSubPos;
     m_modulePositions["clk_rtc_sys子节点"] = clkRTCSYSSubPos;
     m_modulePositions["clk_hspi子节点"] = clkHSPISubPos;
     m_modulePositions["clk_vip_sys_0子节点"] = clkVIPSYS0SubPos;
@@ -3961,6 +4273,18 @@ void ClockConfigWidget::applyModulePositions()
         m_clkFAB100MSubNodeWidget->setFixedSize(pos.width, pos.height);
     }
 
+    if (m_modulePositions.contains("clk_xtal_misc子节点") && m_clkXtalMiscSubNodeWidget) {
+        ModulePosition pos = m_modulePositions["clk_xtal_misc子节点"];
+        m_clkXtalMiscSubNodeWidget->move(pos.x, pos.y);
+        m_clkXtalMiscSubNodeWidget->setFixedSize(pos.width, pos.height);
+    }
+
+    if (m_modulePositions.contains("clk_i2c子节点") && m_clkI2CSubNodeWidget) {
+        ModulePosition pos = m_modulePositions["clk_i2c子节点"];
+        m_clkI2CSubNodeWidget->move(pos.x, pos.y);
+        m_clkI2CSubNodeWidget->setFixedSize(pos.width, pos.height);
+    }
+
     if (m_modulePositions.contains("clk_rtc_sys子节点") && m_clkRTCSYSSubNodeWidget) {
         ModulePosition pos = m_modulePositions["clk_rtc_sys子节点"];
         m_clkRTCSYSSubNodeWidget->move(pos.x, pos.y);
@@ -4018,9 +4342,9 @@ void ClockConfigWidget::ensureFlowCanvasFitsContent()
                << m_clkCam0PLLSubNodeWidget << m_clkDispPLLSubNodeWidget << m_clkSysDispSubNodeWidget
                << m_clkA0PLLSubNodeWidget << m_clkRVPLLSubNodeWidget << m_clkAPPLLSubNodeWidget
                << m_clkFPLLSubNodeWidget << m_clkTPLLSubNodeWidget << m_clkMPLLSubNodeWidget
-               << m_clkFAB100MSubNodeWidget << m_clkRTCSYSSubNodeWidget
-               << m_clkHSPeriSubNodeWidget << m_clkVIPSYS0SubNodeWidget << m_clkVIPSYS1SubNodeWidget
-               << m_clkVIPSYS3SubNodeWidget << m_clkSPISubNodeWidget;
+               << m_clkFAB100MSubNodeWidget << m_clkXtalMiscSubNodeWidget << m_clkI2CSubNodeWidget
+               << m_clkRTCSYSSubNodeWidget << m_clkHSPeriSubNodeWidget << m_clkVIPSYS0SubNodeWidget
+               << m_clkVIPSYS1SubNodeWidget << m_clkVIPSYS3SubNodeWidget << m_clkSPISubNodeWidget;
 
     for (QWidget* w : allWidgets) {
         if (!w) continue;
@@ -4081,6 +4405,8 @@ void ClockConfigWidget::showPositionConfigDialog()
         {"clk_tpu子节点", "clk_tpll"},
         {"clk_mpll子节点", "clk_mpll"},
         {"clk_fab100m子节点", "clk_fab_100M"},
+        {"clk_xtal_misc子节点", "clk_xtal_misc"},
+        {"clk_i2c子节点", "clk_i2c"},
         {"clk_rtc_sys子节点", "clk_rtc_sys"},
         {"clk_hspi子节点", "clk_hsperi"},
         {"clk_vip_sys_0子节点", "clk_vip_sys_0"},
@@ -4325,6 +4651,16 @@ void ClockConfigWidget::onPLLMultiplierChanged(const QString& pllName, int multi
         updateAllClkFAB100MSubNodeFrequencies();
     }
 
+    // 如果是clk_xtal_misc，还需要更新其子节点的频率
+    if (pllName == "clk_xtal_misc") {
+        updateAllClkXtalMiscSubNodeFrequencies();
+    }
+
+    // 如果是clk_i2c，还需要更新其子节点的频率
+    if (pllName == "clk_i2c") {
+        updateAllClkI2CSubNodeFrequencies();
+    }
+
     // 如果是clk_hspi，还需要更新其子节点的频率
     if (pllName == "clk_hspi") {
         updateAllClkHSPeriSubNodeFrequencies();
@@ -4529,6 +4865,26 @@ void ClockConfigWidget::onClkFPLLSubNodeDividerChanged(const QString& nodeName, 
             updateAllClkFAB100MSubNodeFrequencies();
         }
 
+        // 如果修改的是clk_xtal_misc，需要同步更新其在m_pllConfigs中的频率，并更新其子节点
+        if (nodeName == "clk_xtal_misc") {
+            // 同步更新m_pllConfigs中的频率
+            if (m_pllConfigs.contains("clk_xtal_misc")) {
+                m_pllConfigs["clk_xtal_misc"].outputFreq = m_clkFPLLSubNodes[nodeName].frequency;
+            }
+            // 更新clk_xtal_misc的所有子节点频率
+            updateAllClkXtalMiscSubNodeFrequencies();
+        }
+
+        // 如果修改的是clk_i2c，需要同步更新其在m_pllConfigs中的频率，并更新其子节点
+        if (nodeName == "clk_i2c") {
+            // 同步更新m_pllConfigs中的频率
+            if (m_pllConfigs.contains("clk_i2c")) {
+                m_pllConfigs["clk_i2c"].outputFreq = m_clkFPLLSubNodes[nodeName].frequency;
+            }
+            // 更新clk_i2c的所有子节点频率
+            updateAllClkI2CSubNodeFrequencies();
+        }
+
         emit configChanged();
     }
 }
@@ -4617,6 +4973,24 @@ void ClockConfigWidget::onClkFAB100MSubNodeDividerChanged(const QString& nodeNam
     if (m_clkFAB100MSubNodes.contains(nodeName)) {
         m_clkFAB100MSubNodes[nodeName].divider = divider;
         updateClkFAB100MSubNodeFrequency(nodeName);
+        emit configChanged();
+    }
+}
+
+void ClockConfigWidget::onClkXtalMiscSubNodeDividerChanged(const QString& nodeName, int divider)
+{
+    if (m_clkXtalMiscSubNodes.contains(nodeName)) {
+        m_clkXtalMiscSubNodes[nodeName].divider = divider;
+        updateClkXtalMiscSubNodeFrequency(nodeName);
+        emit configChanged();
+    }
+}
+
+void ClockConfigWidget::onClkI2CSubNodeDividerChanged(const QString& nodeName, int divider)
+{
+    if (m_clkI2CSubNodes.contains(nodeName)) {
+        m_clkI2CSubNodes[nodeName].divider = divider;
+        updateClkI2CSubNodeFrequency(nodeName);
         emit configChanged();
     }
 }
@@ -5084,6 +5458,12 @@ void ClockConfigWidget::updateAllClkFPLLSubNodeFrequencies()
     if (m_clkFPLLSubNodes.contains("clk_fab_100M")) {
         m_pllConfigs["clk_fab_100M"].outputFreq = m_clkFPLLSubNodes["clk_fab_100M"].frequency;
     }
+
+    // 更新clk_xtal_misc的所有子节点频率
+    updateAllClkXtalMiscSubNodeFrequencies();
+
+    // 更新clk_i2c的所有子节点频率
+    updateAllClkI2CSubNodeFrequencies();
 }
 
 void ClockConfigWidget::updateClkTPLLSubNodeFrequency(const QString& nodeName)
@@ -5194,6 +5574,64 @@ void ClockConfigWidget::updateAllClkFAB100MSubNodeFrequencies()
 {
     for (const QString& nodeName : CLK_FAB_100M_SUB_NODES) {
         updateClkFAB100MSubNodeFrequency(nodeName);
+    }
+}
+
+void ClockConfigWidget::updateClkXtalMiscSubNodeFrequency(const QString& nodeName)
+{
+    if (!m_clkXtalMiscSubNodes.contains(nodeName)) return;
+
+    ClockOutput& subNode = m_clkXtalMiscSubNodes[nodeName];
+
+    // 获取clk_xtal_misc的频率
+    double clkXtalMiscFreq = 25.0; // 默认25MHz
+    if (m_pllConfigs.contains("clk_xtal_misc")) {
+        clkXtalMiscFreq = m_pllConfigs["clk_xtal_misc"].outputFreq;
+    }
+
+    // clk_xtal_misc子节点频率 = clk_xtal_misc频率 / 分频器
+    subNode.frequency = clkXtalMiscFreq / subNode.divider;
+
+    // 更新显示
+    if (m_clkXtalMiscSubNodeFreqLabels.contains(nodeName)) {
+        QString freqText = QString("%1 MHz").arg(subNode.frequency, 0, 'f', 1);
+        m_clkXtalMiscSubNodeFreqLabels[nodeName]->setText(freqText);
+    }
+}
+
+void ClockConfigWidget::updateAllClkXtalMiscSubNodeFrequencies()
+{
+    for (const QString& nodeName : CLK_XTAL_MISC_SUB_NODES) {
+        updateClkXtalMiscSubNodeFrequency(nodeName);
+    }
+}
+
+void ClockConfigWidget::updateClkI2CSubNodeFrequency(const QString& nodeName)
+{
+    if (!m_clkI2CSubNodes.contains(nodeName)) return;
+
+    ClockOutput& subNode = m_clkI2CSubNodes[nodeName];
+
+    // 获取clk_i2c的频率
+    double clkI2CFreq = 25.0; // 默认25MHz
+    if (m_pllConfigs.contains("clk_i2c")) {
+        clkI2CFreq = m_pllConfigs["clk_i2c"].outputFreq;
+    }
+
+    // clk_i2c子节点频率 = clk_i2c频率 / 分频器
+    subNode.frequency = clkI2CFreq / subNode.divider;
+
+    // 更新显示
+    if (m_clkI2CSubNodeFreqLabels.contains(nodeName)) {
+        QString freqText = QString("%1 MHz").arg(subNode.frequency, 0, 'f', 1);
+        m_clkI2CSubNodeFreqLabels[nodeName]->setText(freqText);
+    }
+}
+
+void ClockConfigWidget::updateAllClkI2CSubNodeFrequencies()
+{
+    for (const QString& nodeName : CLK_I2C_SUB_NODES) {
+        updateClkI2CSubNodeFrequency(nodeName);
     }
 }
 
@@ -5451,6 +5889,16 @@ void ClockConfigWidget::updateFrequencies()
     // 更新所有clk_fab100m子节点频率
     for (const QString& nodeName : CLK_FAB_100M_SUB_NODES) {
         updateClkFAB100MSubNodeFrequency(nodeName);
+    }
+
+    // 更新所有clk_xtal_misc子节点频率
+    for (const QString& nodeName : CLK_XTAL_MISC_SUB_NODES) {
+        updateClkXtalMiscSubNodeFrequency(nodeName);
+    }
+
+    // 更新所有clk_i2c子节点频率
+    for (const QString& nodeName : CLK_I2C_SUB_NODES) {
+        updateClkI2CSubNodeFrequency(nodeName);
     }
 
     // 更新所有clk_rtc_sys子节点频率
@@ -6155,6 +6603,36 @@ void ClockConfigWidget::drawConnectionLines(QPainter& painter)
             QPoint elbow1, elbow2;
             calculateElbowPoints(fab100MPoint, subNodePoint, elbow1, elbow2);
             drawElbowArrowLine(painter, fab100MPoint, elbow1, elbow2, subNodePoint, lineColor);
+        }
+    }
+
+    // 绘制clk_xtal_misc到其子节点的连接线
+    if (m_clkXtalMiscSubNodeWidget) {
+        QPoint xtalMiscPoint = getClkXtalMiscConnectionPoint();
+        QPoint subNodePoint = getClkXtalMiscSubNodeConnectionPoint();
+        if (!subNodePoint.isNull() && !xtalMiscPoint.isNull()) {
+            // 使用深橙色来表示clk_xtal_misc到子节点的连接
+            QColor lineColor = QColor(255, 140, 0);  // 深橙色
+
+            // 计算肘形拐点
+            QPoint elbow1, elbow2;
+            calculateElbowPoints(xtalMiscPoint, subNodePoint, elbow1, elbow2);
+            drawElbowArrowLine(painter, xtalMiscPoint, elbow1, elbow2, subNodePoint, lineColor);
+        }
+    }
+
+    // 绘制clk_i2c到其子节点的连接线
+    if (m_clkI2CSubNodeWidget) {
+        QPoint i2cPoint = getClkI2CConnectionPoint();
+        QPoint subNodePoint = getClkI2CSubNodeConnectionPoint();
+        if (!subNodePoint.isNull() && !i2cPoint.isNull()) {
+            // 使用深橙色来表示clk_i2c到子节点的连接
+            QColor lineColor = QColor(255, 140, 0);  // 深橙色
+
+            // 计算肘形拐点
+            QPoint elbow1, elbow2;
+            calculateElbowPoints(i2cPoint, subNodePoint, elbow1, elbow2);
+            drawElbowArrowLine(painter, i2cPoint, elbow1, elbow2, subNodePoint, lineColor);
         }
     }
 
@@ -7018,6 +7496,96 @@ QPoint ClockConfigWidget::getClkFAB100MSubNodeConnectionPoint() const
     );
 }
 
+QPoint ClockConfigWidget::getClkXtalMiscConnectionPoint() const
+{
+    if (!m_clkFPLLSubNodeWidget || !m_flowWidget || !m_clkFPLLSubNodeWidgets.contains("clk_xtal_misc")) {
+        return QPoint();
+    }
+
+    QWidget* xtalMiscWidget = m_clkFPLLSubNodeWidgets["clk_xtal_misc"];
+    if (!xtalMiscWidget) {
+        return QPoint();
+    }
+
+    // 获取clk_xtal_misc widget在其父widget中的位置
+    QPoint xtalMiscPos = xtalMiscWidget->pos();
+    QRect xtalMiscRect = xtalMiscWidget->rect();
+    // 获取子PLL区域在flow widget中的位置
+    QPoint subPllAreaPos = m_clkFPLLSubNodeWidget->pos();
+
+    // clk_xtal_misc连接点位于widget的右侧中央
+    QPoint xtalMiscPoint = QPoint(
+        subPllAreaPos.x() + xtalMiscPos.x() + xtalMiscRect.width(),
+        subPllAreaPos.y() + xtalMiscPos.y() + xtalMiscRect.height() / 2
+    );
+
+    return xtalMiscPoint;
+}
+
+QPoint ClockConfigWidget::getClkXtalMiscSubNodeConnectionPoint() const
+{
+    if (!m_clkXtalMiscSubNodeWidget || !m_flowWidget) {
+        return QPoint();
+    }
+
+    // 获取子节点widget在其父widget中的位置
+    QPoint subNodePos = m_clkXtalMiscSubNodeWidget->pos();
+    QRect subNodeRect = m_clkXtalMiscSubNodeWidget->rect();
+
+    // 子节点连接点位于widget的左侧中央
+    QPoint subNodePoint = QPoint(
+        subNodePos.x(),
+        subNodePos.y() + subNodeRect.height() / 2
+    );
+
+    return subNodePoint;
+}
+
+QPoint ClockConfigWidget::getClkI2CConnectionPoint() const
+{
+    if (!m_clkFPLLSubNodeWidget || !m_flowWidget || !m_clkFPLLSubNodeWidgets.contains("clk_i2c")) {
+        return QPoint();
+    }
+
+    QWidget* i2cWidget = m_clkFPLLSubNodeWidgets["clk_i2c"];
+    if (!i2cWidget) {
+        return QPoint();
+    }
+
+    // 获取clk_i2c widget在其父widget中的位置
+    QPoint i2cPos = i2cWidget->pos();
+    QRect i2cRect = i2cWidget->rect();
+    // 获取子PLL区域在flow widget中的位置
+    QPoint subPllAreaPos = m_clkFPLLSubNodeWidget->pos();
+
+    // clk_i2c连接点位于widget的右侧中央
+    QPoint i2cPoint = QPoint(
+        subPllAreaPos.x() + i2cPos.x() + i2cRect.width(),
+        subPllAreaPos.y() + i2cPos.y() + i2cRect.height() / 2
+    );
+
+    return i2cPoint;
+}
+
+QPoint ClockConfigWidget::getClkI2CSubNodeConnectionPoint() const
+{
+    if (!m_clkI2CSubNodeWidget || !m_flowWidget) {
+        return QPoint();
+    }
+
+    // 获取子节点widget在其父widget中的位置
+    QPoint subNodePos = m_clkI2CSubNodeWidget->pos();
+    QRect subNodeRect = m_clkI2CSubNodeWidget->rect();
+
+    // 子节点连接点位于widget的左侧中央
+    QPoint subNodePoint = QPoint(
+        subNodePos.x(),
+        subNodePos.y() + subNodeRect.height() / 2
+    );
+
+    return subNodePoint;
+}
+
 QPoint ClockConfigWidget::getClkHSPeriConnectionPoint() const
 {
     if (!m_clkMPLLSubNodeWidget || !m_flowWidget || !m_clkMPLLSubNodeWidgets.contains("clk_hsperi")) {
@@ -7343,6 +7911,8 @@ QWidget* ClockConfigWidget::findClockWidgetByName(const QString& key, QString* r
     if (!w) w = tryFind(m_clkTPLLSubNodeWidgets);
     if (!w) w = tryFind(m_clkMPLLSubNodeWidgets);
     if (!w) w = tryFind(m_clkFAB100MSubNodeWidgets);
+    if (!w) w = tryFind(m_clkXtalMiscSubNodeWidgets);
+    if (!w) w = tryFind(m_clkI2CSubNodeWidgets);
     if (!w) w = tryFind(m_clkHSPeriSubNodeWidgets);
     if (!w) w = tryFind(m_clkRTCSYSSubNodeWidgets);
     if (!w) w = tryFind(m_clkVIPSYS0SubNodeWidgets);
@@ -7410,9 +7980,9 @@ QWidget* ClockConfigWidget::getWidgetAt(const QPoint& pos)
                << m_clkCam0PLLSubNodeWidget << m_clkDispPLLSubNodeWidget << m_clkSysDispSubNodeWidget
                << m_clkA0PLLSubNodeWidget << m_clkRVPLLSubNodeWidget << m_clkAPPLLSubNodeWidget
                << m_clkFPLLSubNodeWidget << m_clkTPLLSubNodeWidget << m_clkMPLLSubNodeWidget
-               << m_clkFAB100MSubNodeWidget << m_clkRTCSYSSubNodeWidget
-               << m_clkHSPeriSubNodeWidget << m_clkVIPSYS0SubNodeWidget << m_clkVIPSYS1SubNodeWidget
-               << m_clkVIPSYS3SubNodeWidget << m_clkSPISubNodeWidget;
+               << m_clkFAB100MSubNodeWidget << m_clkXtalMiscSubNodeWidget << m_clkI2CSubNodeWidget
+               << m_clkRTCSYSSubNodeWidget<< m_clkHSPeriSubNodeWidget << m_clkVIPSYS0SubNodeWidget
+               << m_clkVIPSYS1SubNodeWidget << m_clkVIPSYS3SubNodeWidget << m_clkSPISubNodeWidget;
 
     for (QWidget* widget : allWidgets) {
         if (widget && widget->geometry().contains(pos)) {
@@ -7540,6 +8110,8 @@ QString ClockConfigWidget::getWidgetModuleName(QWidget* widget)
     if (widget == m_clkTPLLSubNodeWidget) return "clk_tpll";
     if (widget == m_clkMPLLSubNodeWidget) return "clk_mpll";
     if (widget == m_clkFAB100MSubNodeWidget) return "clk_fab_100M";
+    if (widget == m_clkXtalMiscSubNodeWidget) return "clk_xtal_misc";
+    if (widget == m_clkI2CSubNodeWidget) return "clk_i2c";
     if (widget == m_clkHSPeriSubNodeWidget) return "clk_hsperi";
     if (widget == m_clkRTCSYSSubNodeWidget) return "clk_rtc_sys";
     if (widget == m_clkVIPSYS0SubNodeWidget) return "clk_vip_sys_0";
@@ -7569,6 +8141,8 @@ QWidget* ClockConfigWidget::getWidgetByModuleName(const QString& moduleName)
     if (moduleName == "clk_tpll") return m_clkTPLLSubNodeWidget;
     if (moduleName == "clk_mpll") return m_clkMPLLSubNodeWidget;
     if (moduleName == "clk_fab_100M") return m_clkFAB100MSubNodeWidget;
+    if (moduleName == "clk_xtal_misc") return m_clkXtalMiscSubNodeWidget;
+    if (moduleName == "clk_i2c") return m_clkI2CSubNodeWidget;
     if (moduleName == "clk_hsperi") return m_clkHSPeriSubNodeWidget;
     if (moduleName == "clk_rtc_sys") return m_clkRTCSYSSubNodeWidget;
     if (moduleName == "clk_vip_sys_0") return m_clkVIPSYS0SubNodeWidget;
