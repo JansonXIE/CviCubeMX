@@ -28,7 +28,7 @@ const QStringList ClockConfigWidget::PLL_NAMES = {
 };
 
 const QStringList ClockConfigWidget::SUB_PLL_NAMES = {
-    "clk_a0pll", "clk_cam0pll", "clk_cam1pll", "clk_disppll", "clk_mipimpll_d3", "clk_cyc_dsi_syn"
+    "clk_a24k", "clk_vivo_mipimpll", "clk_cyc_dsi_syn", "clk_disppll", "clk_a0pll"
 };
 
 const QStringList ClockConfigWidget::OUTPUT_NAMES = {
@@ -567,27 +567,28 @@ void ClockConfigWidget::setupSubPLLs()
         config.source = "clk_mipimpll";
 
         // 根据子PLL名称设置不同的默认倍频值
-        if (pllName == "clk_a0pll") {
-            config.multiplier = 4;  // 倍频为4
-            config.divider = 7.32421875;  // 分频为7.32421875
-        } else if (pllName == "clk_cam0pll") {
-            config.multiplier = 52;  // 倍频为52
-            config.divider = 36.0;  // 分频为36
-        } else if (pllName == "clk_cam1pll") {
-            config.multiplier = 64;  // 倍频为64
-            config.divider = 36.0;  // 分频为36
+        if (pllName == "clk_a24k") {
+            config.multiplier = 1;  // 倍频为1
+            config.divider = 1.0;  // 分频为1
+            config.outputFreq = 0.0;  // clk_a24k频率为0
+        } else if (pllName == "clk_vivo_mipimpll") {
+            config.multiplier = 1;  // 倍频为1
+            config.divider = 1.0;  // 分频为1
+        } else if (pllName == "clk_cyc_dsi_syn") {
+            config.multiplier = 1;  // 倍频为1
+            config.divider = 1.0;  // 分频为1
         } else if (pllName == "clk_disppll") {
             config.multiplier = 12;  // 倍频为12
             config.divider = 9.09090909;  // 分频为9.09090909
-        } else if (pllName == "clk_mipimpll_d3") {
-            config.multiplier = 1;  // 倍频为1
-            config.divider = 3;  // 分频为3
-        } else if (pllName == "clk_cyc_dsi_syn") {
-            config.multiplier = 1;  // 倍频为1
-            config.divider = 1;  // 分频为1
+        } else if (pllName == "clk_a0pll") {
+            config.multiplier = 4;  // 倍频为4
+            config.divider = 7.32421875;  // 分频为7.32421875
         }
 
-        config.outputFreq = config.inputFreq * config.multiplier / config.divider;
+        // clk_a24k 的输出频率特殊处理（为0）
+        if (pllName != "clk_a24k") {
+            config.outputFreq = config.inputFreq * config.multiplier / config.divider;
+        }
 
         m_pllConfigs[pllName] = config;
     }
@@ -2278,18 +2279,16 @@ void ClockConfigWidget::createSubPLLWidget(const QString& pllName, QWidget* pare
     
     // 根据PLL名称设置不同的默认分频值
     double defaultDivider = 1.0;
-    if (pllName == "clk_a0pll") {
-        defaultDivider = 7.32421875;
-    } else if (pllName == "clk_cam0pll") {
-        defaultDivider = 36.0;
-    } else if (pllName == "clk_cam1pll") {
-        defaultDivider = 36.0;
-    } else if (pllName == "clk_disppll") {
-        defaultDivider = 9.09090909;
-    } else if (pllName == "clk_mipimpll_d3") {
-        defaultDivider = 3.0;
+    if (pllName == "clk_a24k") {
+        defaultDivider = 1.0;
+    } else if (pllName == "clk_vivo_mipimpll") {
+        defaultDivider = 1.0;
     } else if (pllName == "clk_cyc_dsi_syn") {
         defaultDivider = 1.0;
+    } else if (pllName == "clk_disppll") {
+        defaultDivider = 9.09090909;
+    } else if (pllName == "clk_a0pll") {
+        defaultDivider = 7.32421875;
     }
 
     divBox->setValue(defaultDivider);
@@ -2314,18 +2313,16 @@ void ClockConfigWidget::createSubPLLWidget(const QString& pllName, QWidget* pare
     
     // 根据PLL名称设置不同的默认倍频值
     int defaultMultiplier = 1;
-    if (pllName == "clk_a0pll") {
-        defaultMultiplier = 4;
-    } else if (pllName == "clk_cam0pll") {
-        defaultMultiplier = 52;
-    } else if (pllName == "clk_cam1pll") {
-        defaultMultiplier = 64;
-    } else if (pllName == "clk_disppll") {
-        defaultMultiplier = 12;
-    } else if (pllName == "clk_mipimpll_d3") {
+    if (pllName == "clk_a24k") {
+        defaultMultiplier = 1;
+    } else if (pllName == "clk_vivo_mipimpll") {
         defaultMultiplier = 1;
     } else if (pllName == "clk_cyc_dsi_syn") {
         defaultMultiplier = 1;
+    } else if (pllName == "clk_disppll") {
+        defaultMultiplier = 12;
+    } else if (pllName == "clk_a0pll") {
+        defaultMultiplier = 4;
     }
 
     multBox->setValue(defaultMultiplier);
@@ -2337,8 +2334,16 @@ void ClockConfigWidget::createSubPLLWidget(const QString& pllName, QWidget* pare
 
     // 频率显示 - 根据默认值计算初始频率
     double mipimpllFreq = 900.0;  // MIPIMPLL的频率 (25 * 36)
-    double calculatedFreq = (mipimpllFreq * defaultMultiplier) / defaultDivider;
-    QString freqText = QString("%1 MHz").arg(calculatedFreq, 0, 'f', 8);
+    double calculatedFreq;
+    QString freqText;
+    
+    if (pllName == "clk_a24k") {
+        calculatedFreq = 0.0;  // clk_a24k频率为0
+        freqText = "0 MHz";
+    } else {
+        calculatedFreq = (mipimpllFreq * defaultMultiplier) / defaultDivider;
+        freqText = QString("%1 MHz").arg(calculatedFreq, 0, 'f', 8);
+    }
 
     QLabel* freqLabel = new QLabel(freqText);
     freqLabel->setStyleSheet("color: #dc3545; font-family: monospace; font-weight: bold; font-size: 9px;");
@@ -5515,14 +5520,25 @@ void ClockConfigWidget::updateSubPLLFrequency(const QString& pllName)
         config.inputFreq = m_pllConfigs["clk_mipimpll"].outputFreq;
     }
 
-    // 计算子PLL输出频率: (输入频率 * 倍频器) / 分频器
-    config.outputFreq = (config.inputFreq * config.multiplier) / config.divider;
+    // 特殊处理 clk_a24k，频率固定为 0
+    if (pllName == "clk_a24k") {
+        config.outputFreq = 0.0;
+    } else {
+        // 计算子PLL输出频率: (输入频率 * 倍频器) / 分频器
+        config.outputFreq = (config.inputFreq * config.multiplier) / config.divider;
+    }
+    
     // 同步更新m_pllConfigs[子锁相环子节点]中的频率
     m_pllConfigs[pllName].outputFreq = config.outputFreq;
 
     // 更新显示
     if (m_subPllFreqLabels.contains(pllName)) {
-        QString freqText = QString("%1 MHz").arg(config.outputFreq, 0, 'f', 8);  // 保留8位小数
+        QString freqText;
+        if (pllName == "clk_a24k") {
+            freqText = "0 MHz";
+        } else {
+            freqText = QString("%1 MHz").arg(config.outputFreq, 0, 'f', 8);  // 保留8位小数
+        }
         m_subPllFreqLabels[pllName]->setText(freqText);
     }
 }
@@ -5535,12 +5551,6 @@ void ClockConfigWidget::updateAllSubPLLFrequencies()
 
     // 更新clk_a0pll的所有子节点频率
     updateAllClkA0PLLSubNodeFrequencies();
-
-    // 更新clk_cam0pll的所有子节点频率
-    updateAllClkCam0PLLSubNodeFrequencies();
-
-    // 更新clk_cam1pll的所有子节点频率
-    updateAllClkCam1PLLSubNodeFrequencies();
 
     // 更新clk_disppll的所有子节点频率
     updateAllClkDispPLLSubNodeFrequencies();
@@ -6506,18 +6516,22 @@ void ClockConfigWidget::resetToDefaults()
         int defaultMultiplier = 1;
         double defaultDivider = 1.0;
 
-        if (pllName == "clk_a0pll") {
-            defaultMultiplier = 4;
-            defaultDivider = 7.32421875;
-        } else if (pllName == "clk_cam0pll") {
-            defaultMultiplier = 52;
-            defaultDivider = 36.0;
-        } else if (pllName == "clk_cam1pll") {
-            defaultMultiplier = 64;
-            defaultDivider = 36.0;
+        if (pllName == "clk_a24k") {
+            // clk_a24k特殊处理：频率为0
+            defaultMultiplier = 1;
+            defaultDivider = 1.0;
+        } else if (pllName == "clk_vivo_mipimpll") {
+            defaultMultiplier = 1;
+            defaultDivider = 1.0;
+        } else if (pllName == "clk_cyc_dsi_syn") {
+            defaultMultiplier = 1;
+            defaultDivider = 1.0;
         } else if (pllName == "clk_disppll") {
             defaultMultiplier = 12;
             defaultDivider = 9.09090909;
+        } else if (pllName == "clk_a0pll") {
+            defaultMultiplier = 4;
+            defaultDivider = 7.32421875;
         }
 
         if (m_subPllMultiplierBoxes.contains(pllName)) {
