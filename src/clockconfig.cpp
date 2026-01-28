@@ -34,9 +34,7 @@ const QStringList ClockConfigWidget::SUB_PLL_NAMES = {
 const QStringList ClockConfigWidget::OUTPUT_NAMES = {
     // osc 直接分支（匹配 clk_summary 中 osc 子节点）
     "clk_saradc", "clk_tempsen", "clk_ahb_sf1", "clk_dbgsys", "clk_efuse_clk",
-    "clk_keyscan_xclk", "clk_wgn_xclk", "clk_wdt_pclk", "clk_usb20_coreclkin", "clk_sc", "clk_dbg",
-    // 按现有 UI 继续保留，方便查看（非严格一一对应）
-    "clk_1M", "clk_usb20_suspend"
+    "clk_keyscan_xclk", "clk_wgn_xclk", "clk_wdt_pclk", "clk_usb20_coreclkin", "clk_sc", "clk_dbg"
 };
 
 const QStringList ClockConfigWidget::CLK_1M_SUB_NODES = {
@@ -623,8 +621,6 @@ void ClockConfigWidget::setupOutputs()
         // 根据输出名称设置不同的默认分频值
         if (outputName == "clk_usb20_suspend") {
             output.divider = 125;
-        } else if (outputName == "clk_1M") {
-            output.divider = 250;  // 25MHz / 250 = 0.1MHz = 100kHz，接近1MHz
         } else {
             output.divider = 1;  // 其他节点默认分频为1
         }
@@ -638,8 +634,6 @@ void ClockConfigWidget::setupOutputs()
     m_outputWidget->setParent(m_flowWidget);
     // 默认位置将在initializeModulePositions中设置
 
-    // 创建clk_1M子节点区域
-    setupClk1MSubNodes();
 }
 
 void ClockConfigWidget::setupClk1MSubNodes()
@@ -1579,6 +1573,9 @@ void ClockConfigWidget::setupClkXtalMiscSubNodes()
     // 设置父widget为m_flowWidget并使用绝对定位
     m_clkXtalMiscSubNodeWidget->setParent(m_flowWidget);
     // 默认位置将在initializeModulePositions中设置
+
+    // 创建clk_1M子节点区域
+    setupClk1MSubNodes();
 }
 
 void ClockConfigWidget::setupClkI2CSubNodes()
@@ -2232,12 +2229,6 @@ void ClockConfigWidget::createOutputWidget(const QString& outputName, QWidget* p
     
     // 根据输出名称设置不同的默认分频值
     int defaultDivider = 1;
-    if (outputName == "clk_usb20_suspend") {
-        defaultDivider = 125;
-    } else if (outputName == "clk_1M") {
-        defaultDivider = 250;
-    }
-
     divBox->setValue(defaultDivider);
     divBox->setFixedWidth(45);
     divBox->setStyleSheet("font-size: 10px;");
@@ -4736,12 +4727,6 @@ void ClockConfigWidget::onClockDividerChanged(const QString& outputName, int div
     if (m_outputs.contains(outputName)) {
         m_outputs[outputName].divider = divider;
         updateOutputFrequency(outputName);
-
-        // 如果是clk_1M的分频器变化，需要更新所有clk_1M子节点
-        if (outputName == "clk_1M") {
-            updateAllClk1MSubNodeFrequencies();
-        }
-
         emit configChanged();
     }
 }
@@ -4765,7 +4750,7 @@ void ClockConfigWidget::onClkCam1PLLSubNodeDividerChanged(const QString& nodeNam
         if (nodeName == "clk_raw_axi") {
             // 同步更新m_pllConfigs中的频率
             if (m_pllConfigs.contains("clk_raw_axi")) {
-                m_pllConfigs["clk_raw_axi"].outputFreq = m_clkMPLLSubNodes[nodeName].frequency;
+                m_pllConfigs["clk_raw_axi"].outputFreq = m_clkCam1PLLSubNodes[nodeName].frequency;
             }
             // 更新clk_raw_axi的所有子节点频率
             updateAllClkRawAxiSubNodeFrequencies();
@@ -4982,6 +4967,11 @@ void ClockConfigWidget::onClkXtalMiscSubNodeDividerChanged(const QString& nodeNa
     if (m_clkXtalMiscSubNodes.contains(nodeName)) {
         m_clkXtalMiscSubNodes[nodeName].divider = divider;
         updateClkXtalMiscSubNodeFrequency(nodeName);
+
+        // 如果是clk_1M的分频器变化，需要更新所有clk_1M子节点
+        if (nodeName == "clk_1M") {
+            updateAllClk1MSubNodeFrequencies();
+        }
         emit configChanged();
     }
 }
@@ -6000,12 +5990,6 @@ void ClockConfigWidget::resetToDefaults()
 
         // 根据输出名称设置不同的默认分频值
         int defaultDivider = 1;
-        if (outputName == "clk_usb20_suspend") {
-            defaultDivider = 125;
-        } else if (outputName == "clk_1M") {
-            defaultDivider = 250;
-        }
-
         m_outputs[outputName].divider = defaultDivider;
 
         // 更新UI分频器控件
@@ -6916,11 +6900,11 @@ QPoint ClockConfigWidget::getOutputAreaConnectionPoint() const
 
 QPoint ClockConfigWidget::getClk1MConnectionPoint() const
 {
-    if (!m_outputWidget || !m_flowWidget || !m_outputWidgets.contains("clk_1M")) {
+    if (!m_clkXtalMiscSubNodeWidget || !m_flowWidget || !m_clkXtalMiscSubNodeWidgets.contains("clk_1M")) {
         return QPoint();
     }
 
-    QWidget* clk1MWidget = m_outputWidgets["clk_1M"];
+    QWidget* clk1MWidget = m_clkXtalMiscSubNodeWidgets["clk_1M"];
     if (!clk1MWidget) {
         return QPoint();
     }
@@ -6930,7 +6914,7 @@ QPoint ClockConfigWidget::getClk1MConnectionPoint() const
     QRect clk1MRect = clk1MWidget->rect();
 
     // 获取输出区域在flow widget中的位置
-    QPoint outputAreaPos = m_outputWidget->pos();
+    QPoint outputAreaPos = m_clkXtalMiscSubNodeWidget->pos();
 
     // clk_1M连接点位于widget的右侧中央
     return QPoint(
