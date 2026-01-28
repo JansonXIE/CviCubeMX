@@ -4907,32 +4907,58 @@ void ClockConfigWidget::setupClockTree()
 void ClockConfigWidget::initializeModulePositions()
 {
     // 初始化各个模块的默认位置: x, y, 宽度, 高度
-    ModulePosition inputPos = {"输入源", 25, 730, 100, 350};
-    ModulePosition pllPos = {"锁相环", 240, 600, 200, 700};
-    ModulePosition subPllPos = {"子锁相环", 980, 475, 180, 780};
-    ModulePosition outputPos = {"OSC输出", 1780, 25, 200, 3500}; // 调整高度以容纳所有输出节点
-    ModulePosition clk1MSubPos = {"clk_1M子节点", 2050, 3000, 150, 350};
-    ModulePosition clkCam1PLLSubPos = {"clk_cam1pll子节点", 1280, 650, 150, 450}; // 新增clk_cam1pll子节点位置
-    ModulePosition clkRawAxiSubPos = {"clk_raw_axi子节点", 1500, 750, 180, 550}; // 新增clk_raw_axi子节点位置
-    ModulePosition clkCam0PLLSubPos = {"clk_cam0pll子节点", 1500, 480, 150, 250}; // 新增clk_cam0pll子节点位置
-    ModulePosition clkDispPLLSubPos = {"clk_disppll子节点", 1280, 1160, 150, 250}; // 新增clk_disppll子节点位置
-    ModulePosition clkSysDispSubPos = {"clk_sys_disp子节点", 1500, 1325, 150, 120}; // 新增clk_sys_disp子节点位置
-    ModulePosition clkA0PLLSubPos = {"clk_a0pll子节点", 1280, 130, 150, 450}; // 新增clk_a0pll子节点位置
-    ModulePosition clkRVPLLSubPos = {"clk_rvpll子节点", 510, 1300, 150, 120}; // 新增clk_rvpll子节点位置
-    ModulePosition clkAPPLLSubPos = {"clk_appll子节点", 510, 1130, 150, 120}; // 新增clk_appll子节点位置
-    ModulePosition clkFPLLSubPos = {"clk_fpll子节点", 510, 55, 150, 800}; // 新增clk_fpll子节点位置
-    ModulePosition clkTPLLSubPos = {"clk_tpu子节点", 510, 920, 150, 200}; // 新增clk_tpu子节点位置
-    ModulePosition clkMPLLSubPos = {"clk_mpll子节点", 750, 1250, 150, 1900}; // 新增clk_mpll子节点位置
-    ModulePosition clkFAB100MSubPos = {"clk_fab100m子节点", 750, 450, 150, 300}; // 新增clk_fab100m子节点位置
-    ModulePosition clkXtalMiscSubPos = {"clk_xtal_misc子节点", 650, 55, 150, 1000}; // 新增clk_xtal_misc子节点位置
-    ModulePosition clkI2CSubPos = {"clk_i2c子节点", 800, 55, 150, 120}; // 新增clk_i2c子节点位置
-    ModulePosition clkRTCSYSSubPos = {"clk_rtc_sys子节点", 1150, 1335, 150, 1400}; // 新增clk_rtc_sys子节点位置
-    ModulePosition clkHSPISubPos = {"clk_hspi子节点", 955, 2352, 150, 2000}; // 新增clk_hspi子节点位置
-    ModulePosition clkVIPSYS0SubPos = {"clk_vip_sys_0子节点", 1300, 2352, 150, 500}; // 新增clk_vip_sys_0子节点位置
-    ModulePosition clkVIPSYS1SubPos = {"clk_vip_sys_1子节点", 1450, 2352, 150, 500}; // 新增clk_vip_sys_1子节点位置
-    ModulePosition clkVIPSYS3SubPos = {"clk_vip_sys_3子节点", 1600, 2352, 150, 200}; // 新增clk_vip_sys_3子节点位置
-    ModulePosition clkSPISubPos = {"clk_spi子节点", 1700, 2352, 150, 400}; // 新增clk_spi子节点位置
+    // 优化后的布局：从左到右分层，垂直对齐，减少连接线交叉
+    
+    // 第一列：输入源 (最左侧)
+    ModulePosition inputPos = {"输入源", 30, 50, 150, 400};
+    
+    // 第二列：主PLL (锁相环)
+    ModulePosition pllPos = {"锁相环", 250, 50, 200, 700};
+    
+    // 第三列：PLL的直接子节点 (按照垂直位置排列)
+    ModulePosition clkFPLLSubPos = {"clk_fpll子节点", 520, 50, 180, 800};         // clk_fpll子节点 (顶部)
+    ModulePosition clkXtalMiscSubPos = {"clk_xtal_misc子节点", 770, 50, 180, 1000}; // clk_xtal_misc子节点
+    ModulePosition clkI2CSubPos = {"clk_i2c子节点", 1020, 50, 180, 120};           // clk_i2c子节点 (小节点)
+    ModulePosition clkAPPLLSubPos = {"clk_appll子节点", 520, 900, 180, 120};       // clk_appll子节点
+    ModulePosition clkTPLLSubPos = {"clk_tpu子节点", 520, 1070, 180, 200};         // clk_tpu子节点
+    ModulePosition clkRVPLLSubPos = {"clk_rvpll子节点", 520, 1320, 180, 120};      // clk_rvpll子节点
+    
+    // 第四列：子锁相环 (Sub-PLL)
+    ModulePosition subPllPos = {"子锁相环", 1270, 50, 200, 780};
+    
+    // 第五列：Sub-PLL的子节点 (按照垂直位置排列)
+    ModulePosition clkA0PLLSubPos = {"clk_a0pll子节点", 1540, 50, 180, 450};        // clk_a0pll子节点 (顶部)
+    ModulePosition clkCam0PLLSubPos = {"clk_cam0pll子节点", 1540, 550, 180, 250};   // clk_cam0pll子节点
+    ModulePosition clkCam1PLLSubPos = {"clk_cam1pll子节点", 1540, 850, 180, 450};   // clk_cam1pll子节点
+    ModulePosition clkDispPLLSubPos = {"clk_disppll子节点", 1540, 1350, 180, 250};  // clk_disppll子节点
+    
+    // 第六列：更深层级的子节点
+    ModulePosition clkRawAxiSubPos = {"clk_raw_axi子节点", 1790, 850, 200, 550};    // clk_raw_axi子节点 (从clk_cam1pll)
+    ModulePosition clkSysDispSubPos = {"clk_sys_disp子节点", 1790, 1350, 200, 120}; // clk_sys_disp子节点 (从clk_disppll)
+    
+    // MPLL分支 (独立的大分支，放在下方)
+    ModulePosition clkMPLLSubPos = {"clk_mpll子节点", 520, 1500, 200, 1900};        // clk_mpll子节点 (大节点)
+    ModulePosition clkRTCSYSSubPos = {"clk_rtc_sys子节点", 790, 1500, 200, 1400};   // clk_rtc_sys子节点
+    ModulePosition clkHSPISubPos = {"clk_hspi子节点", 1060, 1500, 200, 2000};       // clk_hsperi子节点
+    ModulePosition clkVIPSYS0SubPos = {"clk_vip_sys_0子节点", 1330, 1500, 200, 500}; // clk_vip_sys_0子节点
+    ModulePosition clkVIPSYS1SubPos = {"clk_vip_sys_1子节点", 1330, 2050, 200, 500}; // clk_vip_sys_1子节点
+    ModulePosition clkVIPSYS3SubPos = {"clk_vip_sys_3子节点", 1330, 2600, 200, 200}; // clk_vip_sys_3子节点
+    
+    // FPLL分支的二级子节点
+    ModulePosition clkFAB100MSubPos = {"clk_fab100m子节点", 770, 900, 200, 300};     // clk_fab_100M子节点
+    ModulePosition clkAPBI2CSubPos = {"clk_apb_i2c子节点", 1270, 50, 200, 400};      // clk_apb_i2c子节点 (从clk_i2c)
+    ModulePosition clkAPBVCSYSSubPos = {"clk_apb_vcsys子节点", 1040, 950, 200, 180}; // clk_apb_vcsys子节点 (从clk_fab_100M)
+    ModulePosition clkX2PSubPos = {"clk_x2p子节点", 1040, 1180, 200, 420};           // clk_x2p子节点 (从clk_fab_100M)
+    ModulePosition clkVIPSYS2SubPos = {"clk_vip_sys_2子节点", 1790, 1050, 200, 200}; // clk_vip_sys_2子节点
+    ModulePosition clkKeyscanXclkSubPos = {"clk_keyscan_xclk子节点", 2350, 800, 200, 180}; // clk_keyscan_xclk子节点
+    ModulePosition clkWgnXclkSubPos = {"clk_wgn_xclk子节点", 2350, 1030, 200, 180};  // clk_wgn_xclk子节点
+    
+    // 最右侧：OSC输出和其他终端节点
+    ModulePosition outputPos = {"OSC输出", 2060, 50, 220, 3500};                    // OSC输出 (最右侧)
+    ModulePosition clk1MSubPos = {"clk_1M子节点", 1020, 230, 180, 350};             // clk_1M子节点 (从clk_xtal_misc)
+    ModulePosition clkSPISubPos = {"clk_spi子节点", 1600, 2850, 180, 400};          // clk_spi子节点
 
+    // 注册所有模块位置
     m_modulePositions["输入源"] = inputPos;
     m_modulePositions["锁相环"] = pllPos;
     m_modulePositions["子锁相环"] = subPllPos;
@@ -4956,8 +4982,14 @@ void ClockConfigWidget::initializeModulePositions()
     m_modulePositions["clk_hspi子节点"] = clkHSPISubPos;
     m_modulePositions["clk_vip_sys_0子节点"] = clkVIPSYS0SubPos;
     m_modulePositions["clk_vip_sys_1子节点"] = clkVIPSYS1SubPos;
+    m_modulePositions["clk_vip_sys_2子节点"] = clkVIPSYS2SubPos;
     m_modulePositions["clk_vip_sys_3子节点"] = clkVIPSYS3SubPos;
     m_modulePositions["clk_spi子节点"] = clkSPISubPos;
+    m_modulePositions["clk_apb_i2c子节点"] = clkAPBI2CSubPos;
+    m_modulePositions["clk_apb_vcsys子节点"] = clkAPBVCSYSSubPos;
+    m_modulePositions["clk_x2p子节点"] = clkX2PSubPos;
+    m_modulePositions["clk_keyscan_xclk子节点"] = clkKeyscanXclkSubPos;
+    m_modulePositions["clk_wgn_xclk子节点"] = clkWgnXclkSubPos;
 
     // 应用默认位置
     applyModulePositions();
@@ -5111,6 +5143,12 @@ void ClockConfigWidget::applyModulePositions()
         m_clkVIPSYS1SubNodeWidget->setFixedSize(pos.width, pos.height);
     }
 
+    if (m_modulePositions.contains("clk_vip_sys_2子节点") && m_clkVIPSYS2SubNodeWidget) {
+        ModulePosition pos = m_modulePositions["clk_vip_sys_2子节点"];
+        m_clkVIPSYS2SubNodeWidget->move(pos.x, pos.y);
+        m_clkVIPSYS2SubNodeWidget->setFixedSize(pos.width, pos.height);
+    }
+
     if (m_modulePositions.contains("clk_vip_sys_3子节点") && m_clkVIPSYS3SubNodeWidget) {
         ModulePosition pos = m_modulePositions["clk_vip_sys_3子节点"];
         m_clkVIPSYS3SubNodeWidget->move(pos.x, pos.y);
@@ -5121,6 +5159,36 @@ void ClockConfigWidget::applyModulePositions()
         ModulePosition pos = m_modulePositions["clk_spi子节点"];
         m_clkSPISubNodeWidget->move(pos.x, pos.y);
         m_clkSPISubNodeWidget->setFixedSize(pos.width, pos.height);
+    }
+
+    if (m_modulePositions.contains("clk_apb_i2c子节点") && m_clkAPBI2CSubNodeWidget) {
+        ModulePosition pos = m_modulePositions["clk_apb_i2c子节点"];
+        m_clkAPBI2CSubNodeWidget->move(pos.x, pos.y);
+        m_clkAPBI2CSubNodeWidget->setFixedSize(pos.width, pos.height);
+    }
+
+    if (m_modulePositions.contains("clk_apb_vcsys子节点") && m_clkAPBVCSYSSubNodeWidget) {
+        ModulePosition pos = m_modulePositions["clk_apb_vcsys子节点"];
+        m_clkAPBVCSYSSubNodeWidget->move(pos.x, pos.y);
+        m_clkAPBVCSYSSubNodeWidget->setFixedSize(pos.width, pos.height);
+    }
+
+    if (m_modulePositions.contains("clk_x2p子节点") && m_clkX2PSubNodeWidget) {
+        ModulePosition pos = m_modulePositions["clk_x2p子节点"];
+        m_clkX2PSubNodeWidget->move(pos.x, pos.y);
+        m_clkX2PSubNodeWidget->setFixedSize(pos.width, pos.height);
+    }
+
+    if (m_modulePositions.contains("clk_keyscan_xclk子节点") && m_clkKeyscanXclkSubNodeWidget) {
+        ModulePosition pos = m_modulePositions["clk_keyscan_xclk子节点"];
+        m_clkKeyscanXclkSubNodeWidget->move(pos.x, pos.y);
+        m_clkKeyscanXclkSubNodeWidget->setFixedSize(pos.width, pos.height);
+    }
+
+    if (m_modulePositions.contains("clk_wgn_xclk子节点") && m_clkWgnXclkSubNodeWidget) {
+        ModulePosition pos = m_modulePositions["clk_wgn_xclk子节点"];
+        m_clkWgnXclkSubNodeWidget->move(pos.x, pos.y);
+        m_clkWgnXclkSubNodeWidget->setFixedSize(pos.width, pos.height);
     }
 
     // 重绘连接线
@@ -5146,7 +5214,9 @@ void ClockConfigWidget::ensureFlowCanvasFitsContent()
                << m_clkFPLLSubNodeWidget << m_clkTPLLSubNodeWidget << m_clkMPLLSubNodeWidget
                << m_clkFAB100MSubNodeWidget << m_clkXtalMiscSubNodeWidget << m_clkI2CSubNodeWidget
                << m_clkRTCSYSSubNodeWidget << m_clkHSPeriSubNodeWidget << m_clkVIPSYS0SubNodeWidget
-               << m_clkVIPSYS1SubNodeWidget << m_clkVIPSYS3SubNodeWidget << m_clkSPISubNodeWidget;
+               << m_clkVIPSYS1SubNodeWidget << m_clkVIPSYS2SubNodeWidget << m_clkVIPSYS3SubNodeWidget 
+               << m_clkSPISubNodeWidget << m_clkAPBI2CSubNodeWidget << m_clkAPBVCSYSSubNodeWidget 
+               << m_clkX2PSubNodeWidget << m_clkKeyscanXclkSubNodeWidget << m_clkWgnXclkSubNodeWidget;
 
     for (QWidget* w : allWidgets) {
         if (!w) continue;
@@ -5213,8 +5283,14 @@ void ClockConfigWidget::showPositionConfigDialog()
         {"clk_hspi子节点", "clk_hsperi"},
         {"clk_vip_sys_0子节点", "clk_vip_sys_0"},
         {"clk_vip_sys_1子节点", "clk_vip_sys_1"},
+        {"clk_vip_sys_2子节点", "clk_vip_sys_2"},
         {"clk_vip_sys_3子节点", "clk_vip_sys_3"},
-        {"clk_spi子节点", "clk_spi"}
+        {"clk_spi子节点", "clk_spi"},
+        {"clk_apb_i2c子节点", "clk_apb_i2c"},
+        {"clk_apb_vcsys子节点", "clk_apb_vcsys"},
+        {"clk_x2p子节点", "clk_x2p"},
+        {"clk_keyscan_xclk子节点", "clk_keyscan_xclk"},
+        {"clk_wgn_xclk子节点", "clk_wgn_xclk"}
     };
 
     QStringList moduleNames = displayNameToModuleKey.keys();
@@ -9574,8 +9650,11 @@ QWidget* ClockConfigWidget::getWidgetByModuleName(const QString& moduleName)
     if (moduleName == "clk_rtc_sys") return m_clkRTCSYSSubNodeWidget;
     if (moduleName == "clk_vip_sys_0") return m_clkVIPSYS0SubNodeWidget;
     if (moduleName == "clk_vip_sys_1") return m_clkVIPSYS1SubNodeWidget;
+    if (moduleName == "clk_vip_sys_2") return m_clkVIPSYS2SubNodeWidget;
     if (moduleName == "clk_vip_sys_3") return m_clkVIPSYS3SubNodeWidget;
     if (moduleName == "clk_spi") return m_clkSPISubNodeWidget;
+    if (moduleName == "clk_keyscan_xclk") return m_clkKeyscanXclkSubNodeWidget;
+    if (moduleName == "clk_wgn_xclk") return m_clkWgnXclkSubNodeWidget;
 
     return nullptr;
 }
