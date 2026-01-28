@@ -44,6 +44,7 @@ struct ClockOutput {
     QString name;        // 输出名称
     QString source;      // 时钟源
     int divider;        // 分频器值
+    int multiplier;     // 倍频器值（部分节点使用）
     double frequency;   // 频率(MHz)
     bool enabled;       // 是否启用
 };
@@ -483,6 +484,7 @@ private:
     QMap<QString, QWidget*> m_outputWidgets;
     QMap<QString, QLabel*> m_outputFreqLabels;
     QMap<QString, QSpinBox*> m_outputDividerBoxes;  // 新增：输出分频器控件
+    QMap<QString, QSpinBox*> m_outputMultiplierBoxes;  // 新增：输出倍频器控件
 
     // clk子节点配置组
     QMap<QString, QWidget*> m_clk1MSubNodeWidgets;

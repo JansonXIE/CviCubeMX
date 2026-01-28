@@ -33,8 +33,11 @@ const QStringList ClockConfigWidget::SUB_PLL_NAMES = {
 
 const QStringList ClockConfigWidget::OUTPUT_NAMES = {
     // osc 直接分支（匹配 clk_summary 中 osc 子节点）
-    "clk_saradc", "clk_tempsen", "clk_ahb_sf1", "clk_dbgsys", "clk_efuse_clk",
-    "clk_keyscan_xclk", "clk_wgn_xclk", "clk_wdt_pclk", "clk_usb20_coreclkin", "clk_sc", "clk_dbg"
+    "clk_rtc_sys_saradc1", "clk_rtc_sys_irrx", "clk_rtc_sys_saradc", "clk_rtc_sys_i2c",
+    "clk_rtc_sys_uart", "clk_rtc_sys_timer1", "clk_rtc_sys_timer0", "clk_rtc_sys_rtc_spinor",
+    "clk_rtc_sys_spinor1", "clk_pm", "clk_saradc", "clk_tempsen", "clk_ahb_sf1",
+    "clk_dbgsys", "clk_efuse_clk", "clk_keyscan_xclk", "clk_wgn_xclk", "clk_wdt_pclk",
+    "clk_usb20_coreclkin", "clk_sc", "clk_dbg", "clk_mipimpll_d3", "clk_cam1pll", "clk_cam0pll"
 };
 
 const QStringList ClockConfigWidget::CLK_1M_SUB_NODES = {
@@ -633,12 +636,16 @@ void ClockConfigWidget::setupOutputs()
         output.source = "OSC";
         output.frequency = OSC_FREQUENCY;
         output.enabled = true;  // OSC输出默认启用
+        output.divider = 1;  // 默认分频为1
+        output.multiplier = 1;  // 默认倍频为1
 
-        // 根据输出名称设置不同的默认分频值
-        if (outputName == "clk_usb20_suspend") {
-            output.divider = 125;
-        } else {
-            output.divider = 1;  // 其他节点默认分频为1
+        // 根据输出名称设置不同的默认倍频值
+        if (outputName == "clk_mipimpll_d3") {
+            output.multiplier = 12;
+        } else if (outputName == "clk_cam1pll") {
+            output.multiplier = 64;
+        } else if (outputName == "clk_cam0pll") {
+            output.multiplier = 52;
         }
 
         m_outputs[outputName] = output;
@@ -2387,11 +2394,16 @@ void ClockConfigWidget::createOutputWidget(const QString& outputName, QWidget* p
     nameLabel->setAlignment(Qt::AlignCenter);
     nameLabel->setWordWrap(true);
 
-    // 分频器配置
+    // 判断是否为特殊节点（使用倍频器）
+    bool useMultiplier = (outputName == "clk_mipimpll_d3" || 
+                          outputName == "clk_cam1pll" || 
+                          outputName == "clk_cam0pll");
+
+    // 分频器或倍频器配置
     QHBoxLayout* divConfigLayout = new QHBoxLayout();
     divConfigLayout->setSpacing(3);
 
-    QLabel* divLabel = new QLabel("分频：");
+    QLabel* divLabel = new QLabel(useMultiplier ? "倍频：" : "分频：");
     divLabel->setStyleSheet("color: #721c24; font-size: 10px; font-weight: bold;");
 
     QSpinBox* divBox = new QSpinBox();
@@ -2400,9 +2412,18 @@ void ClockConfigWidget::createOutputWidget(const QString& outputName, QWidget* p
     divBox->setReadOnly(true);  // 设置为只读，禁止编辑
     divBox->installEventFilter(this);  // 安装事件过滤器以禁用滚轮
     
-    // 根据输出名称设置不同的默认分频值
-    int defaultDivider = 1;
-    divBox->setValue(defaultDivider);
+    // 根据输出名称设置不同的默认值
+    int defaultValue = 1;
+    if (useMultiplier) {
+        if (outputName == "clk_mipimpll_d3") {
+            defaultValue = 12;
+        } else if (outputName == "clk_cam1pll") {
+            defaultValue = 64;
+        } else if (outputName == "clk_cam0pll") {
+            defaultValue = 52;
+        }
+    }
+    divBox->setValue(defaultValue);
     divBox->setFixedWidth(45);
     divBox->setStyleSheet("font-size: 10px;");
 
@@ -2410,7 +2431,7 @@ void ClockConfigWidget::createOutputWidget(const QString& outputName, QWidget* p
     divConfigLayout->addWidget(divBox);
 
     // 频率显示
-    double calculatedFreq = OSC_FREQUENCY / defaultDivider;
+    double calculatedFreq = useMultiplier ? (OSC_FREQUENCY * defaultValue) : (OSC_FREQUENCY / defaultValue);
     QString freqText;
     if (calculatedFreq >= 1.0) {
         freqText = QString("%1 MHz").arg(calculatedFreq, 0, 'f', 3);
@@ -2429,7 +2450,11 @@ void ClockConfigWidget::createOutputWidget(const QString& outputName, QWidget* p
     // 存储控件引用
     m_outputWidgets[outputName] = outputWidget;
     m_outputFreqLabels[outputName] = freqLabel;
-    m_outputDividerBoxes[outputName] = divBox;  // 新增：存储分频器控件
+    if (useMultiplier) {
+        m_outputMultiplierBoxes[outputName] = divBox;  // 存储倍频器控件
+    } else {
+        m_outputDividerBoxes[outputName] = divBox;  // 存储分频器控件
+    }
 
     m_outputLayout->addWidget(outputWidget);
 }
@@ -5562,8 +5587,17 @@ void ClockConfigWidget::updateOutputFrequency(const QString& outputName)
 
     ClockOutput& output = m_outputs[outputName];
 
-    // OSC输出频率 = OSC频率 / 分频器
-    output.frequency = OSC_FREQUENCY / output.divider;
+    // 判断是否为特殊节点（使用倍频器）
+    bool useMultiplier = (outputName == "clk_mipimpll_d3" || 
+                          outputName == "clk_cam1pll" || 
+                          outputName == "clk_cam0pll");
+
+    // OSC输出频率计算
+    if (useMultiplier) {
+        output.frequency = OSC_FREQUENCY * output.multiplier;  // 使用倍频
+    } else {
+        output.frequency = OSC_FREQUENCY / output.divider;  // 使用分频
+    }
 
     // 更新显示
     if (m_outputFreqLabels.contains(outputName)) {
@@ -6551,13 +6585,37 @@ void ClockConfigWidget::resetToDefaults()
         m_outputs[outputName].source = "OSC";
         m_outputs[outputName].enabled = true;  // OSC输出默认启用
 
-        // 根据输出名称设置不同的默认分频值
-        int defaultDivider = 1;
-        m_outputs[outputName].divider = defaultDivider;
+        // 判断是否为特殊节点（使用倍频器）
+        bool useMultiplier = (outputName == "clk_mipimpll_d3" || 
+                              outputName == "clk_cam1pll" || 
+                              outputName == "clk_cam0pll");
 
-        // 更新UI分频器控件
-        if (m_outputDividerBoxes.contains(outputName)) {
-            m_outputDividerBoxes[outputName]->setValue(defaultDivider);
+        if (useMultiplier) {
+            // 设置倍频值
+            int defaultMultiplier = 1;
+            if (outputName == "clk_mipimpll_d3") {
+                defaultMultiplier = 12;
+            } else if (outputName == "clk_cam1pll") {
+                defaultMultiplier = 64;
+            } else if (outputName == "clk_cam0pll") {
+                defaultMultiplier = 52;
+            }
+            m_outputs[outputName].multiplier = defaultMultiplier;
+            m_outputs[outputName].divider = 1;
+            
+            // 更新UI倍频器控件
+            if (m_outputMultiplierBoxes.contains(outputName)) {
+                m_outputMultiplierBoxes[outputName]->setValue(defaultMultiplier);
+            }
+        } else {
+            // 设置分频值
+            m_outputs[outputName].divider = 1;
+            m_outputs[outputName].multiplier = 1;
+            
+            // 更新UI分频器控件
+            if (m_outputDividerBoxes.contains(outputName)) {
+                m_outputDividerBoxes[outputName]->setValue(1);
+            }
         }
     }
 
