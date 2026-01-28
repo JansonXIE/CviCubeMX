@@ -140,6 +140,7 @@ private slots:
     void onClkHSPeriSubNodeDividerChanged(const QString& nodeName, int divider);  // 新增：clk_hsperi子节点分频器变化
     void onClkVIPSYS0SubNodeDividerChanged(const QString& nodeName, int divider);  // 新增：clk_vip_sys_0子节点分频器变化
     void onClkVIPSYS1SubNodeDividerChanged(const QString& nodeName, int divider);  // 新增：clk_vip_sys_1子节点分频器变化
+    void onClkVIPSYS2SubNodeDividerChanged(const QString& nodeName, int divider);  // 新增：clk_vip_sys_2子节点分频器变化
     void onClkVIPSYS3SubNodeDividerChanged(const QString& nodeName, int divider);  // 新增：clk_vip_sys_3子节点分频器变化
     void onClkSPISubNodeDividerChanged(const QString& nodeName, int divider);  // 新增：clk_spi子节点分频器变化
 
@@ -176,8 +177,11 @@ private:
     void setupClkHSPeriSubNodes();  // 新增：设置clk_hsperi子节点区域
     void setupClkVIPSYS0SubNodes();  // 新增：设置clk_vip_sys_0子节点区域
     void setupClkVIPSYS1SubNodes();  // 新增：设置clk_vip_sys_1子节点区域
+    void setupClkVIPSYS2SubNodes();  // 新增：设置clk_vip_sys_2子节点区域
     void setupClkVIPSYS3SubNodes();  // 新增：设置clk_vip_sys_3子节点区域
     void setupClkSPISubNodes();  // 新增：设置clk_spi子节点区域
+    void setupClkKeyscanXclkSubNodes();  // 新增：设置clk_keyscan_xclk子节点区域
+    void setupClkWgnXclkSubNodes();  // 新增：设置clk_wgn_xclk子节点区域
 
     void setupClockTree();
     void initializeModulePositions();  // 新增：初始化模块位置
@@ -206,8 +210,11 @@ private:
     void createClkHSPeriSubNodeWidget(const QString& nodeName, QWidget* parent);  // 新增：创建clk_hsperi子节点widget
     void createClkVIPSYS0SubNodeWidget(const QString& nodeName, QWidget* parent);  // 新增：创建clk_vip_sys_0子节点widget
     void createClkVIPSYS1SubNodeWidget(const QString& nodeName, QWidget* parent);  // 新增：创建clk_vip_sys_1子节点widget
+    void createClkVIPSYS2SubNodeWidget(const QString& nodeName, QWidget* parent);  // 新增：创建clk_vip_sys_2子节点widget
     void createClkVIPSYS3SubNodeWidget(const QString& nodeName, QWidget* parent);  // 新增：创建clk_vip_sys_3子节点widget
     void createClkSPISubNodeWidget(const QString& nodeName, QWidget* parent);  // 新增：创建clk_spi子节点widget
+    void createClkKeyscanXclkSubNodeWidget(const QString& nodeName, QWidget* parent);  // 新增：创建clk_keyscan_xclk子节点widget
+    void createClkWgnXclkSubNodeWidget(const QString& nodeName, QWidget* parent);  // 新增：创建clk_wgn_xclk子节点widget
 
     void updatePLLFrequency(const QString& pllName);
     void updateSubPLLFrequency(const QString& pllName);  // 新增：更新子锁相环(clk_mipimpll)子节点频率
@@ -257,10 +264,16 @@ private:
     void updateAllClkVIPSYS0SubNodeFrequencies();  // 新增：更新所有clk_vip_sys_0子节点频率
     void updateClkVIPSYS1SubNodeFrequency(const QString& nodeName);  // 新增：更新clk_vip_sys_1子节点频率
     void updateAllClkVIPSYS1SubNodeFrequencies();  // 新增：更新所有clk_vip_sys_1子节点频率
+    void updateClkVIPSYS2SubNodeFrequency(const QString& nodeName);  // 新增：更新clk_vip_sys_2子节点频率
+    void updateAllClkVIPSYS2SubNodeFrequencies();  // 新增：更新所有clk_vip_sys_2子节点频率
     void updateClkVIPSYS3SubNodeFrequency(const QString& nodeName);  // 新增：更新clk_vip_sys_3子节点频率
     void updateAllClkVIPSYS3SubNodeFrequencies();  // 新增：更新所有clk_vip_sys_3子节点频率
     void updateClkSPISubNodeFrequency(const QString& nodeName);  // 新增：更新clk_spi子节点频率
     void updateAllClkSPISubNodeFrequencies();  // 新增：更新所有clk_spi子节点频率
+    void updateClkKeyscanXclkSubNodeFrequency(const QString& nodeName);  // 新增：更新clk_keyscan_xclk子节点频率
+    void updateAllClkKeyscanXclkSubNodeFrequencies();  // 新增：更新所有clk_keyscan_xclk子节点频率
+    void updateClkWgnXclkSubNodeFrequency(const QString& nodeName);  // 新增：更新clk_wgn_xclk子节点频率
+    void updateAllClkWgnXclkSubNodeFrequencies();  // 新增：更新所有clk_wgn_xclk子节点频率
 
     void connectSignals();
 
@@ -318,10 +331,15 @@ private:
     QPoint getClkVIPSYS0SubNodeConnectionPoint() const;  // 新增：获取clk_vip_sys_0子节点连接点
     QPoint getClkVIPSYS1ConnectionPoint() const;  // 新增：获取clk_vip_sys_1连接点
     QPoint getClkVIPSYS1SubNodeConnectionPoint() const;  // 新增：获取clk_vip_sys_1子节点连接点
+    QPoint getClkVIPSYS2ConnectionPoint() const;  // 新增：获取clk_vip_sys_2连接点
+    QPoint getClkVIPSYS2SubNodeConnectionPoint() const;  // 新增：获取clk_vip_sys_2子节点连接点
     QPoint getClkVIPSYS3ConnectionPoint() const;  // 新增：获取clk_vip_sys_3连接点
     QPoint getClkVIPSYS3SubNodeConnectionPoint() const;  // 新增：获取clk_vip_sys_3子节点连接点
     QPoint getClkSPIConnectionPoint() const;  // 新增：获取clk_spi连接点
     QPoint getClkSPISubNodeConnectionPoint() const;  // 新增：获取clk_spi子节点连接点
+    QPoint getOutputNodeConnectionPoint(const QString& nodeName) const;  // 新增：获取OSC输出节点连接点
+    QPoint getClkKeyscanXclkSubNodeConnectionPoint() const;  // 新增：获取clk_keyscan_xclk子节点连接点
+    QPoint getClkWgnXclkSubNodeConnectionPoint() const;  // 新增：获取clk_wgn_xclk子节点连接点
 
     void updateConnectionOverlay();
     QWidget* findClockWidgetByName(const QString& key, QString* resolvedName = nullptr) const; // 新增：根据名称查找控件
@@ -442,6 +460,10 @@ private:
     QWidget* m_clkVIPSYS1SubNodeWidget;
     QVBoxLayout* m_clkVIPSYS1SubNodeLayout;
 
+    // clk_vip_sys_2子节点区域
+    QWidget* m_clkVIPSYS2SubNodeWidget;
+    QVBoxLayout* m_clkVIPSYS2SubNodeLayout;
+
     // clk_vip_sys_3子节点区域
     QWidget* m_clkVIPSYS3SubNodeWidget;
     QVBoxLayout* m_clkVIPSYS3SubNodeLayout;
@@ -449,6 +471,14 @@ private:
     // clk_spi子节点区域
     QWidget* m_clkSPISubNodeWidget;
     QVBoxLayout* m_clkSPISubNodeLayout;
+
+    // clk_keyscan_xclk子节点区域
+    QWidget* m_clkKeyscanXclkSubNodeWidget;
+    QVBoxLayout* m_clkKeyscanXclkSubNodeLayout;
+
+    // clk_wgn_xclk子节点区域
+    QWidget* m_clkWgnXclkSubNodeWidget;
+    QVBoxLayout* m_clkWgnXclkSubNodeLayout;
 
     // 左侧时钟树面板
     QWidget* m_clockTreeWidget;
@@ -553,12 +583,21 @@ private:
     QMap<QString, QWidget*> m_clkVIPSYS1SubNodeWidgets;
     QMap<QString, QLabel*> m_clkVIPSYS1SubNodeFreqLabels;
     QMap<QString, QSpinBox*> m_clkVIPSYS1SubNodeDividerBoxes;
+    QMap<QString, QWidget*> m_clkVIPSYS2SubNodeWidgets;
+    QMap<QString, QLabel*> m_clkVIPSYS2SubNodeFreqLabels;
+    QMap<QString, QSpinBox*> m_clkVIPSYS2SubNodeDividerBoxes;
     QMap<QString, QWidget*> m_clkVIPSYS3SubNodeWidgets;
     QMap<QString, QLabel*> m_clkVIPSYS3SubNodeFreqLabels;
     QMap<QString, QSpinBox*> m_clkVIPSYS3SubNodeDividerBoxes;
     QMap<QString, QWidget*> m_clkSPISubNodeWidgets;
     QMap<QString, QLabel*> m_clkSPISubNodeFreqLabels;
     QMap<QString, QSpinBox*> m_clkSPISubNodeDividerBoxes;
+    QMap<QString, QWidget*> m_clkKeyscanXclkSubNodeWidgets;
+    QMap<QString, QLabel*> m_clkKeyscanXclkSubNodeFreqLabels;
+    QMap<QString, QSpinBox*> m_clkKeyscanXclkSubNodeDividerBoxes;
+    QMap<QString, QWidget*> m_clkWgnXclkSubNodeWidgets;
+    QMap<QString, QLabel*> m_clkWgnXclkSubNodeFreqLabels;
+    QMap<QString, QSpinBox*> m_clkWgnXclkSubNodeDividerBoxes;
 
     // 控制按钮
     QHBoxLayout* m_buttonLayout;
@@ -593,8 +632,11 @@ private:
     QMap<QString, ClockOutput> m_clkRTCSYSSubNodes;  // 新增：clk_rtc_sys子节点位置配置
     QMap<QString, ClockOutput> m_clkVIPSYS0SubNodes;  // 新增：clk_vip_sys_0子节点位置配置
     QMap<QString, ClockOutput> m_clkVIPSYS1SubNodes;  // 新增：clk_vip_sys_1子节点位置配置
+    QMap<QString, ClockOutput> m_clkVIPSYS2SubNodes;  // 新增：clk_vip_sys_2子节点位置配置
     QMap<QString, ClockOutput> m_clkVIPSYS3SubNodes;  // 新增：clk_vip_sys_3子节点位置配置
     QMap<QString, ClockOutput> m_clkSPISubNodes;  // 新增：clk_spi子节点位置配置
+    QMap<QString, ClockOutput> m_clkKeyscanXclkSubNodes;  // 新增：clk_keyscan_xclk子节点数据
+    QMap<QString, ClockOutput> m_clkWgnXclkSubNodes;  // 新增：clk_wgn_xclk子节点数据
 
     QMap<QString, ModulePosition> m_modulePositions;  // 新增：模块位置配置
 
@@ -630,8 +672,11 @@ private:
     static const QStringList CLK_RTC_SYS_SUB_NODES;  // 新增：clk_rtc_sys子节点列表
     static const QStringList CLK_VIP_SYS_0_SUB_NODES;  // 新增：clk_vip_sys_0子节点列表
     static const QStringList CLK_VIP_SYS_1_SUB_NODES;  // 新增：clk_vip_sys_1子节点列表
+    static const QStringList CLK_VIP_SYS_2_SUB_NODES;  // 新增：clk_vip_sys_2子节点列表
     static const QStringList CLK_VIP_SYS_3_SUB_NODES;  // 新增：clk_vip_sys_3子节点列表
     static const QStringList CLK_SPI_SUB_NODES;  // 新增：clk_spi子节点列表
+    static const QStringList CLK_KEYSCAN_XCLK_SUB_NODES;  // 新增：clk_keyscan_xclk子节点列表
+    static const QStringList CLK_WGN_XCLK_SUB_NODES;  // 新增：clk_wgn_xclk子节点列表
 
     // 拖拽和缩放相关的成员变量
     bool m_isDragging;              // 是否正在拖拽
