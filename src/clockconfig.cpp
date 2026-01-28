@@ -105,6 +105,18 @@ const QStringList ClockConfigWidget::CLK_I2C_SUB_NODES = {
     "clk_apb_i2c"
 };
 
+const QStringList ClockConfigWidget::CLK_APB_I2C_SUB_NODES = {
+    "clk_apb_i2c4", "clk_apb_i2c3", "clk_apb_i2c2", "clk_apb_i2c1", "clk_apb_i2c0"
+};
+
+const QStringList ClockConfigWidget::CLK_APB_VCSYS_SUB_NODES = {
+    "clk_apb_jpeg", "clk_apb_ve"
+};
+
+const QStringList ClockConfigWidget::CLK_X2P_SUB_NODES = {
+    "clk_2de_vip", "clk_csi2_rx_vip", "clk_csi1_rx_vip", "clk_csi0_rx_vip", "clk_dsi_mac_vip"
+};
+
 const QStringList ClockConfigWidget::CLK_RTC_SYS_SUB_NODES = {
     "clk_rtc_sys_apb_saradc1", "clk_rtc_sys_apb_wdt", "clk_rtc_sys_apb_saradc",
     "clk_rtc_sys_apb_i2c", "clk_rtc_sys_apb_osc", "clk_rtc_sys_apb_gpio",
@@ -198,6 +210,9 @@ ClockConfigWidget::ClockConfigWidget(QWidget *parent)
     setupClkFAB100MSubNodes();  // 新增：设置clk_fab_100M子节点区域
     setupClkXtalMiscSubNodes();  // 新增：设置clk_xtal_misc子节点区域
     setupClkI2CSubNodes();  // 新增：设置clk_i2c子节点区域
+    setupClkAPBI2CSubNodes();  // 新增：设置clk_apb_i2c子节点区域
+    setupClkAPBVCSYSSubNodes();  // 新增：设置clk_apb_vcsys子节点区域
+    setupClkX2PSubNodes();  // 新增：设置clk_x2p子节点区域
     setupClkRTCSYSSubNodes();  // 新增：设置clk_rtc_sys子节点区域
     setupClkHSPeriSubNodes();  // 新增：设置clk_hsperi子节点区域
     setupClkVIPSYS0SubNodes();  // 新增：设置clk_vip_sys_0子节点区域
@@ -1626,6 +1641,159 @@ void ClockConfigWidget::setupClkI2CSubNodes()
 
     // 设置父widget为m_flowWidget并使用绝对定位
     m_clkI2CSubNodeWidget->setParent(m_flowWidget);
+    // 默认位置将在initializeModulePositions中设置
+}
+
+void ClockConfigWidget::setupClkAPBI2CSubNodes()
+{
+    // 创建clk_apb_i2c子节点区域
+    m_clkAPBI2CSubNodeWidget = new QWidget();
+    m_clkAPBI2CSubNodeWidget->setFixedSize(150, 400); // 设置固定尺寸，5个子节点
+    m_clkAPBI2CSubNodeWidget->setStyleSheet(
+        "QWidget { "
+        "background-color: #e8f0ff; "
+        "border: 2px solid #007bff; "
+        "border-radius: 8px; "
+        "}"
+    );
+
+    m_clkAPBI2CSubNodeLayout = new QVBoxLayout(m_clkAPBI2CSubNodeWidget);
+    m_clkAPBI2CSubNodeLayout->setContentsMargins(10, 10, 10, 10);
+    m_clkAPBI2CSubNodeLayout->setSpacing(5);
+
+    // 添加标题
+    QLabel* subNodeTitle = new QLabel("clk_apb_i2c子节点");
+    subNodeTitle->setStyleSheet("font-size: 14px; font-weight: bold; color: #004085; text-align: center;");
+    subNodeTitle->setAlignment(Qt::AlignCenter);
+    m_clkAPBI2CSubNodeLayout->addWidget(subNodeTitle);
+
+    // 为每个clk_apb_i2c子节点创建显示界面
+    for (const QString& nodeName : CLK_APB_I2C_SUB_NODES) {
+        createClkAPBI2CSubNodeWidget(nodeName, m_clkAPBI2CSubNodeWidget);
+
+        // 初始化clk_apb_i2c子节点配置
+        ClockOutput subNode;
+        subNode.name = nodeName;
+        subNode.source = "clk_apb_i2c";
+        subNode.divider = 1;  // 默认分频为1
+        subNode.enabled = true;
+
+        // 计算频率：clk_apb_i2c的频率 / 分频器
+        double clkApbI2CFreq = 100.0;  // 默认100MHz，从clk_i2c->clk_apb_i2c继承
+        if (m_clkI2CSubNodes.contains("clk_apb_i2c")) {
+            clkApbI2CFreq = m_clkI2CSubNodes["clk_apb_i2c"].frequency;
+        }
+        subNode.frequency = clkApbI2CFreq / subNode.divider;
+
+        m_clkAPBI2CSubNodes[nodeName] = subNode;
+    }
+
+    m_clkAPBI2CSubNodeLayout->addStretch();
+
+    // 设置父widget为m_flowWidget并使用绝对定位
+    m_clkAPBI2CSubNodeWidget->setParent(m_flowWidget);
+    // 默认位置将在initializeModulePositions中设置
+}
+
+void ClockConfigWidget::setupClkAPBVCSYSSubNodes()
+{
+    // 创建clk_apb_vcsys子节点区域
+    m_clkAPBVCSYSSubNodeWidget = new QWidget();
+    m_clkAPBVCSYSSubNodeWidget->setFixedSize(150, 180); // 设置固定尺寸，2个子节点
+    m_clkAPBVCSYSSubNodeWidget->setStyleSheet(
+        "QWidget { "
+        "background-color: #e8f0ff; "
+        "border: 2px solid #007bff; "
+        "border-radius: 8px; "
+        "}"
+    );
+
+    m_clkAPBVCSYSSubNodeLayout = new QVBoxLayout(m_clkAPBVCSYSSubNodeWidget);
+    m_clkAPBVCSYSSubNodeLayout->setContentsMargins(10, 10, 10, 10);
+    m_clkAPBVCSYSSubNodeLayout->setSpacing(5);
+
+    // 添加标题
+    QLabel* subNodeTitle = new QLabel("clk_apb_vcsys子节点");
+    subNodeTitle->setStyleSheet("font-size: 14px; font-weight: bold; color: #004085; text-align: center;");
+    subNodeTitle->setAlignment(Qt::AlignCenter);
+    m_clkAPBVCSYSSubNodeLayout->addWidget(subNodeTitle);
+
+    // 为每个clk_apb_vcsys子节点创建显示界面
+    for (const QString& nodeName : CLK_APB_VCSYS_SUB_NODES) {
+        createClkAPBVCSYSSubNodeWidget(nodeName, m_clkAPBVCSYSSubNodeWidget);
+
+        // 初始化clk_apb_vcsys子节点配置
+        ClockOutput subNode;
+        subNode.name = nodeName;
+        subNode.source = "clk_apb_vcsys";
+        subNode.divider = 1;  // 默认分频为1
+        subNode.enabled = true;
+
+        // 计算频率：clk_apb_vcsys的频率 / 分频器
+        double clkApbVcsysFreq = 100.0;  // 默认100MHz，从clk_fab_100M->clk_apb_vcsys继承
+        if (m_clkFAB100MSubNodes.contains("clk_apb_vcsys")) {
+            clkApbVcsysFreq = m_clkFAB100MSubNodes["clk_apb_vcsys"].frequency;
+        }
+        subNode.frequency = clkApbVcsysFreq / subNode.divider;
+
+        m_clkAPBVCSYSSubNodes[nodeName] = subNode;
+    }
+
+    m_clkAPBVCSYSSubNodeLayout->addStretch();
+
+    // 设置父widget为m_flowWidget并使用绝对定位
+    m_clkAPBVCSYSSubNodeWidget->setParent(m_flowWidget);
+    // 默认位置将在initializeModulePositions中设置
+}
+
+void ClockConfigWidget::setupClkX2PSubNodes()
+{
+    // 创建clk_x2p子节点区域
+    m_clkX2PSubNodeWidget = new QWidget();
+    m_clkX2PSubNodeWidget->setFixedSize(150, 420); // 设置固定尺寸，5个子节点
+    m_clkX2PSubNodeWidget->setStyleSheet(
+        "QWidget { "
+        "background-color: #e8f0ff; "
+        "border: 2px solid #007bff; "
+        "border-radius: 8px; "
+        "}"
+    );
+
+    m_clkX2PSubNodeLayout = new QVBoxLayout(m_clkX2PSubNodeWidget);
+    m_clkX2PSubNodeLayout->setContentsMargins(10, 10, 10, 10);
+    m_clkX2PSubNodeLayout->setSpacing(5);
+
+    // 添加标题
+    QLabel* subNodeTitle = new QLabel("clk_x2p子节点");
+    subNodeTitle->setStyleSheet("font-size: 14px; font-weight: bold; color: #004085; text-align: center;");
+    subNodeTitle->setAlignment(Qt::AlignCenter);
+    m_clkX2PSubNodeLayout->addWidget(subNodeTitle);
+
+    // 为每个clk_x2p子节点创建显示界面
+    for (const QString& nodeName : CLK_X2P_SUB_NODES) {
+        createClkX2PSubNodeWidget(nodeName, m_clkX2PSubNodeWidget);
+
+        // 初始化clk_x2p子节点配置
+        ClockOutput subNode;
+        subNode.name = nodeName;
+        subNode.source = "clk_x2p";
+        subNode.divider = 1;  // 默认分频为1
+        subNode.enabled = true;
+
+        // 计算频率：clk_x2p的频率 / 分频器
+        double clkX2PFreq = 100.0;  // 默认100MHz，从clk_fab_100M->clk_x2p继承
+        if (m_clkFAB100MSubNodes.contains("clk_x2p")) {
+            clkX2PFreq = m_clkFAB100MSubNodes["clk_x2p"].frequency;
+        }
+        subNode.frequency = clkX2PFreq / subNode.divider;
+
+        m_clkX2PSubNodes[nodeName] = subNode;
+    }
+
+    m_clkX2PSubNodeLayout->addStretch();
+
+    // 设置父widget为m_flowWidget并使用绝对定位
+    m_clkX2PSubNodeWidget->setParent(m_flowWidget);
     // 默认位置将在initializeModulePositions中设置
 }
 
@@ -3566,6 +3734,243 @@ void ClockConfigWidget::createClkI2CSubNodeWidget(const QString& nodeName, QWidg
             });
 }
 
+void ClockConfigWidget::createClkAPBI2CSubNodeWidget(const QString& nodeName, QWidget* parent)
+{
+    QWidget* subNodeWidget = new QWidget();
+    subNodeWidget->setStyleSheet(
+        "QWidget { "
+        "background-color: #ffffff; "
+        "border: 1px solid #007bff; "
+        "border-radius: 4px; "
+        "padding: 3px; "
+        "margin: 1px; "
+        "}"
+    );
+
+    QVBoxLayout* layout = new QVBoxLayout(subNodeWidget);
+    layout->setSpacing(2);
+    layout->setContentsMargins(3, 3, 3, 3);
+
+    // 子节点名称标签
+    QLabel* nameLabel = new QLabel();
+    nameLabel->setText(formatClockTitle(nodeName));
+    nameLabel->setStyleSheet("font-weight: bold; color: #004085; font-size: 11px;");
+    nameLabel->setAlignment(Qt::AlignCenter);
+    nameLabel->setWordWrap(true);
+
+    // 分频器配置
+    QHBoxLayout* divConfigLayout = new QHBoxLayout();
+    divConfigLayout->setSpacing(3);
+
+    QLabel* divLabel = new QLabel("分频：");
+    divLabel->setStyleSheet("color: #004085; font-size: 10px; font-weight: bold;");
+
+    QSpinBox* divBox = new QSpinBox();
+    divBox->setRange(1, 1000);
+    divBox->setValue(1);  // 默认分频为1
+    // 只读显示
+    divBox->setEnabled(false);
+    divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
+    divBox->setFocusPolicy(Qt::NoFocus);
+    divBox->setFixedWidth(45);
+    divBox->setStyleSheet("font-size: 10px;");
+    divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);  // 禁用上下按钮
+    divBox->setReadOnly(true);  // 设置为只读，禁止编辑
+    divBox->installEventFilter(this);  // 安装事件过滤器以禁用滚轮
+    
+    divConfigLayout->addWidget(divLabel);
+    divConfigLayout->addWidget(divBox);
+
+    // 频率显示
+    double clkApbI2CFreq = 100.0;  // 默认100MHz，从clk_apb_i2c继承
+    double calculatedFreq = clkApbI2CFreq / 1;  // 默认分频为1
+    QString freqText;
+    if (calculatedFreq >= 1.0) {
+        freqText = QString("%1 MHz").arg(calculatedFreq, 0, 'f', 3);
+    } else {
+        freqText = QString("%1 kHz").arg(calculatedFreq * 1000, 0, 'f', 1);
+    }
+
+    QLabel* freqLabel = new QLabel(freqText);
+    freqLabel->setStyleSheet("color: #dc3545; font-family: monospace; font-weight: bold; font-size: 9px;");
+    freqLabel->setAlignment(Qt::AlignCenter);
+
+    layout->addWidget(nameLabel);
+    layout->addLayout(divConfigLayout);
+    layout->addWidget(freqLabel);
+
+    // 存储控件引用
+    m_clkAPBI2CSubNodeWidgets[nodeName] = subNodeWidget;
+    m_clkAPBI2CSubNodeFreqLabels[nodeName] = freqLabel;
+    m_clkAPBI2CSubNodeDividerBoxes[nodeName] = divBox;
+
+    m_clkAPBI2CSubNodeLayout->addWidget(subNodeWidget);
+
+    // 连接分频器变化信号
+    connect(divBox, QOverload<int>::of(&QSpinBox::valueChanged),
+            [this, nodeName](int value) {
+                onClkAPBI2CSubNodeDividerChanged(nodeName, value);
+            });
+}
+
+void ClockConfigWidget::createClkAPBVCSYSSubNodeWidget(const QString& nodeName, QWidget* parent)
+{
+    QWidget* subNodeWidget = new QWidget();
+    subNodeWidget->setStyleSheet(
+        "QWidget { "
+        "background-color: #ffffff; "
+        "border: 1px solid #007bff; "
+        "border-radius: 4px; "
+        "padding: 3px; "
+        "margin: 1px; "
+        "}"
+    );
+
+    QVBoxLayout* layout = new QVBoxLayout(subNodeWidget);
+    layout->setSpacing(2);
+    layout->setContentsMargins(3, 3, 3, 3);
+
+    // 子节点名称标签
+    QLabel* nameLabel = new QLabel();
+    nameLabel->setText(formatClockTitle(nodeName));
+    nameLabel->setStyleSheet("font-weight: bold; color: #004085; font-size: 11px;");
+    nameLabel->setAlignment(Qt::AlignCenter);
+    nameLabel->setWordWrap(true);
+
+    // 分频器配置
+    QHBoxLayout* divConfigLayout = new QHBoxLayout();
+    divConfigLayout->setSpacing(3);
+
+    QLabel* divLabel = new QLabel("分频：");
+    divLabel->setStyleSheet("color: #004085; font-size: 10px; font-weight: bold;");
+
+    QSpinBox* divBox = new QSpinBox();
+    divBox->setRange(1, 1000);
+    divBox->setValue(1);  // 默认分频为1
+    // 只读显示
+    divBox->setEnabled(false);
+    divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
+    divBox->setFocusPolicy(Qt::NoFocus);
+    divBox->setFixedWidth(45);
+    divBox->setStyleSheet("font-size: 10px;");
+    divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);  // 禁用上下按钮
+    divBox->setReadOnly(true);  // 设置为只读，禁止编辑
+    divBox->installEventFilter(this);  // 安装事件过滤器以禁用滚轮
+    
+    divConfigLayout->addWidget(divLabel);
+    divConfigLayout->addWidget(divBox);
+
+    // 频率显示
+    double clkApbVcsysFreq = 100.0;  // 默认100MHz，从clk_apb_vcsys继承
+    double calculatedFreq = clkApbVcsysFreq / 1;  // 默认分频为1
+    QString freqText;
+    if (calculatedFreq >= 1.0) {
+        freqText = QString("%1 MHz").arg(calculatedFreq, 0, 'f', 3);
+    } else {
+        freqText = QString("%1 kHz").arg(calculatedFreq * 1000, 0, 'f', 1);
+    }
+
+    QLabel* freqLabel = new QLabel(freqText);
+    freqLabel->setStyleSheet("color: #dc3545; font-family: monospace; font-weight: bold; font-size: 9px;");
+    freqLabel->setAlignment(Qt::AlignCenter);
+
+    layout->addWidget(nameLabel);
+    layout->addLayout(divConfigLayout);
+    layout->addWidget(freqLabel);
+
+    // 存储控件引用
+    m_clkAPBVCSYSSubNodeWidgets[nodeName] = subNodeWidget;
+    m_clkAPBVCSYSSubNodeFreqLabels[nodeName] = freqLabel;
+    m_clkAPBVCSYSSubNodeDividerBoxes[nodeName] = divBox;
+
+    m_clkAPBVCSYSSubNodeLayout->addWidget(subNodeWidget);
+
+    // 连接分频器变化信号
+    connect(divBox, QOverload<int>::of(&QSpinBox::valueChanged),
+            [this, nodeName](int value) {
+                onClkAPBVCSYSSubNodeDividerChanged(nodeName, value);
+            });
+}
+
+void ClockConfigWidget::createClkX2PSubNodeWidget(const QString& nodeName, QWidget* parent)
+{
+    QWidget* subNodeWidget = new QWidget();
+    subNodeWidget->setStyleSheet(
+        "QWidget { "
+        "background-color: #ffffff; "
+        "border: 1px solid #007bff; "
+        "border-radius: 4px; "
+        "padding: 3px; "
+        "margin: 1px; "
+        "}"
+    );
+
+    QVBoxLayout* layout = new QVBoxLayout(subNodeWidget);
+    layout->setSpacing(2);
+    layout->setContentsMargins(3, 3, 3, 3);
+
+    // 子节点名称标签
+    QLabel* nameLabel = new QLabel();
+    nameLabel->setText(formatClockTitle(nodeName));
+    nameLabel->setStyleSheet("font-weight: bold; color: #004085; font-size: 11px;");
+    nameLabel->setAlignment(Qt::AlignCenter);
+    nameLabel->setWordWrap(true);
+
+    // 分频器配置
+    QHBoxLayout* divConfigLayout = new QHBoxLayout();
+    divConfigLayout->setSpacing(3);
+
+    QLabel* divLabel = new QLabel("分频：");
+    divLabel->setStyleSheet("color: #004085; font-size: 10px; font-weight: bold;");
+
+    QSpinBox* divBox = new QSpinBox();
+    divBox->setRange(1, 1000);
+    divBox->setValue(1);  // 默认分频为1
+    // 只读显示
+    divBox->setEnabled(false);
+    divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
+    divBox->setFocusPolicy(Qt::NoFocus);
+    divBox->setFixedWidth(45);
+    divBox->setStyleSheet("font-size: 10px;");
+    divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);  // 禁用上下按钮
+    divBox->setReadOnly(true);  // 设置为只读，禁止编辑
+    divBox->installEventFilter(this);  // 安装事件过滤器以禁用滚轮
+    
+    divConfigLayout->addWidget(divLabel);
+    divConfigLayout->addWidget(divBox);
+
+    // 频率显示
+    double clkX2PFreq = 100.0;  // 默认100MHz，从clk_x2p继承
+    double calculatedFreq = clkX2PFreq / 1;  // 默认分频为1
+    QString freqText;
+    if (calculatedFreq >= 1.0) {
+        freqText = QString("%1 MHz").arg(calculatedFreq, 0, 'f', 3);
+    } else {
+        freqText = QString("%1 kHz").arg(calculatedFreq * 1000, 0, 'f', 1);
+    }
+
+    QLabel* freqLabel = new QLabel(freqText);
+    freqLabel->setStyleSheet("color: #dc3545; font-family: monospace; font-weight: bold; font-size: 9px;");
+    freqLabel->setAlignment(Qt::AlignCenter);
+
+    layout->addWidget(nameLabel);
+    layout->addLayout(divConfigLayout);
+    layout->addWidget(freqLabel);
+
+    // 存储控件引用
+    m_clkX2PSubNodeWidgets[nodeName] = subNodeWidget;
+    m_clkX2PSubNodeFreqLabels[nodeName] = freqLabel;
+    m_clkX2PSubNodeDividerBoxes[nodeName] = divBox;
+
+    m_clkX2PSubNodeLayout->addWidget(subNodeWidget);
+
+    // 连接分频器变化信号
+    connect(divBox, QOverload<int>::of(&QSpinBox::valueChanged),
+            [this, nodeName](int value) {
+                onClkX2PSubNodeDividerChanged(nodeName, value);
+            });
+}
+
 void ClockConfigWidget::createClkRTCSYSSubNodeWidget(const QString& nodeName, QWidget* parent)
 {
     QWidget* subNodeWidget = new QWidget();
@@ -4985,6 +5390,33 @@ void ClockConfigWidget::onClkI2CSubNodeDividerChanged(const QString& nodeName, i
     }
 }
 
+void ClockConfigWidget::onClkAPBI2CSubNodeDividerChanged(const QString& nodeName, int divider)
+{
+    if (m_clkAPBI2CSubNodes.contains(nodeName)) {
+        m_clkAPBI2CSubNodes[nodeName].divider = divider;
+        updateClkAPBI2CSubNodeFrequency(nodeName);
+        emit configChanged();
+    }
+}
+
+void ClockConfigWidget::onClkAPBVCSYSSubNodeDividerChanged(const QString& nodeName, int divider)
+{
+    if (m_clkAPBVCSYSSubNodes.contains(nodeName)) {
+        m_clkAPBVCSYSSubNodes[nodeName].divider = divider;
+        updateClkAPBVCSYSSubNodeFrequency(nodeName);
+        emit configChanged();
+    }
+}
+
+void ClockConfigWidget::onClkX2PSubNodeDividerChanged(const QString& nodeName, int divider)
+{
+    if (m_clkX2PSubNodes.contains(nodeName)) {
+        m_clkX2PSubNodes[nodeName].divider = divider;
+        updateClkX2PSubNodeFrequency(nodeName);
+        emit configChanged();
+    }
+}
+
 void ClockConfigWidget::onClkRTCSYSSubNodeDividerChanged(const QString& nodeName, int divider)
 {
     if (m_clkRTCSYSSubNodes.contains(nodeName)) {
@@ -5625,6 +6057,108 @@ void ClockConfigWidget::updateAllClkI2CSubNodeFrequencies()
     }
 }
 
+void ClockConfigWidget::updateClkAPBI2CSubNodeFrequency(const QString& nodeName)
+{
+    if (!m_clkAPBI2CSubNodes.contains(nodeName)) return;
+
+    ClockOutput& subNode = m_clkAPBI2CSubNodes[nodeName];
+
+    // 获取clk_apb_i2c的频率（从clk_i2c子节点获取）
+    double clkApbI2CFreq = 100.0; // 默认100MHz
+    if (m_clkI2CSubNodes.contains("clk_apb_i2c")) {
+        clkApbI2CFreq = m_clkI2CSubNodes["clk_apb_i2c"].frequency;
+    }
+
+    // clk_apb_i2c子节点频率 = clk_apb_i2c频率 / 分频器
+    subNode.frequency = clkApbI2CFreq / subNode.divider;
+
+    // 更新显示
+    if (m_clkAPBI2CSubNodeFreqLabels.contains(nodeName)) {
+        QString freqText;
+        if (subNode.frequency >= 1.0) {
+            freqText = QString("%1 MHz").arg(subNode.frequency, 0, 'f', 3);
+        } else {
+            freqText = QString("%1 kHz").arg(subNode.frequency * 1000, 0, 'f', 1);
+        }
+        m_clkAPBI2CSubNodeFreqLabels[nodeName]->setText(freqText);
+    }
+}
+
+void ClockConfigWidget::updateAllClkAPBI2CSubNodeFrequencies()
+{
+    for (const QString& nodeName : CLK_APB_I2C_SUB_NODES) {
+        updateClkAPBI2CSubNodeFrequency(nodeName);
+    }
+}
+
+void ClockConfigWidget::updateClkAPBVCSYSSubNodeFrequency(const QString& nodeName)
+{
+    if (!m_clkAPBVCSYSSubNodes.contains(nodeName)) return;
+
+    ClockOutput& subNode = m_clkAPBVCSYSSubNodes[nodeName];
+
+    // 获取clk_apb_vcsys的频率（从clk_fab_100M子节点获取）
+    double clkApbVcsysFreq = 100.0; // 默认100MHz
+    if (m_clkFAB100MSubNodes.contains("clk_apb_vcsys")) {
+        clkApbVcsysFreq = m_clkFAB100MSubNodes["clk_apb_vcsys"].frequency;
+    }
+
+    // clk_apb_vcsys子节点频率 = clk_apb_vcsys频率 / 分频器
+    subNode.frequency = clkApbVcsysFreq / subNode.divider;
+
+    // 更新显示
+    if (m_clkAPBVCSYSSubNodeFreqLabels.contains(nodeName)) {
+        QString freqText;
+        if (subNode.frequency >= 1.0) {
+            freqText = QString("%1 MHz").arg(subNode.frequency, 0, 'f', 3);
+        } else {
+            freqText = QString("%1 kHz").arg(subNode.frequency * 1000, 0, 'f', 1);
+        }
+        m_clkAPBVCSYSSubNodeFreqLabels[nodeName]->setText(freqText);
+    }
+}
+
+void ClockConfigWidget::updateAllClkAPBVCSYSSubNodeFrequencies()
+{
+    for (const QString& nodeName : CLK_APB_VCSYS_SUB_NODES) {
+        updateClkAPBVCSYSSubNodeFrequency(nodeName);
+    }
+}
+
+void ClockConfigWidget::updateClkX2PSubNodeFrequency(const QString& nodeName)
+{
+    if (!m_clkX2PSubNodes.contains(nodeName)) return;
+
+    ClockOutput& subNode = m_clkX2PSubNodes[nodeName];
+
+    // 获取clk_x2p的频率（从clk_fab_100M子节点获取）
+    double clkX2PFreq = 100.0; // 默认100MHz
+    if (m_clkFAB100MSubNodes.contains("clk_x2p")) {
+        clkX2PFreq = m_clkFAB100MSubNodes["clk_x2p"].frequency;
+    }
+
+    // clk_x2p子节点频率 = clk_x2p频率 / 分频器
+    subNode.frequency = clkX2PFreq / subNode.divider;
+
+    // 更新显示
+    if (m_clkX2PSubNodeFreqLabels.contains(nodeName)) {
+        QString freqText;
+        if (subNode.frequency >= 1.0) {
+            freqText = QString("%1 MHz").arg(subNode.frequency, 0, 'f', 3);
+        } else {
+            freqText = QString("%1 kHz").arg(subNode.frequency * 1000, 0, 'f', 1);
+        }
+        m_clkX2PSubNodeFreqLabels[nodeName]->setText(freqText);
+    }
+}
+
+void ClockConfigWidget::updateAllClkX2PSubNodeFrequencies()
+{
+    for (const QString& nodeName : CLK_X2P_SUB_NODES) {
+        updateClkX2PSubNodeFrequency(nodeName);
+    }
+}
+
 void ClockConfigWidget::updateClkRTCSYSSubNodeFrequency(const QString& nodeName)
 {
     if (!m_clkRTCSYSSubNodes.contains(nodeName)) return;
@@ -5889,6 +6423,21 @@ void ClockConfigWidget::updateFrequencies()
     // 更新所有clk_i2c子节点频率
     for (const QString& nodeName : CLK_I2C_SUB_NODES) {
         updateClkI2CSubNodeFrequency(nodeName);
+    }
+
+    // 更新所有clk_apb_i2c子节点频率
+    for (const QString& nodeName : CLK_APB_I2C_SUB_NODES) {
+        updateClkAPBI2CSubNodeFrequency(nodeName);
+    }
+
+    // 更新所有clk_apb_vcsys子节点频率
+    for (const QString& nodeName : CLK_APB_VCSYS_SUB_NODES) {
+        updateClkAPBVCSYSSubNodeFrequency(nodeName);
+    }
+
+    // 更新所有clk_x2p子节点频率
+    for (const QString& nodeName : CLK_X2P_SUB_NODES) {
+        updateClkX2PSubNodeFrequency(nodeName);
     }
 
     // 更新所有clk_rtc_sys子节点频率
@@ -6617,6 +7166,51 @@ void ClockConfigWidget::drawConnectionLines(QPainter& painter)
             QPoint elbow1, elbow2;
             calculateElbowPoints(i2cPoint, subNodePoint, elbow1, elbow2);
             drawElbowArrowLine(painter, i2cPoint, elbow1, elbow2, subNodePoint, lineColor);
+        }
+    }
+
+    // 绘制clk_apb_i2c到其子节点的连接线
+    if (m_clkAPBI2CSubNodeWidget) {
+        QPoint apbI2CPoint = getClkAPBI2CConnectionPoint();
+        QPoint subNodePoint = getClkAPBI2CSubNodeConnectionPoint();
+        if (!subNodePoint.isNull() && !apbI2CPoint.isNull()) {
+            // 使用蓝色来表示clk_apb_i2c到子节点的连接
+            QColor lineColor = QColor(0, 123, 255);  // 蓝色
+
+            // 计算肘形拐点
+            QPoint elbow1, elbow2;
+            calculateElbowPoints(apbI2CPoint, subNodePoint, elbow1, elbow2);
+            drawElbowArrowLine(painter, apbI2CPoint, elbow1, elbow2, subNodePoint, lineColor);
+        }
+    }
+
+    // 绘制clk_apb_vcsys到其子节点的连接线
+    if (m_clkAPBVCSYSSubNodeWidget) {
+        QPoint apbVcsysPoint = getClkAPBVCSYSConnectionPoint();
+        QPoint subNodePoint = getClkAPBVCSYSSubNodeConnectionPoint();
+        if (!subNodePoint.isNull() && !apbVcsysPoint.isNull()) {
+            // 使用蓝色来表示clk_apb_vcsys到子节点的连接
+            QColor lineColor = QColor(0, 123, 255);  // 蓝色
+
+            // 计算肘形拐点
+            QPoint elbow1, elbow2;
+            calculateElbowPoints(apbVcsysPoint, subNodePoint, elbow1, elbow2);
+            drawElbowArrowLine(painter, apbVcsysPoint, elbow1, elbow2, subNodePoint, lineColor);
+        }
+    }
+
+    // 绘制clk_x2p到其子节点的连接线
+    if (m_clkX2PSubNodeWidget) {
+        QPoint x2pPoint = getClkX2PConnectionPoint();
+        QPoint subNodePoint = getClkX2PSubNodeConnectionPoint();
+        if (!subNodePoint.isNull() && !x2pPoint.isNull()) {
+            // 使用蓝色来表示clk_x2p到子节点的连接
+            QColor lineColor = QColor(0, 123, 255);  // 蓝色
+
+            // 计算肘形拐点
+            QPoint elbow1, elbow2;
+            calculateElbowPoints(x2pPoint, subNodePoint, elbow1, elbow2);
+            drawElbowArrowLine(painter, x2pPoint, elbow1, elbow2, subNodePoint, lineColor);
         }
     }
 
@@ -7570,6 +8164,144 @@ QPoint ClockConfigWidget::getClkI2CSubNodeConnectionPoint() const
     return subNodePoint;
 }
 
+QPoint ClockConfigWidget::getClkAPBI2CConnectionPoint() const
+{
+    if (!m_clkI2CSubNodeWidget || !m_flowWidget || !m_clkI2CSubNodeWidgets.contains("clk_apb_i2c")) {
+        return QPoint();
+    }
+
+    QWidget* apbI2CWidget = m_clkI2CSubNodeWidgets["clk_apb_i2c"];
+    if (!apbI2CWidget) {
+        return QPoint();
+    }
+
+    // 获取clk_apb_i2c widget在其父widget中的位置
+    QPoint apbI2CPos = apbI2CWidget->pos();
+    QRect apbI2CRect = apbI2CWidget->rect();
+
+    // 获取clk_i2c区域在flow widget中的位置
+    QPoint i2cAreaPos = m_clkI2CSubNodeWidget->pos();
+
+    // clk_apb_i2c连接点位于widget的右侧中央
+    QPoint apbI2CPoint = QPoint(
+        i2cAreaPos.x() + apbI2CPos.x() + apbI2CRect.width(),
+        i2cAreaPos.y() + apbI2CPos.y() + apbI2CRect.height() / 2
+    );
+
+    return apbI2CPoint;
+}
+
+QPoint ClockConfigWidget::getClkAPBI2CSubNodeConnectionPoint() const
+{
+    if (!m_clkAPBI2CSubNodeWidget || !m_flowWidget) {
+        return QPoint();
+    }
+
+    // 获取子节点widget在其父widget中的位置
+    QPoint subNodePos = m_clkAPBI2CSubNodeWidget->pos();
+    QRect subNodeRect = m_clkAPBI2CSubNodeWidget->rect();
+
+    // 子节点连接点位于widget的左侧中央
+    QPoint subNodePoint = QPoint(
+        subNodePos.x(),
+        subNodePos.y() + subNodeRect.height() / 2
+    );
+
+    return subNodePoint;
+}
+
+QPoint ClockConfigWidget::getClkAPBVCSYSConnectionPoint() const
+{
+    if (!m_clkFAB100MSubNodeWidget || !m_flowWidget || !m_clkFAB100MSubNodeWidgets.contains("clk_apb_vcsys")) {
+        return QPoint();
+    }
+
+    QWidget* apbVcsysWidget = m_clkFAB100MSubNodeWidgets["clk_apb_vcsys"];
+    if (!apbVcsysWidget) {
+        return QPoint();
+    }
+
+    // 获取clk_apb_vcsys widget在其父widget中的位置
+    QPoint apbVcsysPos = apbVcsysWidget->pos();
+    QRect apbVcsysRect = apbVcsysWidget->rect();
+
+    // 获取clk_fab_100M区域在flow widget中的位置
+    QPoint fab100MAreaPos = m_clkFAB100MSubNodeWidget->pos();
+
+    // clk_apb_vcsys连接点位于widget的右侧中央
+    QPoint apbVcsysPoint = QPoint(
+        fab100MAreaPos.x() + apbVcsysPos.x() + apbVcsysRect.width(),
+        fab100MAreaPos.y() + apbVcsysPos.y() + apbVcsysRect.height() / 2
+    );
+
+    return apbVcsysPoint;
+}
+
+QPoint ClockConfigWidget::getClkAPBVCSYSSubNodeConnectionPoint() const
+{
+    if (!m_clkAPBVCSYSSubNodeWidget || !m_flowWidget) {
+        return QPoint();
+    }
+
+    // 获取子节点widget在其父widget中的位置
+    QPoint subNodePos = m_clkAPBVCSYSSubNodeWidget->pos();
+    QRect subNodeRect = m_clkAPBVCSYSSubNodeWidget->rect();
+
+    // 子节点连接点位于widget的左侧中央
+    QPoint subNodePoint = QPoint(
+        subNodePos.x(),
+        subNodePos.y() + subNodeRect.height() / 2
+    );
+
+    return subNodePoint;
+}
+
+QPoint ClockConfigWidget::getClkX2PConnectionPoint() const
+{
+    if (!m_clkFAB100MSubNodeWidget || !m_flowWidget || !m_clkFAB100MSubNodeWidgets.contains("clk_x2p")) {
+        return QPoint();
+    }
+
+    QWidget* x2pWidget = m_clkFAB100MSubNodeWidgets["clk_x2p"];
+    if (!x2pWidget) {
+        return QPoint();
+    }
+
+    // 获取clk_x2p widget在其父widget中的位置
+    QPoint x2pPos = x2pWidget->pos();
+    QRect x2pRect = x2pWidget->rect();
+
+    // 获取clk_fab_100M区域在flow widget中的位置
+    QPoint fab100MAreaPos = m_clkFAB100MSubNodeWidget->pos();
+
+    // clk_x2p连接点位于widget的右侧中央
+    QPoint x2pPoint = QPoint(
+        fab100MAreaPos.x() + x2pPos.x() + x2pRect.width(),
+        fab100MAreaPos.y() + x2pPos.y() + x2pRect.height() / 2
+    );
+
+    return x2pPoint;
+}
+
+QPoint ClockConfigWidget::getClkX2PSubNodeConnectionPoint() const
+{
+    if (!m_clkX2PSubNodeWidget || !m_flowWidget) {
+        return QPoint();
+    }
+
+    // 获取子节点widget在其父widget中的位置
+    QPoint subNodePos = m_clkX2PSubNodeWidget->pos();
+    QRect subNodeRect = m_clkX2PSubNodeWidget->rect();
+
+    // 子节点连接点位于widget的左侧中央
+    QPoint subNodePoint = QPoint(
+        subNodePos.x(),
+        subNodePos.y() + subNodeRect.height() / 2
+    );
+
+    return subNodePoint;
+}
+
 QPoint ClockConfigWidget::getClkHSPeriConnectionPoint() const
 {
     if (!m_clkMPLLSubNodeWidget || !m_flowWidget || !m_clkMPLLSubNodeWidgets.contains("clk_hsperi")) {
@@ -7897,6 +8629,9 @@ QWidget* ClockConfigWidget::findClockWidgetByName(const QString& key, QString* r
     if (!w) w = tryFind(m_clkFAB100MSubNodeWidgets);
     if (!w) w = tryFind(m_clkXtalMiscSubNodeWidgets);
     if (!w) w = tryFind(m_clkI2CSubNodeWidgets);
+    if (!w) w = tryFind(m_clkAPBI2CSubNodeWidgets);
+    if (!w) w = tryFind(m_clkAPBVCSYSSubNodeWidgets);
+    if (!w) w = tryFind(m_clkX2PSubNodeWidgets);
     if (!w) w = tryFind(m_clkHSPeriSubNodeWidgets);
     if (!w) w = tryFind(m_clkRTCSYSSubNodeWidgets);
     if (!w) w = tryFind(m_clkVIPSYS0SubNodeWidgets);
@@ -7965,6 +8700,7 @@ QWidget* ClockConfigWidget::getWidgetAt(const QPoint& pos)
                << m_clkA0PLLSubNodeWidget << m_clkRVPLLSubNodeWidget << m_clkAPPLLSubNodeWidget
                << m_clkFPLLSubNodeWidget << m_clkTPLLSubNodeWidget << m_clkMPLLSubNodeWidget
                << m_clkFAB100MSubNodeWidget << m_clkXtalMiscSubNodeWidget << m_clkI2CSubNodeWidget
+               << m_clkAPBI2CSubNodeWidget << m_clkAPBVCSYSSubNodeWidget << m_clkX2PSubNodeWidget
                << m_clkRTCSYSSubNodeWidget<< m_clkHSPeriSubNodeWidget << m_clkVIPSYS0SubNodeWidget
                << m_clkVIPSYS1SubNodeWidget << m_clkVIPSYS3SubNodeWidget << m_clkSPISubNodeWidget;
 
@@ -8096,6 +8832,9 @@ QString ClockConfigWidget::getWidgetModuleName(QWidget* widget)
     if (widget == m_clkFAB100MSubNodeWidget) return "clk_fab_100M";
     if (widget == m_clkXtalMiscSubNodeWidget) return "clk_xtal_misc";
     if (widget == m_clkI2CSubNodeWidget) return "clk_i2c";
+    if (widget == m_clkAPBI2CSubNodeWidget) return "clk_apb_i2c";
+    if (widget == m_clkAPBVCSYSSubNodeWidget) return "clk_apb_vcsys";
+    if (widget == m_clkX2PSubNodeWidget) return "clk_x2p";
     if (widget == m_clkHSPeriSubNodeWidget) return "clk_hsperi";
     if (widget == m_clkRTCSYSSubNodeWidget) return "clk_rtc_sys";
     if (widget == m_clkVIPSYS0SubNodeWidget) return "clk_vip_sys_0";
@@ -8127,6 +8866,9 @@ QWidget* ClockConfigWidget::getWidgetByModuleName(const QString& moduleName)
     if (moduleName == "clk_fab_100M") return m_clkFAB100MSubNodeWidget;
     if (moduleName == "clk_xtal_misc") return m_clkXtalMiscSubNodeWidget;
     if (moduleName == "clk_i2c") return m_clkI2CSubNodeWidget;
+    if (moduleName == "clk_apb_i2c") return m_clkAPBI2CSubNodeWidget;
+    if (moduleName == "clk_apb_vcsys") return m_clkAPBVCSYSSubNodeWidget;
+    if (moduleName == "clk_x2p") return m_clkX2PSubNodeWidget;
     if (moduleName == "clk_hsperi") return m_clkHSPeriSubNodeWidget;
     if (moduleName == "clk_rtc_sys") return m_clkRTCSYSSubNodeWidget;
     if (moduleName == "clk_vip_sys_0") return m_clkVIPSYS0SubNodeWidget;
