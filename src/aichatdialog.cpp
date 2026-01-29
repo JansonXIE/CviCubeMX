@@ -33,9 +33,9 @@ AIChatDialog::AIChatDialog(QWidget *parent)
     , m_isWaitingForResponse(false)
 {
     // 初始化AI API配置
-    m_apiKey = "QWGNmtHwAu1WRJkjmHD4FSpIMgDCS1puYeMq5gglfhpIXBGitoD1YPdygcKwEAQ-PKQZETbIVRUcuiiY1D8JaQ";
-    m_baseUrl = "https://www.sophnet.com/api/open-apis";
-    m_model = "QwQ-32B";
+    m_apiKey = "your_api_key_here";
+    m_baseUrl = "https://www.sophnet.com/api/open-apis/v1";
+    m_model = "DeepSeek-V3.2-Exp:6P2FGzuj1EOFpP2DCX2miK";
     
     setupUI();
     setupStyles();
