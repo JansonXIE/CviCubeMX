@@ -2663,11 +2663,10 @@ void ClockConfigWidget::createClk1MSubNodeWidget(const QString& nodeName, QWidge
     divBox->setRange(1, 1000);
     divBox->setValue(1);  // 默认分频为1
     // 只读显示
-    divBox->setEnabled(false);
     divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
     divBox->setFocusPolicy(Qt::NoFocus);
     divBox->setFixedWidth(45);
-    divBox->setStyleSheet("font-size: 10px;");
+    divBox->setStyleSheet("font-size: 10px; color: #000000;");
     divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);  // 禁用上下按钮
     divBox->setReadOnly(true);  // 设置为只读，禁止编辑
     divBox->installEventFilter(this);  // 安装事件过滤器以禁用滚轮
@@ -2736,11 +2735,10 @@ void ClockConfigWidget::createClkCam1PLLSubNodeWidget(const QString& nodeName, Q
     divBox->setRange(1, 1000);
     divBox->setValue(4);  // 默认分频为4
     // 只读显示
-    divBox->setEnabled(false);
     divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
     divBox->setFocusPolicy(Qt::NoFocus);
     divBox->setFixedWidth(45);
-    divBox->setStyleSheet("font-size: 10px;");
+    divBox->setStyleSheet("font-size: 10px; color: #000000;");
     divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);  // 禁用上下按钮
     divBox->setReadOnly(true);  // 设置为只读，禁止编辑
     divBox->installEventFilter(this);  // 安装事件过滤器以禁用滚轮
@@ -2809,11 +2807,10 @@ void ClockConfigWidget::createClkRawAxiSubNodeWidget(const QString& nodeName, QW
     divBox->setRange(1, 1000);
     divBox->setValue(1);  // 默认分频为1
     // 只读显示
-    divBox->setEnabled(false);
     divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
     divBox->setFocusPolicy(Qt::NoFocus);
     divBox->setFixedWidth(45);
-    divBox->setStyleSheet("font-size: 10px;");
+    divBox->setStyleSheet("font-size: 10px; color: #000000;");
     divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);  // 禁用上下按钮
     divBox->setReadOnly(true);  // 设置为只读，禁止编辑
     divBox->installEventFilter(this);  // 安装事件过滤器以禁用滚轮
@@ -2886,11 +2883,10 @@ void ClockConfigWidget::createClkCam0PLLSubNodeWidget(const QString& nodeName, Q
         divBox->setValue(50);  // clk_cam0_vip默认分频系数是50
     }
     // 只读显示
-    divBox->setEnabled(false);
     divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
     divBox->setFocusPolicy(Qt::NoFocus);
     divBox->setFixedWidth(45);
-    divBox->setStyleSheet("font-size: 10px;");
+    divBox->setStyleSheet("font-size: 10px; color: #000000;");
     divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);  // 禁用上下按钮
     divBox->setReadOnly(true);  // 设置为只读，禁止编辑
     divBox->installEventFilter(this);  // 安装事件过滤器以禁用滚轮
@@ -2972,11 +2968,10 @@ void ClockConfigWidget::createClkDispPLLSubNodeWidget(const QString& nodeName, Q
         divBox->setValue(8);   // clk_sys_disp默认分频系数是8
     }
     // 只读显示
-    divBox->setEnabled(false);
     divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
     divBox->setFocusPolicy(Qt::NoFocus);
     divBox->setFixedWidth(45);
-    divBox->setStyleSheet("font-size: 10px;");
+    divBox->setStyleSheet("font-size: 10px; color: #000000;");
     divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);  // 禁用上下按钮
     divBox->setReadOnly(true);  // 设置为只读，禁止编辑
     divBox->installEventFilter(this);  // 安装事件过滤器以禁用滚轮
@@ -3053,11 +3048,10 @@ void ClockConfigWidget::createClkSysDispSubNodeWidget(const QString& nodeName, Q
     divBox->setRange(1, 1000);
     divBox->setValue(1);  // clk_disp_vip默认分频系数是1
     // 只读显示
-    divBox->setEnabled(false);
     divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
     divBox->setFocusPolicy(Qt::NoFocus);
     divBox->setFixedWidth(45);
-    divBox->setStyleSheet("font-size: 10px;");
+    divBox->setStyleSheet("font-size: 10px; color: #000000;");
     divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);  // 禁用上下按钮
     divBox->setReadOnly(true);  // 设置为只读，禁止编辑
     divBox->installEventFilter(this);  // 安装事件过滤器以禁用滚轮
@@ -3127,11 +3121,10 @@ void ClockConfigWidget::createClkA0PLLSubNodeWidget(const QString& nodeName, QWi
     divBox->setRange(1, 1000);
     divBox->setValue(17);  // 默认分频系数是17
     // 只读显示
-    divBox->setEnabled(false);
     divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
     divBox->setFocusPolicy(Qt::NoFocus);
     divBox->setFixedWidth(45);
-    divBox->setStyleSheet("font-size: 10px;");
+    divBox->setStyleSheet("font-size: 10px; color: #000000;");
     divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);  // 禁用上下按钮
     divBox->setReadOnly(true);  // 设置为只读，禁止编辑
     divBox->installEventFilter(this);  // 安装事件过滤器以禁用滚轮
@@ -3201,11 +3194,10 @@ void ClockConfigWidget::createClkRVPLLSubNodeWidget(const QString& nodeName, QWi
     divBox->setRange(1, 1000);
     divBox->setValue(2);  // 默认分频系数是2
     // 只读显示
-    divBox->setEnabled(false);
     divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
     divBox->setFocusPolicy(Qt::NoFocus);
     divBox->setFixedWidth(45);
-    divBox->setStyleSheet("font-size: 10px;");
+    divBox->setStyleSheet("font-size: 10px; color: #000000;");
     divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);  // 禁用上下按钮
     divBox->setReadOnly(true);  // 设置为只读，禁止编辑
     divBox->installEventFilter(this);  // 安装事件过滤器以禁用滚轮
@@ -3278,11 +3270,10 @@ void ClockConfigWidget::createClkAPPLLSubNodeWidget(const QString& nodeName, QWi
     divBox->setRange(1, 1000);
     divBox->setValue(1);  // 默认分频系数是1
     // 只读显示
-    divBox->setEnabled(false);
     divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
     divBox->setFocusPolicy(Qt::NoFocus);
     divBox->setFixedWidth(45);
-    divBox->setStyleSheet("font-size: 10px;");
+    divBox->setStyleSheet("font-size: 10px; color: #000000;");
     divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);  // 禁用上下按钮
     divBox->setReadOnly(true);  // 设置为只读，禁止编辑
     divBox->installEventFilter(this);  // 安装事件过滤器以禁用滚轮
@@ -3371,11 +3362,10 @@ void ClockConfigWidget::createClkFPLLSubNodeWidget(const QString& nodeName, QWid
         divBox->setValue(10);   // clk_fab_100M默认分频系数是10
     }
     // 只读显示
-    divBox->setEnabled(false);
     divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
     divBox->setFocusPolicy(Qt::NoFocus);
     divBox->setFixedWidth(45);
-    divBox->setStyleSheet("font-size: 10px;");
+    divBox->setStyleSheet("font-size: 10px; color: #000000;");
     divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);  // 禁用上下按钮
     divBox->setReadOnly(true);  // 设置为只读，禁止编辑
     divBox->installEventFilter(this);  // 安装事件过滤器以禁用滚轮
@@ -3469,12 +3459,10 @@ void ClockConfigWidget::createClkTPLLSubNodeWidget(const QString& nodeName, QWid
         divBox->setValue(3);  // clk_tpu_gdma默认分频系数是3
     }
     // 只读显示
-    divBox->setEnabled(false);
     divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
     divBox->setFocusPolicy(Qt::NoFocus);
     divBox->setFixedWidth(45);
-    divBox->setStyleSheet("font-size: 10px;");
-    divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);  // 禁用上下按钮
+    divBox->setStyleSheet("font-size: 10px; color: #000000;");
     divBox->setReadOnly(true);  // 设置为只读，禁止编辑
     divBox->installEventFilter(this);  // 安装事件过滤器以禁用滚轮
     
@@ -3593,11 +3581,9 @@ void ClockConfigWidget::createClkMPLLSubNodeWidget(const QString& nodeName, QWid
         divBox->setValue(4);  // clk_hsperi默认分频系数是4
     }
     // 只读显示
-    divBox->setEnabled(false);
-    divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
     divBox->setFocusPolicy(Qt::NoFocus);
     divBox->setFixedWidth(45);
-    divBox->setStyleSheet("font-size: 10px;");
+    divBox->setStyleSheet("font-size: 10px; color: #000000;");
     divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);  // 禁用上下按钮
     divBox->setReadOnly(true);  // 设置为只读，禁止编辑
     divBox->installEventFilter(this);  // 安装事件过滤器以禁用滚轮
@@ -3721,11 +3707,10 @@ void ClockConfigWidget::createClkFAB100MSubNodeWidget(const QString& nodeName, Q
     }
     divBox->setValue(defaultDivider);
     // 只读显示
-    divBox->setEnabled(false);
     divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
     divBox->setFocusPolicy(Qt::NoFocus);
     divBox->setFixedWidth(45);
-    divBox->setStyleSheet("font-size: 10px;");
+    divBox->setStyleSheet("font-size: 10px; color: #000000;");
     divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);  // 禁用上下按钮
     divBox->setReadOnly(true);  // 设置为只读，禁止编辑
     divBox->installEventFilter(this);  // 安装事件过滤器以禁用滚轮
@@ -3809,11 +3794,10 @@ void ClockConfigWidget::createClkXtalMiscSubNodeWidget(const QString& nodeName, 
         divBox->setValue(1);  // 所有子节点默认分频系数是1
     }
     // 只读显示
-    divBox->setEnabled(false);
     divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
     divBox->setFocusPolicy(Qt::NoFocus);
     divBox->setFixedWidth(45);
-    divBox->setStyleSheet("font-size: 10px;");
+    divBox->setStyleSheet("font-size: 10px; color: #000000;");
     divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);  // 禁用上下按钮
     divBox->setReadOnly(true);  // 设置为只读，禁止编辑
     divBox->installEventFilter(this);  // 安装事件过滤器以禁用滚轮
@@ -3892,11 +3876,10 @@ void ClockConfigWidget::createClkI2CSubNodeWidget(const QString& nodeName, QWidg
     divBox->setValue(1);  // 子节点默认分频系数是1
 
     // 只读显示
-    divBox->setEnabled(false);
     divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
     divBox->setFocusPolicy(Qt::NoFocus);
     divBox->setFixedWidth(45);
-    divBox->setStyleSheet("font-size: 10px;");
+    divBox->setStyleSheet("font-size: 10px; color: #000000;");
     divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);  // 禁用上下按钮
     divBox->setReadOnly(true);  // 设置为只读，禁止编辑
     divBox->installEventFilter(this);  // 安装事件过滤器以禁用滚轮
@@ -3968,11 +3951,10 @@ void ClockConfigWidget::createClkAPBI2CSubNodeWidget(const QString& nodeName, QW
     divBox->setRange(1, 1000);
     divBox->setValue(1);  // 默认分频为1
     // 只读显示
-    divBox->setEnabled(false);
     divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
     divBox->setFocusPolicy(Qt::NoFocus);
     divBox->setFixedWidth(45);
-    divBox->setStyleSheet("font-size: 10px;");
+    divBox->setStyleSheet("font-size: 10px; color: #000000;");
     divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);  // 禁用上下按钮
     divBox->setReadOnly(true);  // 设置为只读，禁止编辑
     divBox->installEventFilter(this);  // 安装事件过滤器以禁用滚轮
@@ -4047,11 +4029,10 @@ void ClockConfigWidget::createClkAPBVCSYSSubNodeWidget(const QString& nodeName, 
     divBox->setRange(1, 1000);
     divBox->setValue(1);  // 默认分频为1
     // 只读显示
-    divBox->setEnabled(false);
     divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
     divBox->setFocusPolicy(Qt::NoFocus);
     divBox->setFixedWidth(45);
-    divBox->setStyleSheet("font-size: 10px;");
+    divBox->setStyleSheet("font-size: 10px; color: #000000;");
     divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);  // 禁用上下按钮
     divBox->setReadOnly(true);  // 设置为只读，禁止编辑
     divBox->installEventFilter(this);  // 安装事件过滤器以禁用滚轮
@@ -4126,11 +4107,10 @@ void ClockConfigWidget::createClkX2PSubNodeWidget(const QString& nodeName, QWidg
     divBox->setRange(1, 1000);
     divBox->setValue(1);  // 默认分频为1
     // 只读显示
-    divBox->setEnabled(false);
     divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
     divBox->setFocusPolicy(Qt::NoFocus);
     divBox->setFixedWidth(45);
-    divBox->setStyleSheet("font-size: 10px;");
+    divBox->setStyleSheet("font-size: 10px; color: #000000;");
     divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);  // 禁用上下按钮
     divBox->setReadOnly(true);  // 设置为只读，禁止编辑
     divBox->installEventFilter(this);  // 安装事件过滤器以禁用滚轮
@@ -4234,11 +4214,10 @@ void ClockConfigWidget::createClkRTCSYSSubNodeWidget(const QString& nodeName, QW
         divBox->setValue(1);  // clk_rtc_sys_mcu默认分频系数是1
     }
     // 只读显示
-    divBox->setEnabled(false);
     divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
     divBox->setFocusPolicy(Qt::NoFocus);
     divBox->setFixedWidth(45);
-    divBox->setStyleSheet("font-size: 10px;");
+    divBox->setStyleSheet("font-size: 10px; color: #000000;");
     divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);  // 禁用上下按钮
     divBox->setReadOnly(true);  // 设置为只读，禁止编辑
     divBox->installEventFilter(this);  // 安装事件过滤器以禁用滚轮
@@ -4345,11 +4324,10 @@ void ClockConfigWidget::createClkHSPeriSubNodeWidget(const QString& nodeName, QW
         divBox->setValue(1);  // 所有子节点默认分频系数是1
     }
     // 只读显示
-    divBox->setEnabled(false);
     divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
     divBox->setFocusPolicy(Qt::NoFocus);
     divBox->setFixedWidth(45);
-    divBox->setStyleSheet("font-size: 10px;");
+    divBox->setStyleSheet("font-size: 10px; color: #000000;");
     divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);  // 禁用上下按钮
     divBox->setReadOnly(true);  // 设置为只读，禁止编辑
     divBox->installEventFilter(this);  // 安装事件过滤器以禁用滚轮
@@ -4427,11 +4405,10 @@ void ClockConfigWidget::createClkVIPSYS0SubNodeWidget(const QString& nodeName, Q
     // 根据子节点设置不同的默认分频值
     divBox->setValue(1);  // 所有子节点默认分频系数是1
     // 只读显示
-    divBox->setEnabled(false);
     divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
     divBox->setFocusPolicy(Qt::NoFocus);
     divBox->setFixedWidth(45);
-    divBox->setStyleSheet("font-size: 10px;");
+    divBox->setStyleSheet("font-size: 10px; color: #000000;");
     divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);  // 禁用上下按钮
     divBox->setReadOnly(true);  // 设置为只读，禁止编辑
     divBox->installEventFilter(this);  // 安装事件过滤器以禁用滚轮
@@ -4502,11 +4479,10 @@ void ClockConfigWidget::createClkVIPSYS1SubNodeWidget(const QString& nodeName, Q
     // 根据子节点设置不同的默认分频值
     divBox->setValue(1);  // 所有子节点默认分频系数是1
     // 只读显示
-    divBox->setEnabled(false);
     divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
     divBox->setFocusPolicy(Qt::NoFocus);
     divBox->setFixedWidth(45);
-    divBox->setStyleSheet("font-size: 10px;");
+    divBox->setStyleSheet("font-size: 10px; color: #000000;");
     divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);  // 禁用上下按钮
     divBox->setReadOnly(true);  // 设置为只读，禁止编辑
     divBox->installEventFilter(this);  // 安装事件过滤器以禁用滚轮
@@ -4577,11 +4553,10 @@ void ClockConfigWidget::createClkVIPSYS2SubNodeWidget(const QString& nodeName, Q
     // 所有子节点默认分频系数是1
     divBox->setValue(1);
     // 只读显示
-    divBox->setEnabled(false);
     divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
     divBox->setFocusPolicy(Qt::NoFocus);
     divBox->setFixedWidth(45);
-    divBox->setStyleSheet("font-size: 10px;");
+    divBox->setStyleSheet("font-size: 10px; color: #000000;");
     divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);  // 禁用上下按钮
     divBox->setReadOnly(true);  // 设置为只读，禁止编辑
     divBox->installEventFilter(this);  // 安装事件过滤器以禁用滚轮
@@ -4652,11 +4627,10 @@ void ClockConfigWidget::createClkVIPSYS3SubNodeWidget(const QString& nodeName, Q
     // 根据子节点设置不同的默认分频值
     divBox->setValue(1);  // 所有子节点默认分频系数是1
     // 只读显示
-    divBox->setEnabled(false);
     divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
     divBox->setFocusPolicy(Qt::NoFocus);
     divBox->setFixedWidth(45);
-    divBox->setStyleSheet("font-size: 10px;");
+    divBox->setStyleSheet("font-size: 10px; color: #000000;");
     divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);  // 禁用上下按钮
     divBox->setReadOnly(true);  // 设置为只读，禁止编辑
     divBox->installEventFilter(this);  // 安装事件过滤器以禁用滚轮
@@ -4727,11 +4701,10 @@ void ClockConfigWidget::createClkSPISubNodeWidget(const QString& nodeName, QWidg
     // 根据子节点设置不同的默认分频值
     divBox->setValue(1);  // 所有子节点默认分频系数是1
     // 只读显示
-    divBox->setEnabled(false);
     divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
     divBox->setFocusPolicy(Qt::NoFocus);
     divBox->setFixedWidth(45);
-    divBox->setStyleSheet("font-size: 10px;");
+    divBox->setStyleSheet("font-size: 10px; color: #000000;");
     divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);  // 禁用上下按钮
     divBox->setReadOnly(true);  // 设置为只读，禁止编辑
     divBox->installEventFilter(this);  // 安装事件过滤器以禁用滚轮
@@ -4800,11 +4773,10 @@ void ClockConfigWidget::createClkKeyscanXclkSubNodeWidget(const QString& nodeNam
     QSpinBox* divBox = new QSpinBox();
     divBox->setRange(1, 1000);
     divBox->setValue(1);  // 默认分频系数是1
-    divBox->setEnabled(false);
     divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
     divBox->setFocusPolicy(Qt::NoFocus);
     divBox->setFixedWidth(45);
-    divBox->setStyleSheet("font-size: 10px;");
+    divBox->setStyleSheet("font-size: 10px; color: #000000;");
     divBox->setReadOnly(true);
     divBox->installEventFilter(this);
     
@@ -4866,11 +4838,10 @@ void ClockConfigWidget::createClkWgnXclkSubNodeWidget(const QString& nodeName, Q
     QSpinBox* divBox = new QSpinBox();
     divBox->setRange(1, 1000);
     divBox->setValue(1);  // 默认分频系数是1
-    divBox->setEnabled(false);
     divBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
     divBox->setFocusPolicy(Qt::NoFocus);
     divBox->setFixedWidth(45);
-    divBox->setStyleSheet("font-size: 10px;");
+    divBox->setStyleSheet("font-size: 10px; color: #000000;");
     divBox->setReadOnly(true);
     divBox->installEventFilter(this);
     
@@ -4946,7 +4917,7 @@ void ClockConfigWidget::initializeModulePositions()
     
     // FPLL分支的二级子节点
     ModulePosition clkFAB100MSubPos = {"clk_fab100m子节点", 770, 980, 200, 300};     // clk_fab_100M子节点
-    ModulePosition clkAPBI2CSubPos = {"clk_apb_i2c子节点", 1270, 50, 200, 400};      // clk_apb_i2c子节点 (从clk_i2c)
+    ModulePosition clkAPBI2CSubPos = {"clk_apb_i2c子节点", 1270, 50, 200, 470};      // clk_apb_i2c子节点 (从clk_i2c)
     ModulePosition clkAPBVCSYSSubPos = {"clk_apb_vcsys子节点", 1040, 950, 200, 220}; // clk_apb_vcsys子节点 (从clk_fab_100M)
     ModulePosition clkX2PSubPos = {"clk_x2p子节点", 1040, 1180, 200, 420};           // clk_x2p子节点 (从clk_fab_100M)
     ModulePosition clkVIPSYS2SubPos = {"clk_vip_sys_2子节点", 2580, 1610, 200, 220}; // clk_vip_sys_2子节点
