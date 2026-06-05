@@ -16,6 +16,54 @@
 				"$gcc"
 			],
 			"isBackground": false
+		},
+		{
+			"label": "Run All Tests",
+			"type": "shell",
+			"command": "npx",
+			"args": [
+				"vitest",
+				"run",
+				"--reporter=verbose"
+			],
+			"group": "test",
+			"problemMatcher": [],
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "new"
+			}
+		},
+		{
+			"label": "Run Tests (Watch)",
+			"type": "shell",
+			"command": "npx",
+			"args": [
+				"vitest",
+				"--reporter=verbose"
+			],
+			"group": "test",
+			"problemMatcher": [],
+			"isBackground": true,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "Run Rust Tests",
+			"type": "shell",
+			"command": "cargo",
+			"args": [
+				"test",
+				"--verbose"
+			],
+			"group": "test",
+			"problemMatcher": [],
+			"isBackground": false,
+			"options": {
+				"cwd": "${workspaceFolder}/src-tauri"
+			}
 		}
 	]
 }

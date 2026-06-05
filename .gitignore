@@ -1,1 +1,10 @@
 build/
+node_modules/
+dist/
+target/
+*.swp
+*.swo
+*~
+.DS_Store
+coverage/
+src-tauri/target/

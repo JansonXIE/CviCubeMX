@@ -1,0 +1,54 @@
+{
+  "description": "从 chipconfig.cpp 提取的芯片规格映射参考数据",
+  "source": "chipconfig.cpp: getPinCountForChip()",
+  "chips": {
+    "cv1801c": {
+      "chipType": "cv1801c",
+      "package": "QFN",
+      "pinCount": 64,
+      "description": "QFN封装，每边16个引脚"
+    },
+    "cv1801h": {
+      "chipType": "cv1801h",
+      "package": "BGA",
+      "pinCount": 60,
+      "description": "BGA封装，8x8网格去掉四角=60"
+    },
+    "cv1811c": {
+      "chipType": "cv1811c",
+      "package": "QFN",
+      "pinCount": 88,
+      "description": "QFN封装，每边22个引脚"
+    },
+    "cv1811h": {
+      "chipType": "cv1811h",
+      "package": "BGA",
+      "pinCount": 84,
+      "description": "BGA封装，自适应网格去掉四角=84"
+    },
+    "cv1842cp": {
+      "chipType": "cv1842cp",
+      "package": "QFN",
+      "pinCount": 88,
+      "description": "QFN封装，每边22个引脚"
+    },
+    "cv1842hp": {
+      "chipType": "cv1842hp",
+      "package": "BGA",
+      "pinCount": 221,
+      "description": "BGA封装，15x15网格去掉四角=221"
+    }
+  },
+  "BGA_corner_exclusion": {
+    "description": "所有BGA封装移除四角引脚",
+    "excluded_pins": ["A1", "A15", "R1", "R15"],
+    "rows": "ABCDEFGHJKLMNOPQR",
+    "note": "跳过字母I，避免与数字1混淆"
+  },
+  "QFN_pin_numbering": {
+    "description": "QFN封装引脚编号规则",
+    "direction": "逆时针",
+    "start": "左侧上端",
+    "sequence": ["左侧从上到下", "底部从左到右", "右侧从下到上", "顶部从右到左"]
+  }
+}

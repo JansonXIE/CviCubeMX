@@ -1,0 +1,34 @@
+{
+  "description": "从 generate_pins.py 提取的功能名称重映射规则",
+  "source": "generate_pins.py: FUNCTION_NAME_REMAP",
+  "remap_rules": {
+    "CR_4WTMS": "CV_2WTMS_CR_4WTMS",
+    "CR_4WTCK": "CV_2WTCK_CR_4WTCK",
+    "CR_4WTDI": "CV_SCL0__CR_4WTDI",
+    "CR_4WTDO": "CV_SDA0__CR_4WTDO",
+    "CR_SCL0": "CV_4WTDI_CR_SCL0",
+    "CR_SDA0": "CV_4WTMS_CR_SDA0",
+    "CR_2WTMS": "CV_4WTDO_CR_2WTMS",
+    "CR_2WTCK": "CV_4WTCK_CR_2WTCK"
+  },
+  "description_format": {
+    "pattern": "index : function_name [(default)]",
+    "example_default": "0 : UART0_TX (default)",
+    "example_non_default": "3 : XGPIOA_16",
+    "bracket_replacement": {
+      "[": "_",
+      "]": ""
+    },
+    "note": "括号 [ ] 在功能名中被替换为下划线和空字符串"
+  },
+  "pin_name_cleaning": {
+    "pattern": "___作为分割符",
+    "example": "PAD_ETH_RXM___EPHY_TXP → PAD_ETH_RXM",
+    "note": "Pin Name 中包含 ___ 的部分只取第一段"
+  },
+  "default_function_fallback": {
+    "no_default_marker": "查找第一个包含 XGPIO 的功能作为默认",
+    "no_gpio_found": "取功能列表中的第一个",
+    "empty_list": "使用 GPIO 作为默认"
+  }
+}
