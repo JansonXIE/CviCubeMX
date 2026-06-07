@@ -76,10 +76,7 @@ pub fn check_memory_overlap(region1: &MemoryRegion, region2: &MemoryRegion) -> b
 /// 此函数返回重叠区域列表作为警告，不作为硬错误
 pub fn validate_memory_layout(regions: &[MemoryRegion]) -> Result<(), String> {
     // 过滤出有实际大小的区域
-    let mut sorted_regions: Vec<&MemoryRegion> = regions
-        .iter()
-        .filter(|r| r.size > 0)
-        .collect();
+    let mut sorted_regions: Vec<&MemoryRegion> = regions.iter().filter(|r| r.size > 0).collect();
 
     // 按起始地址排序
     sorted_regions.sort_by_key(|r| r.start_address);
@@ -116,22 +113,21 @@ pub fn validate_memory_layout(regions: &[MemoryRegion]) -> Result<(), String> {
 /// 检查特定区域之间的约束关系
 pub fn validate_memory_constraints(regions: &[MemoryRegion]) -> Result<(), String> {
     // 构建名称到区域的映射
-    let region_map: std::collections::HashMap<&str, &MemoryRegion> = regions
-        .iter()
-        .map(|r| (r.name.as_str(), r))
-        .collect();
+    let region_map: std::collections::HashMap<&str, &MemoryRegion> =
+        regions.iter().map(|r| (r.name.as_str(), r)).collect();
 
-    let get_addr = |name: &str| -> u64 {
-        region_map.get(name).map(|r| r.start_address).unwrap_or(0)
-    };
+    let get_addr =
+        |name: &str| -> u64 { region_map.get(name).map(|r| r.start_address).unwrap_or(0) };
 
-    let get_size = |name: &str| -> u64 {
-        region_map.get(name).map(|r| r.size).unwrap_or(0)
-    };
+    let get_size = |name: &str| -> u64 { region_map.get(name).map(|r| r.size).unwrap_or(0) };
 
     // RTOS_SYS_SIZE: 默认 4M
     let rtos_sys_size: u64 = get_size("RTOS_SYS");
-    let rtos_sys_size = if rtos_sys_size > 0 { rtos_sys_size } else { 4 * 1024 * 1024 };
+    let rtos_sys_size = if rtos_sys_size > 0 {
+        rtos_sys_size
+    } else {
+        4 * 1024 * 1024
+    };
 
     let fsbl_c906l_start_addr = get_addr("FSBL_C906L_START");
     let rtos_ion_addr = get_addr("RTOS_ION");
@@ -195,25 +191,139 @@ pub fn validate_memory_constraints(regions: &[MemoryRegion]) -> Result<(), Strin
 /// 获取默认内存区域列表（对应 C++ 中的 initializeMemoryRegions）
 pub fn get_default_memory_regions() -> Vec<MemoryRegion> {
     let region_data: Vec<(String, u64, u64, bool, String)> = vec![
-        ("MONITOR".to_string(),            0x80000000, 0x0,        true, "监控区域".to_string()),
-        ("KERNEL_MEMORY".to_string(),      0x80000000, 0x10000000, true, "内核内存区域".to_string()),
-        ("FSBL_C906L_START".to_string(),   0x800a0000, 0x0,        true, "FSBL C906L启动区域".to_string()),
-        ("OPENSBI_FDT".to_string(),        0x800a0000, 0x0,        true, "OpenSBI设备树".to_string()),
-        ("RTOS_LOG".to_string(),           0x804a0000, 0x20000,    true, "RTOS日志区域".to_string()),
-        ("SHARE_MEM".to_string(),          0x804c0000, 0x20000,    true, "共享内存".to_string()),
-        ("SHARE_PARAM".to_string(),        0x804e0000, 0x10000,    true, "共享参数".to_string()),
-        ("PQBIN".to_string(),              0x80500000, 0x80000,    true, "PQBIN区域".to_string()),
-        ("RTOS_LOGO".to_string(),          0x80580000, 0x0,        true, "RTOS Logo".to_string()),
-        ("CVI_UPDATE_HEADER".to_string(),  0x813ffc00, 0x400,      true, "CVI更新头".to_string()),
-        ("FSBL_UNZIP".to_string(),         0x81400000, 0x400000,   true, "FSBL解压区域".to_string()),
-        ("UIMAG".to_string(),              0x81400000, 0x400000,   true, "UI镜像".to_string()),
-        ("RTOS_COMPRESS_BIN".to_string(),  0x81ea0000, 0x0,        true, "RTOS压缩二进制".to_string()),
-        ("H26X_BITSTREAM".to_string(),     0x85500000, 0x0,        true, "H26X比特流".to_string()),
-        ("H26X_ENC_BUFF".to_string(),      0x85500000, 0x0,        true, "H26X编码缓冲".to_string()),
-        ("ION".to_string(),                0x85500000, 0x4b00000,  true, "ION内存池".to_string()),
-        ("ISP_MEM_BASE".to_string(),       0x85500000, 0x0,        true, "ISP内存基址".to_string()),
-        ("BOOTLOGO".to_string(),           0x89e3e000, 0x1c2000,   true, "启动Logo".to_string()),
-        ("RTOS_ION".to_string(),           0x8a000000, 0x6000000,  true, "RTOS ION".to_string()),
+        (
+            "MONITOR".to_string(),
+            0x80000000,
+            0x0,
+            true,
+            "监控区域".to_string(),
+        ),
+        (
+            "KERNEL_MEMORY".to_string(),
+            0x80000000,
+            0x10000000,
+            true,
+            "内核内存区域".to_string(),
+        ),
+        (
+            "FSBL_C906L_START".to_string(),
+            0x800a0000,
+            0x0,
+            true,
+            "FSBL C906L启动区域".to_string(),
+        ),
+        (
+            "OPENSBI_FDT".to_string(),
+            0x800a0000,
+            0x0,
+            true,
+            "OpenSBI设备树".to_string(),
+        ),
+        (
+            "RTOS_LOG".to_string(),
+            0x804a0000,
+            0x20000,
+            true,
+            "RTOS日志区域".to_string(),
+        ),
+        (
+            "SHARE_MEM".to_string(),
+            0x804c0000,
+            0x20000,
+            true,
+            "共享内存".to_string(),
+        ),
+        (
+            "SHARE_PARAM".to_string(),
+            0x804e0000,
+            0x10000,
+            true,
+            "共享参数".to_string(),
+        ),
+        (
+            "PQBIN".to_string(),
+            0x80500000,
+            0x80000,
+            true,
+            "PQBIN区域".to_string(),
+        ),
+        (
+            "RTOS_LOGO".to_string(),
+            0x80580000,
+            0x0,
+            true,
+            "RTOS Logo".to_string(),
+        ),
+        (
+            "CVI_UPDATE_HEADER".to_string(),
+            0x813ffc00,
+            0x400,
+            true,
+            "CVI更新头".to_string(),
+        ),
+        (
+            "FSBL_UNZIP".to_string(),
+            0x81400000,
+            0x400000,
+            true,
+            "FSBL解压区域".to_string(),
+        ),
+        (
+            "UIMAG".to_string(),
+            0x81400000,
+            0x400000,
+            true,
+            "UI镜像".to_string(),
+        ),
+        (
+            "RTOS_COMPRESS_BIN".to_string(),
+            0x81ea0000,
+            0x0,
+            true,
+            "RTOS压缩二进制".to_string(),
+        ),
+        (
+            "H26X_BITSTREAM".to_string(),
+            0x85500000,
+            0x0,
+            true,
+            "H26X比特流".to_string(),
+        ),
+        (
+            "H26X_ENC_BUFF".to_string(),
+            0x85500000,
+            0x0,
+            true,
+            "H26X编码缓冲".to_string(),
+        ),
+        (
+            "ION".to_string(),
+            0x85500000,
+            0x4b00000,
+            true,
+            "ION内存池".to_string(),
+        ),
+        (
+            "ISP_MEM_BASE".to_string(),
+            0x85500000,
+            0x0,
+            true,
+            "ISP内存基址".to_string(),
+        ),
+        (
+            "BOOTLOGO".to_string(),
+            0x89e3e000,
+            0x1c2000,
+            true,
+            "启动Logo".to_string(),
+        ),
+        (
+            "RTOS_ION".to_string(),
+            0x8a000000,
+            0x6000000,
+            true,
+            "RTOS ION".to_string(),
+        ),
     ];
 
     region_data
@@ -258,11 +368,10 @@ pub fn export_memory_json(regions: Vec<MemoryRegion>, path: String) -> Result<()
         "memoryBaseAddress": format!("0x{:x}", MEMORY_BASE_ADDRESS),
     });
 
-    let json_str = serde_json::to_string_pretty(&json_data)
-        .map_err(|e| format!("JSON序列化失败: {}", e))?;
+    let json_str =
+        serde_json::to_string_pretty(&json_data).map_err(|e| format!("JSON序列化失败: {}", e))?;
 
-    fs::write(&path, json_str)
-        .map_err(|e| format!("写入文件失败: {}", e))?;
+    fs::write(&path, json_str).map_err(|e| format!("写入文件失败: {}", e))?;
 
     Ok(())
 }
@@ -285,16 +394,13 @@ pub fn export_memory_defconfig(
     }
 
     // 读取现有文件内容
-    let content = fs::read_to_string(path)
-        .map_err(|e| format!("无法读取defconfig文件: {}", e))?;
+    let content = fs::read_to_string(path).map_err(|e| format!("无法读取defconfig文件: {}", e))?;
 
     let mut lines: Vec<String> = content.lines().map(|s| s.to_string()).collect();
 
     // 获取相关区域的大小
-    let region_map: std::collections::HashMap<&str, &MemoryRegion> = regions
-        .iter()
-        .map(|r| (r.name.as_str(), r))
-        .collect();
+    let region_map: std::collections::HashMap<&str, &MemoryRegion> =
+        regions.iter().map(|r| (r.name.as_str(), r)).collect();
 
     let ion_size = region_map.get("ION").map(|r| r.size).unwrap_or(0);
     let rtos_ion_size = region_map.get("RTOS_ION").map(|r| r.size).unwrap_or(0);
@@ -326,8 +432,7 @@ pub fn export_memory_defconfig(
 
     // 写回文件
     let output = lines.join("\n");
-    fs::write(path, output)
-        .map_err(|e| format!("无法写入defconfig文件: {}", e))?;
+    fs::write(path, output).map_err(|e| format!("无法写入defconfig文件: {}", e))?;
 
     Ok(())
 }
@@ -498,17 +603,15 @@ mod tests {
 
     #[test]
     fn test_validate_memory_layout_address_below_base() {
-        let regions = vec![
-            MemoryRegion {
-                name: "A".to_string(),
-                start_address: 0x70000000, // 低于基地址
-                end_address: 0x70010000,
-                size: 0x10000,
-                size_string: "64K".to_string(),
-                is_editable: true,
-                description: "".to_string(),
-            },
-        ];
+        let regions = vec![MemoryRegion {
+            name: "A".to_string(),
+            start_address: 0x70000000, // 低于基地址
+            end_address: 0x70010000,
+            size: 0x10000,
+            size_string: "64K".to_string(),
+            is_editable: true,
+            description: "".to_string(),
+        }];
         let result = validate_memory_layout(&regions);
         assert!(result.is_err());
         let err_msg = result.unwrap_err();

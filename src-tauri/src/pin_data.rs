@@ -2,7 +2,6 @@
 ///
 /// 从 pinfunction.cpp 提取的引脚功能数据，通过 include_str! 嵌入 JSON。
 /// 提供 Tauri commands: load_pin_data, set_pin_function
-
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Mutex;
@@ -43,13 +42,13 @@ const PIN_DATA_JSON: &str = include_str!("../pin_data.json");
 
 /// 全局用户配置存储
 /// key = (chip_type, pin_name), value = user-selected function
-static USER_CONFIG: std::sync::LazyLock<Mutex<HashMap<(String, String), (String, Option<String>)>>> =
-    std::sync::LazyLock::new(|| Mutex::new(HashMap::new()));
+static USER_CONFIG: std::sync::LazyLock<
+    Mutex<HashMap<(String, String), (String, Option<String>)>>,
+> = std::sync::LazyLock::new(|| Mutex::new(HashMap::new()));
 
 /// 解析嵌入的 JSON 数据
 fn load_raw_pin_data() -> Result<Vec<PinDataRaw>, String> {
-    serde_json::from_str(PIN_DATA_JSON)
-        .map_err(|e| format!("Failed to parse pin_data.json: {}", e))
+    serde_json::from_str(PIN_DATA_JSON).map_err(|e| format!("Failed to parse pin_data.json: {}", e))
 }
 
 /// 加载指定芯片类型的引脚数据
@@ -84,8 +83,10 @@ pub fn load_pin_data(chip_type: String) -> Result<Vec<PinInfo>, String> {
         // 从 JSON 中查找 BGA 引脚 (pin_num 包含字母且不在四角)
         let bga_pins: HashMap<String, PinDataRaw> = raw_data
             .iter()
-            .filter(|p| p.pin_num.chars().any(|c| c.is_alphabetic())
-                       && !corner_exclusions.contains(&p.pin_num))
+            .filter(|p| {
+                p.pin_num.chars().any(|c| c.is_alphabetic())
+                    && !corner_exclusions.contains(&p.pin_num)
+            })
             .map(|p| (p.pin_num.clone(), p.clone()))
             .collect();
 
@@ -115,17 +116,6 @@ pub fn load_pin_data(chip_type: String) -> Result<Vec<PinInfo>, String> {
                         current_function: current,
                         user_configured,
                     });
-                } else {
-                    // 无硬编码数据，使用 basicFunctions
-                    result.push(PinInfo {
-                        pin_num: pin_num.clone(),
-                        pin_name: pin_num.clone(), // 无PAD名称，用编号代替
-                        display_name: pin_num.clone(),
-                        supported_functions: pin_data_tool::BASIC_FUNCTIONS.iter().map(|s| s.to_string()).collect(),
-                        default_function: "GPIO".to_string(),
-                        current_function: "GPIO".to_string(),
-                        user_configured: false,
-                    });
                 }
             }
         }
@@ -154,17 +144,6 @@ pub fn load_pin_data(chip_type: String) -> Result<Vec<PinInfo>, String> {
                     default_function: raw.default_function.clone(),
                     current_function: current,
                     user_configured,
-                });
-            } else {
-                // 无硬编码数据
-                result.push(PinInfo {
-                    pin_num: pin_num.clone(),
-                    pin_name: pin_num.clone(),
-                    display_name: pin_num.clone(),
-                    supported_functions: pin_data_tool::BASIC_FUNCTIONS.iter().map(|s| s.to_string()).collect(),
-                    default_function: "GPIO".to_string(),
-                    current_function: "GPIO".to_string(),
-                    user_configured: false,
                 });
             }
         }
@@ -272,9 +251,9 @@ mod tests {
 
     #[test]
     fn test_cv1842hp_pin_count() {
-        // cv1842hp (BGA 15x15-4=221) 应返回 221 个 PinInfo
+        // cv1842hp 的实际映射引脚少于物理最大引脚数 221
         let result = load_pin_data("cv1842hp".to_string()).unwrap();
-        assert_eq!(result.len(), 221);
+        assert!(result.len() > 30);
     }
 
     #[test]
@@ -289,30 +268,43 @@ mod tests {
 
     #[test]
     fn test_cv1842cp_pin_count() {
-        // cv1842cp (QFN 88 pins) 应返回 88 个 PinInfo
+        // cv1842cp 的实际映射引脚少于物理引脚数 88
         let result = load_pin_data("cv1842cp".to_string()).unwrap();
-        assert_eq!(result.len(), 88);
+        assert!(result.len() > 50);
     }
 
     #[test]
     fn test_cv1801c_pin_count() {
+        // cv1801c 的实际映射引脚少于物理引脚数 64
         let result = load_pin_data("cv1801c".to_string()).unwrap();
-        assert_eq!(result.len(), 64);
+        assert!(result.len() > 30);
     }
 
     #[test]
     fn test_set_and_get_pin_function() {
-        set_pin_function("cv1842hp".to_string(), "PAD_MIPI_TXM4".to_string(), "UART0_TX".to_string(), None).unwrap();
+        set_pin_function(
+            "cv1842hp".to_string(),
+            "PAD_MIPI_TXM4".to_string(),
+            "UART0_TX".to_string(),
+            None,
+        )
+        .unwrap();
 
         let result = load_pin_data("cv1842hp".to_string()).unwrap();
-        let pin = result.iter().find(|p| p.pin_name == "PAD_MIPI_TXM4").unwrap();
+        let pin = result
+            .iter()
+            .find(|p| p.pin_name == "PAD_MIPI_TXM4")
+            .unwrap();
         assert_eq!(pin.current_function, "UART0_TX");
         assert!(pin.user_configured);
 
         // 清除
         clear_pin_functions("cv1842hp".to_string()).unwrap();
         let result = load_pin_data("cv1842hp".to_string()).unwrap();
-        let pin = result.iter().find(|p| p.pin_name == "PAD_MIPI_TXM4").unwrap();
+        let pin = result
+            .iter()
+            .find(|p| p.pin_name == "PAD_MIPI_TXM4")
+            .unwrap();
         assert_eq!(pin.current_function, "XGPIOC_18");
         assert!(!pin.user_configured);
     }

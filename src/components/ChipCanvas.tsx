@@ -88,9 +88,16 @@ export default function ChipCanvas() {
                   return (
                     <div
                       key={`empty-${pinNum}`}
-                      className="w-10 h-10 bg-slate-800/40 rounded-lg border border-slate-700/30 flex items-center justify-center text-slate-600 text-[9px] select-none"
+                      className="relative w-10 h-10 bg-slate-800/20 rounded-full border border-slate-700/50 flex items-center justify-center text-slate-500 text-[10px] font-bold select-none opacity-70"
+                      title={`${pinNum} - 未映射引脚（禁用）`}
                     >
                       {pinNum}
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <svg className="w-6 h-6 text-red-500/80" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <line x1="18" y1="6" x2="6" y2="18"></line>
+                          <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                      </div>
                     </div>
                   );
                 }
@@ -217,9 +224,16 @@ export default function ChipCanvas() {
       return (
         <div
           key={key}
-          className="w-10 h-10 bg-slate-800/40 rounded-lg border border-slate-700/30 flex items-center justify-center text-slate-600 text-[9px] select-none"
+          className="relative w-10 h-10 bg-slate-800/20 rounded-lg border border-slate-700/50 flex items-center justify-center text-slate-500 text-[10px] font-bold select-none opacity-70"
+          title={`${pinNum} - 未映射引脚（禁用）`}
         >
           {pinNum}
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <svg className="w-6 h-6 text-red-500/80" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </div>
         </div>
       );
     }
@@ -240,7 +254,7 @@ export default function ChipCanvas() {
       
       <div className="mb-4 text-center">
         <h3 className="font-bold text-slate-300">芯片引脚布局拓扑</h3>
-        <p className="text-xs text-slate-500 mt-1">右键引脚以配置对应复用功能</p>
+        <p className="text-xs text-slate-500 mt-1">点击或右键引脚以配置对应复用功能</p>
       </div>
 
       <div className="relative w-full max-w-4xl bg-slate-950/40 border border-slate-800/80 rounded-xl p-4 shadow-inner">

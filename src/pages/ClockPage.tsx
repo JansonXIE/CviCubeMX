@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { useClockStore, PllConfig } from "../stores/clockStore";
 import { Search, Save, Clock, HelpCircle, RefreshCw } from "lucide-react";
+import { useSdkStore } from "../stores/sdkStore";
 
 export default function ClockPage() {
+  const { sdkPath, chipType } = useSdkStore();
   const {
     pllConfigs,
     outputs,
@@ -52,11 +54,16 @@ export default function ClockPage() {
   };
 
   const handleExport = async () => {
+    if (!sdkPath || !chipType) {
+      setExportMsg("请先在顶部配置全局 SDK 源码路径和芯片型号！");
+      setTimeout(() => setExportMsg(null), 4000);
+      return;
+    }
     setExportMsg(null);
     try {
-      await exportClockDefconfig("boards_pinout/cv1842hp/defconfig", "cv1842hp", localPlls);
-      setExportMsg("时钟配置导出成功！");
-      setTimeout(() => setExportMsg(null), 3000);
+      await exportClockDefconfig(sdkPath, chipType, localPlls);
+      setExportMsg(`时钟配置已成功保存并同步到: build/boards/cv184x/${chipType}/${chipType}_defconfig`);
+      setTimeout(() => setExportMsg(null), 4000);
     } catch (e) {
       setExportMsg(`时钟配置导出失败: ${e}`);
       setTimeout(() => setExportMsg(null), 5000);

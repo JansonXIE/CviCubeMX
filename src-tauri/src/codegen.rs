@@ -7,7 +7,6 @@
 /// - update_existing_code: 增量更新已有文件
 /// - generate_eth/mipi/audio_sequence: 特殊寄存器序列
 /// - is_gpio_mode: 判断是否为 GPIO 模式
-
 use handlebars::Handlebars;
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashMap};
@@ -122,12 +121,7 @@ fn has_audio_keyword(function: &str) -> bool {
 /// 对应 C++ codegenerator.cpp: generateEthSequence()
 /// 当 ETH pads (PAD_ETH_RXM/RXP/TXM/TXP) 配置为 GPIO 时，需要写入特殊寄存器序列
 pub fn generate_eth_sequence(pin_functions: &HashMap<String, String>) -> String {
-    let special_eth_pads = [
-        "PAD_ETH_RXM",
-        "PAD_ETH_RXP",
-        "PAD_ETH_TXM",
-        "PAD_ETH_TXP",
-    ];
+    let special_eth_pads = ["PAD_ETH_RXM", "PAD_ETH_RXP", "PAD_ETH_TXM", "PAD_ETH_TXP"];
 
     // 检查是否有 ETH pad 被配置为 GPIO
     let need = special_eth_pads
@@ -171,15 +165,31 @@ pub fn generate_eth_sequence(pin_functions: &HashMap<String, String>) -> String 
 /// 为 MIPI TX/RX pads 生成寄存器配置 (TXM/TXP -> reg_pd_lptrx/reg_pd_txdvr_ldo, RX -> reg_mipirx_pd_rxlp)
 pub fn generate_mipi_sequence(pin_functions: &HashMap<String, String>) -> String {
     let txm_pads = [
-        "PAD_MIPI_TXM0", "PAD_MIPI_TXP0", "PAD_MIPI_TXM1", "PAD_MIPI_TXP1",
-        "PAD_MIPI_TXM2", "PAD_MIPI_TXP2", "PAD_MIPI_TXM3", "PAD_MIPI_TXP3",
-        "PAD_MIPI_TXM4", "PAD_MIPI_TXP4",
+        "PAD_MIPI_TXM0",
+        "PAD_MIPI_TXP0",
+        "PAD_MIPI_TXM1",
+        "PAD_MIPI_TXP1",
+        "PAD_MIPI_TXM2",
+        "PAD_MIPI_TXP2",
+        "PAD_MIPI_TXM3",
+        "PAD_MIPI_TXP3",
+        "PAD_MIPI_TXM4",
+        "PAD_MIPI_TXP4",
     ];
 
     let rx_pads = [
-        "PAD_MIPIRX0N", "PAD_MIPIRX0P", "PAD_MIPIRX1N", "PAD_MIPIRX1P",
-        "PAD_MIPIRX2N", "PAD_MIPIRX2P", "PAD_MIPIRX3N", "PAD_MIPIRX3P",
-        "PAD_MIPIRX4N", "PAD_MIPIRX4P", "PAD_MIPIRX5N", "PAD_MIPIRX5P",
+        "PAD_MIPIRX0N",
+        "PAD_MIPIRX0P",
+        "PAD_MIPIRX1N",
+        "PAD_MIPIRX1P",
+        "PAD_MIPIRX2N",
+        "PAD_MIPIRX2P",
+        "PAD_MIPIRX3N",
+        "PAD_MIPIRX3P",
+        "PAD_MIPIRX4N",
+        "PAD_MIPIRX4P",
+        "PAD_MIPIRX5N",
+        "PAD_MIPIRX5P",
     ];
 
     let mut need = false;
@@ -321,7 +331,9 @@ pub fn generate_audio_sequence(pin_functions: &HashMap<String, String>) -> Strin
     }
 
     if !seq.is_empty() {
-        seq = "    /* Audio pad mode adjustments (analog=00, gpio!=00) */\n".to_string() + &seq + "\n";
+        seq = "    /* Audio pad mode adjustments (analog=00, gpio!=00) */\n".to_string()
+            + &seq
+            + "\n";
     }
     if !need {
         return seq;
@@ -332,7 +344,11 @@ pub fn generate_audio_sequence(pin_functions: &HashMap<String, String>) -> Strin
 }
 
 /// 生成完整的 cvi_board_init.c 文件内容 (用于不存在已有文件时的新建场景)
-pub fn generate_code(chip_type: &str, pin_configs: &[PinConfig], output_path: Option<&str>) -> Result<String, String> {
+pub fn generate_code(
+    chip_type: &str,
+    pin_configs: &[PinConfig],
+    output_path: Option<&str>,
+) -> Result<String, String> {
     let configured_pins: Vec<&PinConfig> = pin_configs
         .iter()
         .filter(|p| p.user_configured && p.function != "reset_state")
@@ -418,14 +434,14 @@ pub fn generate_code(chip_type: &str, pin_configs: &[PinConfig], output_path: Op
     reg.register_template_string("cvi_board_init", TEMPLATE_CONTENT)
         .map_err(|e| format!("Template register error: {}", e))?;
 
-    let code = reg.render("cvi_board_init", &context)
+    let code = reg
+        .render("cvi_board_init", &context)
         .map_err(|e| format!("Rendering error: {}", e))?;
 
     // 如果指定了输出路径，将代码写入文件
     if let Some(path) = output_path {
         if !path.trim().is_empty() {
-            fs::write(path, &code)
-                .map_err(|e| format!("Cannot write to file {}: {}", path, e))?;
+            fs::write(path, &code).map_err(|e| format!("Cannot write to file {}: {}", path, e))?;
         }
     }
 
@@ -439,8 +455,8 @@ pub fn update_existing_code(file_path: &str, pin_configs: &[PinConfig]) -> Resul
     let path = Path::new(file_path);
 
     // 读取已有文件内容
-    let content = fs::read_to_string(path)
-        .map_err(|e| format!("Cannot open file {}: {}", file_path, e))?;
+    let content =
+        fs::read_to_string(path).map_err(|e| format!("Cannot open file {}: {}", file_path, e))?;
 
     // 构建用户配置的 pin_functions map
     let pin_functions: HashMap<String, String> = pin_configs
@@ -541,7 +557,8 @@ pub fn update_existing_code(file_path: &str, pin_configs: &[PinConfig]) -> Resul
     reg.register_template_string("cvi_board_init", TEMPLATE_CONTENT)
         .map_err(|e| format!("Template register error: {}", e))?;
 
-    let full_config = reg.render("cvi_board_init", &context)
+    let full_config = reg
+        .render("cvi_board_init", &context)
         .map_err(|e| format!("Rendering error: {}", e))?;
 
     // 查找并替换 "Generated PINMUX configurations" 块
@@ -557,7 +574,11 @@ pub fn update_existing_code(file_path: &str, pin_configs: &[PinConfig]) -> Resul
                 let mut start_pos = pos1;
                 while start_pos > 0 {
                     let prev_char = new_content.as_bytes()[start_pos - 1];
-                    if prev_char == b'\n' || prev_char == b'\r' || prev_char == b' ' || prev_char == b'\t' {
+                    if prev_char == b'\n'
+                        || prev_char == b'\r'
+                        || prev_char == b' '
+                        || prev_char == b'\t'
+                    {
                         start_pos -= 1;
                     } else {
                         break;
@@ -614,8 +635,8 @@ pub fn update_existing_code(file_path: &str, pin_configs: &[PinConfig]) -> Resul
         }
     } else {
         // 没有已有生成块: 在 return 0; 前插入新配置
-        let return_re = regex::Regex::new(r"return\s+0\s*;")
-            .map_err(|e| format!("Regex error: {}", e))?;
+        let return_re =
+            regex::Regex::new(r"return\s+0\s*;").map_err(|e| format!("Regex error: {}", e))?;
 
         if let Some(mat) = return_re.find(&content) {
             let return_pos = mat.start();
@@ -832,13 +853,11 @@ mod tests {
 
     #[test]
     fn test_generate_code_basic() {
-        let pin_configs = vec![
-            PinConfig {
-                pin_name: "PAD_MIPI_TXM4".to_string(),
-                function: "VI0_D_15".to_string(),
-                user_configured: true,
-            },
-        ];
+        let pin_configs = vec![PinConfig {
+            pin_name: "PAD_MIPI_TXM4".to_string(),
+            function: "VI0_D_15".to_string(),
+            user_configured: true,
+        }];
         let code = generate_code("cv1842hp", &pin_configs, None).unwrap();
         assert!(code.contains("cvi_board_init.c"));
         assert!(code.contains("int cvi_board_init(void)"));
@@ -855,13 +874,11 @@ mod tests {
 
     #[test]
     fn test_generate_code_skip_gpio() {
-        let pin_configs = vec![
-            PinConfig {
-                pin_name: "PAD_MIPI_TXM4".to_string(),
-                function: "XGPIOC_18".to_string(),
-                user_configured: true,
-            },
-        ];
+        let pin_configs = vec![PinConfig {
+            pin_name: "PAD_MIPI_TXM4".to_string(),
+            function: "XGPIOC_18".to_string(),
+            user_configured: true,
+        }];
         let code = generate_code("cv1842hp", &pin_configs, None).unwrap();
         // GPIO 功能不应生成 PINMUX_CONFIG (但应出现在调试注释中)
         assert!(code.contains("PAD_MIPI_TXM4 -> XGPIOC_18"));
@@ -870,13 +887,11 @@ mod tests {
 
     #[test]
     fn test_generate_code_skip_reset_state() {
-        let pin_configs = vec![
-            PinConfig {
-                pin_name: "PAD_MIPI_TXM4".to_string(),
-                function: "reset_state".to_string(),
-                user_configured: true,
-            },
-        ];
+        let pin_configs = vec![PinConfig {
+            pin_name: "PAD_MIPI_TXM4".to_string(),
+            function: "reset_state".to_string(),
+            user_configured: true,
+        }];
         let code = generate_code("cv1842hp", &pin_configs, None).unwrap();
         // reset_state 不应生成 any 配置
         assert!(!code.contains("PINMUX_CONFIG"));
@@ -884,13 +899,11 @@ mod tests {
 
     #[test]
     fn test_generate_code_skip_non_user_configured() {
-        let pin_configs = vec![
-            PinConfig {
-                pin_name: "PAD_MIPI_TXM4".to_string(),
-                function: "VI0_D_15".to_string(),
-                user_configured: false,
-            },
-        ];
+        let pin_configs = vec![PinConfig {
+            pin_name: "PAD_MIPI_TXM4".to_string(),
+            function: "VI0_D_15".to_string(),
+            user_configured: false,
+        }];
         let code = generate_code("cv1842hp", &pin_configs, None).unwrap();
         // 非 user_configured 的引脚不应出现在配置中
         assert!(!code.contains("PINMUX_CONFIG(PAD_MIPI_TXM4, VI0_D_15)"));
@@ -905,18 +918,13 @@ mod tests {
         let content = "int board_init(void) {\n    // Generated PINMUX configurations\n    PINMUX(PAD_MIPI_TXM4, XGPIOC_18);\n    return 0;\n}\n";
         fs::write(&test_file, content).unwrap();
 
-        let pin_configs = vec![
-            PinConfig {
-                pin_name: "PAD_MIPI_TXM4".to_string(),
-                function: "VI0_D_15".to_string(),
-                user_configured: true,
-            },
-        ];
+        let pin_configs = vec![PinConfig {
+            pin_name: "PAD_MIPI_TXM4".to_string(),
+            function: "VI0_D_15".to_string(),
+            user_configured: true,
+        }];
 
-        let result = update_existing_code(
-            test_file.to_str().unwrap(),
-            &pin_configs,
-        );
+        let result = update_existing_code(test_file.to_str().unwrap(), &pin_configs);
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), "File updated successfully");
 
@@ -936,18 +944,13 @@ mod tests {
         let content = "int board_init(void) {\n    // no generated block\n    return 0;\n}\n";
         fs::write(&test_file, content).unwrap();
 
-        let pin_configs = vec![
-            PinConfig {
-                pin_name: "PAD_MIPI_TXM4".to_string(),
-                function: "VI0_D_15".to_string(),
-                user_configured: true,
-            },
-        ];
+        let pin_configs = vec![PinConfig {
+            pin_name: "PAD_MIPI_TXM4".to_string(),
+            function: "VI0_D_15".to_string(),
+            user_configured: true,
+        }];
 
-        let result = update_existing_code(
-            test_file.to_str().unwrap(),
-            &pin_configs,
-        );
+        let result = update_existing_code(test_file.to_str().unwrap(), &pin_configs);
         assert!(result.is_ok());
 
         let updated = fs::read_to_string(&test_file).unwrap();
@@ -966,10 +969,7 @@ mod tests {
         fs::write(&test_file, content).unwrap();
 
         let pin_configs = vec![];
-        let result = update_existing_code(
-            test_file.to_str().unwrap(),
-            &pin_configs,
-        );
+        let result = update_existing_code(test_file.to_str().unwrap(), &pin_configs);
         assert!(result.is_ok());
 
         let updated = fs::read_to_string(&test_file).unwrap();
@@ -995,18 +995,13 @@ mod tests {
         let content = "int board_init(void) {\n    // some code\n}\n";
         fs::write(&test_file, content).unwrap();
 
-        let pin_configs = vec![
-            PinConfig {
-                pin_name: "PAD_MIPI_TXM4".to_string(),
-                function: "VI0_D_15".to_string(),
-                user_configured: true,
-            },
-        ];
+        let pin_configs = vec![PinConfig {
+            pin_name: "PAD_MIPI_TXM4".to_string(),
+            function: "VI0_D_15".to_string(),
+            user_configured: true,
+        }];
 
-        let result = update_existing_code(
-            test_file.to_str().unwrap(),
-            &pin_configs,
-        );
+        let result = update_existing_code(test_file.to_str().unwrap(), &pin_configs);
         assert!(result.is_err());
         assert!(result.unwrap_err().contains("return 0"));
 

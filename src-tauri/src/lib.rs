@@ -22,6 +22,7 @@ fn greet(name: String) -> String {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .manage(DtsState::new())
         .invoke_handler(tauri::generate_handler![
@@ -56,6 +57,8 @@ pub fn run() {
             // M7: Codegen commands
             codegen_commands::generate_code,
             codegen_commands::update_existing_code,
+            codegen_commands::validate_sdk_path,
+            codegen_commands::generate_board_init_code,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

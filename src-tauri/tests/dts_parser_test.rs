@@ -36,20 +36,29 @@ sysdma_remap {
         assert_eq!(i2c0.clock_frequency, 100000);
 
         let sysdma = peripherals.get("sysdma_remap").unwrap();
-        assert_eq!(sysdma.sysdma_channels, vec!["0", "5", "12", "13", "42", "42", "4", "7"]);
+        assert_eq!(
+            sysdma.sysdma_channels,
+            vec!["0", "5", "12", "13", "42", "42", "4", "7"]
+        );
     }
 
     // 联动修改：修改 sysdma 通道，将 12 更改为 8 (对应 uart0_rx)
     let new_channels = vec![
-        "0".to_string(), "5".to_string(), "8".to_string(), "13".to_string(),
-        "42".to_string(), "42".to_string(), "4".to_string(), "7".to_string()
+        "0".to_string(),
+        "5".to_string(),
+        "8".to_string(),
+        "13".to_string(),
+        "42".to_string(),
+        "42".to_string(),
+        "4".to_string(),
+        "7".to_string(),
     ];
 
     DtsWriter::update_sysdma_channels(&mut parser, "sysdma_remap", new_channels).unwrap();
 
     // 检查联动后的文件内容
     let updated_content = parser.get_file_content();
-    
+
     // 应该给 uart0 加上 dmas, dma-names, capability 属性
     assert!(updated_content.contains("dmas = <&dmac 2 1 1>;"));
     assert!(updated_content.contains("dma-names = \"rx\";"));

@@ -52,7 +52,11 @@ fn test_export_clock_defconfig_integration() {
         .unwrap()
         .as_nanos();
     let temp_dir = std::env::temp_dir().join(format!("cvicubemx_clock_test_{}", timestamp));
-    let build_dir = temp_dir.join("build").join("boards").join("cv184x").join("cv1842hp");
+    let build_dir = temp_dir
+        .join("build")
+        .join("boards")
+        .join("cv184x")
+        .join("cv1842hp");
     fs::create_dir_all(&build_dir).unwrap();
 
     let defconfig_path = build_dir.join("cv1842hp_defconfig");

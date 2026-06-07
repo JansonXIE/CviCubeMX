@@ -6,7 +6,7 @@
 use crate::clock_calc::{
     compute_clk_1m_subnode_frequency, compute_output_frequency, compute_pll_frequency,
     compute_subnode_frequency, compute_subpll_frequency, ClockOutput, ClockTreeResult,
-    ModulePosition, OSC_FREQUENCY_MHZ, PllConfig, PLL_NAMES, SUB_NODE_GROUPS, SUB_PLL_NAMES,
+    ModulePosition, PllConfig, OSC_FREQUENCY_MHZ, PLL_NAMES, SUB_NODE_GROUPS, SUB_PLL_NAMES,
 };
 use std::collections::HashMap;
 use std::fs;
@@ -24,9 +24,7 @@ use std::path::Path;
 /// * `Ok(ClockTreeResult)` with all computed frequencies
 /// * `Err(String)` on computation error
 #[tauri::command]
-pub fn compute_clock_tree(
-    configs: HashMap<String, PllConfig>,
-) -> Result<ClockTreeResult, String> {
+pub fn compute_clock_tree(configs: HashMap<String, PllConfig>) -> Result<ClockTreeResult, String> {
     let mut pll_configs = configs.clone();
     let mut outputs = HashMap::new();
     let mut sub_nodes_map: HashMap<String, HashMap<String, ClockOutput>> = HashMap::new();
@@ -36,11 +34,8 @@ pub fn compute_clock_tree(
         if let Some(config) = pll_configs.get_mut(*pll_name) {
             // Main PLL: divider is typically 1 (fixed)
             // output_freq = input_freq * multiplier
-            config.output_freq = compute_pll_frequency(
-                config.input_freq,
-                config.multiplier,
-                config.divider,
-            );
+            config.output_freq =
+                compute_pll_frequency(config.input_freq, config.multiplier, config.divider);
         }
     }
 
@@ -60,11 +55,8 @@ pub fn compute_clock_tree(
             if *sub_pll_name == "clk_a24k" {
                 config.output_freq = 0.0;
             } else {
-                config.output_freq = compute_subpll_frequency(
-                    config.input_freq,
-                    config.multiplier,
-                    config.divider,
-                );
+                config.output_freq =
+                    compute_subpll_frequency(config.input_freq, config.multiplier, config.divider);
             }
         }
     }
@@ -164,10 +156,7 @@ fn get_parent_frequency(
     outputs: &HashMap<String, ClockOutput>,
 ) -> f64 {
     match parent_name {
-        "clk_1M" => outputs
-            .get("clk_1M")
-            .map(|o| o.frequency)
-            .unwrap_or(0.1), // clk_1M default = 0.1 MHz
+        "clk_1M" => outputs.get("clk_1M").map(|o| o.frequency).unwrap_or(0.1), // clk_1M default = 0.1 MHz
         "clk_cam1pll" => pll_configs
             .get("clk_cam1pll")
             .map(|c| c.output_freq)
@@ -216,10 +205,7 @@ fn get_parent_frequency(
             .get("clk_xtal_misc")
             .map(|o| o.frequency)
             .unwrap_or(25.0),
-        "clk_i2c" => outputs
-            .get("clk_i2c")
-            .map(|o| o.frequency)
-            .unwrap_or(25.0),
+        "clk_i2c" => outputs.get("clk_i2c").map(|o| o.frequency).unwrap_or(25.0),
         "clk_apb_i2c" => outputs
             .get("clk_apb_i2c")
             .map(|o| o.frequency)
@@ -228,10 +214,7 @@ fn get_parent_frequency(
             .get("clk_apb_vcsys")
             .map(|o| o.frequency)
             .unwrap_or(25.0),
-        "clk_x2p" => outputs
-            .get("clk_x2p")
-            .map(|o| o.frequency)
-            .unwrap_or(25.0),
+        "clk_x2p" => outputs.get("clk_x2p").map(|o| o.frequency).unwrap_or(25.0),
         "clk_rtc_sys" => outputs
             .get("clk_rtc_sys")
             .map(|o| o.frequency)
@@ -256,10 +239,7 @@ fn get_parent_frequency(
             .get("clk_vip_sys_3")
             .map(|o| o.frequency)
             .unwrap_or(200.0),
-        "clk_spi" => outputs
-            .get("clk_spi")
-            .map(|o| o.frequency)
-            .unwrap_or(25.0),
+        "clk_spi" => outputs.get("clk_spi").map(|o| o.frequency).unwrap_or(25.0),
         "clk_keyscan_xclk" => outputs
             .get("clk_keyscan_xclk")
             .map(|o| o.frequency)
@@ -286,9 +266,7 @@ fn get_parent_frequency(
 /// * `Ok(())` on success
 /// * `Err(String)` on I/O or serialization error
 #[tauri::command]
-pub fn save_module_positions(
-    positions: HashMap<String, ModulePosition>,
-) -> Result<(), String> {
+pub fn save_module_positions(positions: HashMap<String, ModulePosition>) -> Result<(), String> {
     // Save to app data directory
     let app_data_dir = get_app_data_dir()?;
     let path = Path::new(&app_data_dir).join("module_positions.json");
@@ -296,8 +274,7 @@ pub fn save_module_positions(
     let json = serde_json::to_string_pretty(&positions)
         .map_err(|e| format!("Serialization error: {}", e))?;
 
-    fs::write(&path, json)
-        .map_err(|e| format!("Write error: {}", e))?;
+    fs::write(&path, json).map_err(|e| format!("Write error: {}", e))?;
 
     Ok(())
 }
@@ -317,11 +294,10 @@ pub fn load_module_positions() -> Result<HashMap<String, ModulePosition>, String
         return Ok(HashMap::new());
     }
 
-    let json = fs::read_to_string(&path)
-        .map_err(|e| format!("Read error: {}", e))?;
+    let json = fs::read_to_string(&path).map_err(|e| format!("Read error: {}", e))?;
 
-    let positions: HashMap<String, ModulePosition> = serde_json::from_str(&json)
-        .map_err(|e| format!("Deserialization error: {}", e))?;
+    let positions: HashMap<String, ModulePosition> =
+        serde_json::from_str(&json).map_err(|e| format!("Deserialization error: {}", e))?;
 
     Ok(positions)
 }
@@ -369,7 +345,10 @@ pub fn export_clock_defconfig(
         .join(format!("{}_defconfig", chip_type_lower));
 
     if !defconfig_path.exists() {
-        return Err(format!("Defconfig file not found: {}", defconfig_path.display()));
+        return Err(format!(
+            "Defconfig file not found: {}",
+            defconfig_path.display()
+        ));
     }
 
     // 3. Read existing defconfig file content
@@ -409,8 +388,7 @@ fn get_app_data_dir() -> Result<String, String> {
     // For Tauri apps, we typically use the app's data directory
     // Since we don't have direct access to tauri::App here,
     // we use a simple approach based on the current executable
-    let exe_dir = std::env::current_exe()
-        .map_err(|e| format!("Cannot get exe path: {}", e))?;
+    let exe_dir = std::env::current_exe().map_err(|e| format!("Cannot get exe path: {}", e))?;
 
     let app_dir = exe_dir
         .parent()
@@ -418,8 +396,7 @@ fn get_app_data_dir() -> Result<String, String> {
         .join("cvicubemx_data");
 
     if !app_dir.exists() {
-        fs::create_dir_all(&app_dir)
-            .map_err(|e| format!("Create app data dir error: {}", e))?;
+        fs::create_dir_all(&app_dir).map_err(|e| format!("Create app data dir error: {}", e))?;
     }
 
     Ok(app_dir.to_string_lossy().to_string())
@@ -582,7 +559,11 @@ mod tests {
             .unwrap()
             .as_nanos();
         let temp_dir = std::env::temp_dir().join(format!("cvicubemx_test_{}", timestamp));
-        let build_dir = temp_dir.join("build").join("boards").join("cv184x").join("cv1842hp");
+        let build_dir = temp_dir
+            .join("build")
+            .join("boards")
+            .join("cv184x")
+            .join("cv1842hp");
         fs::create_dir_all(&build_dir).unwrap();
 
         let defconfig_path = build_dir.join("cv1842hp_defconfig");

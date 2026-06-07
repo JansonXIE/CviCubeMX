@@ -1,5 +1,8 @@
 use cvicubemx_lib::pin_data::load_pin_data;
-use cvicubemx_lib::pin_data_tool::{clean_pin_name, get_function_name_remap, is_bga_corner, parse_function_select_cell, pin_sort_key};
+use cvicubemx_lib::pin_data_tool::{
+    clean_pin_name, get_function_name_remap, is_bga_corner, parse_function_select_cell,
+    pin_sort_key,
+};
 
 #[test]
 fn test_clean_pin_name_integration() {

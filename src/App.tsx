@@ -12,6 +12,12 @@ import FlashPage from "./pages/FlashPage";
 import CodeGenPage from "./pages/CodeGenPage";
 import AIChatPage from "./pages/AIChatPage";
 
+// 引导组件与状态管理
+import SdkOnboardingModal from "./components/SdkOnboardingModal";
+import { useSdkStore } from "./stores/sdkStore";
+import { useChipStore } from "./stores/chipStore";
+import { usePeripheralStore } from "./stores/peripheralStore";
+
 /**
  * 侧边栏 - 现代深色毛玻璃风格
  */
@@ -66,6 +72,7 @@ function Sidebar() {
  * 顶部栏 - 现代卡片风格，包含交互按钮
  */
 function TopBar() {
+  const { sdkPath, chipType, setIsOnboardingOpen } = useSdkStore();
   const [greetResult, setGreetResult] = React.useState("");
 
   const handleGreet = async () => {
@@ -79,7 +86,27 @@ function TopBar() {
 
   return (
     <header className="h-16 bg-slate-900/40 backdrop-blur-lg flex items-center justify-between px-6 border-b border-slate-700/50 z-10">
-      <div className="text-slate-300 font-medium">芯片配置工具</div>
+      <div className="flex items-center gap-6">
+        <span className="text-slate-300 font-medium text-sm">芯片配置工具</span>
+        {sdkPath && (
+          <div className="hidden md:flex items-center gap-3 text-xs">
+            <div className="bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700/40 flex items-center gap-2 max-w-xs">
+              <span className="text-slate-500 font-bold uppercase tracking-wider text-[10px]">SDK</span>
+              <span className="text-slate-300 font-mono truncate max-w-[150px]" title={sdkPath}>{sdkPath}</span>
+            </div>
+            <div className="bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700/40 flex items-center gap-2">
+              <span className="text-slate-500 font-bold uppercase tracking-wider text-[10px]">CHIP</span>
+              <span className="text-slate-300 font-mono truncate max-w-[180px]" title={chipType}>{chipType}</span>
+            </div>
+            <button
+              onClick={() => setIsOnboardingOpen(true)}
+              className="px-2.5 py-1.5 rounded-lg bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 active:bg-indigo-500/30 transition-all font-semibold outline-none focus:outline-none focus:ring-0 border-transparent cursor-pointer"
+            >
+              重新配置
+            </button>
+          </div>
+        )}
+      </div>
       <div className="flex items-center gap-4">
         {greetResult && (
           <span className="text-emerald-400 text-sm font-medium animate-fade-in">
@@ -88,7 +115,7 @@ function TopBar() {
         )}
         <button
           onClick={handleGreet}
-          className="bg-indigo-500 hover:bg-indigo-600 text-white px-5 py-2 rounded-lg shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/40 transition-all duration-300 transform hover:-translate-y-0.5 active:translate-y-0 active:scale-95 outline-none focus:outline-none focus:ring-2 focus:ring-indigo-500/50 border-transparent font-medium"
+          className="bg-indigo-500 hover:bg-indigo-600 text-white px-5 py-2 rounded-lg shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/40 transition-all duration-300 transform hover:-translate-y-0.5 active:translate-y-0 active:scale-95 outline-none focus:outline-none focus:ring-0 border-transparent font-medium"
         >
           测试 IPC
         </button>
@@ -120,6 +147,50 @@ function ContentArea() {
  * 主应用组件
  */
 export default function App() {
+  const { sdkPath, chipType, setSdkPath, setChipType, isOnboardingOpen, setIsOnboardingOpen } = useSdkStore();
+  const { selectChip } = useChipStore();
+  const { loadPeripherals } = usePeripheralStore();
+
+  // 校验并加载数据
+  const initializeApp = async (path: string, chip: string) => {
+    try {
+      await selectChip(chip);
+      const dtsPath = `${path}/build/boards/default/dts/cv184x/cv184x_base.dtsi`;
+      await loadPeripherals(dtsPath);
+    } catch (e) {
+      console.error("初始化应用数据失败:", e);
+    }
+  };
+
+  React.useEffect(() => {
+    const checkOnboarding = async () => {
+      if (!sdkPath) {
+        setIsOnboardingOpen(true);
+      } else {
+        try {
+          const isValid = await invoke<boolean>("validate_sdk_path", { path: sdkPath });
+          if (!isValid) {
+            setIsOnboardingOpen(true);
+          } else {
+            // 路径合法，进行自动加载
+            await initializeApp(sdkPath, chipType);
+          }
+        } catch (e) {
+          console.error("验证路径出错", e);
+          setIsOnboardingOpen(true);
+        }
+      }
+    };
+    checkOnboarding();
+  }, [sdkPath, chipType]);
+
+  const handleOnboardingComplete = async (path: string, chip: string) => {
+    setSdkPath(path);
+    setChipType(chip);
+    await initializeApp(path, chip);
+    setIsOnboardingOpen(false);
+  };
+
   return (
     <BrowserRouter>
       <div className="h-screen flex flex-col bg-slate-900 text-slate-50 overflow-hidden font-sans">
@@ -134,6 +205,14 @@ export default function App() {
             <ContentArea />
           </main>
         </div>
+
+        {/* 启动引导 Modal */}
+        <SdkOnboardingModal
+          isOpen={isOnboardingOpen}
+          onClose={() => setIsOnboardingOpen(false)}
+          onComplete={handleOnboardingComplete}
+          isClosable={!!sdkPath}
+        />
       </div>
     </BrowserRouter>
   );

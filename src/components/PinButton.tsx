@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { PinInfo } from "../stores/chipStore";
 
 interface PinButtonProps {
@@ -22,6 +23,14 @@ export default function PinButton({ pin, isHighlighted, onSelectFunction }: PinB
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuPos, setMenuPos] = useState({ x: 0, y: 0 });
   const menuRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+
+  // 左键点击事件处理器
+  const handleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setMenuPos({ x: e.clientX, y: e.clientY });
+    setMenuOpen((prev) => !prev);
+  };
 
   // 右键菜单拦截
   const handleContextMenu = (e: React.MouseEvent) => {
@@ -33,7 +42,12 @@ export default function PinButton({ pin, isHighlighted, onSelectFunction }: PinB
   // 点击外部关闭菜单
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+      if (
+        menuRef.current &&
+        !menuRef.current.contains(event.target as Node) &&
+        buttonRef.current &&
+        !buttonRef.current.contains(event.target as Node)
+      ) {
         setMenuOpen(false);
       }
     };
@@ -56,11 +70,14 @@ export default function PinButton({ pin, isHighlighted, onSelectFunction }: PinB
     <div className="relative inline-block">
       {/* 引脚按钮 */}
       <button
+        ref={buttonRef}
         type="button"
+        onClick={handleClick}
         onContextMenu={handleContextMenu}
-        className={`w-10 h-10 rounded-lg font-bold text-xs flex flex-col items-center justify-center transition-all duration-300 border border-slate-700/50 shadow-md ${colorClass} ${
+        className={`w-10 h-10 rounded-lg font-bold text-xs flex flex-col items-center justify-center transition-all duration-300 border border-slate-700/50 shadow-md outline-none focus:outline-none focus-visible:outline-none focus:ring-0 active:scale-95 ${colorClass} ${
           isHighlighted ? "animate-pulse ring-4 ring-indigo-500/80 shadow-[0_0_15px_rgba(99,102,241,0.6)] scale-110" : ""
-        } focus:outline-none focus:ring-0 active:scale-95`}
+        }`}
+        style={{ outline: "none", WebkitTapHighlightColor: "transparent" }}
         title={`引脚: ${pin.pin_num}\n名称: ${pin.pin_name}\n当前功能: ${pin.current_function}`}
       >
         <span className="opacity-80 scale-75">{pin.pin_num}</span>
@@ -68,7 +85,7 @@ export default function PinButton({ pin, isHighlighted, onSelectFunction }: PinB
       </button>
 
       {/* 右键功能选择菜单 */}
-      {menuOpen && (
+      {menuOpen && createPortal(
         <div
           ref={menuRef}
           className="fixed z-50 w-56 bg-slate-900/90 backdrop-blur-xl border border-slate-700/50 rounded-xl shadow-2xl p-2 animate-fade-in"
@@ -83,17 +100,32 @@ export default function PinButton({ pin, isHighlighted, onSelectFunction }: PinB
                 key={fn}
                 type="button"
                 onClick={() => selectFunc(fn)}
-                className={`w-full text-left px-3 py-2 text-xs rounded-lg transition-all duration-200 focus:outline-none focus:ring-0 ${
+                className={`w-full text-left px-3 py-2 text-xs rounded-lg transition-all duration-200 outline-none focus:outline-none focus-visible:outline-none focus:ring-0 ${
                   pin.current_function === fn
                     ? "bg-indigo-600/30 text-indigo-400 font-semibold"
                     : "text-slate-300 hover:bg-slate-800/80 hover:text-white"
                 }`}
+                style={{ outline: "none", WebkitTapHighlightColor: "transparent" }}
               >
                 {fn}
               </button>
             ))}
+            {pin.current_function !== pin.default_function && (
+              <div className="pt-1 mt-1 border-t border-slate-700/50">
+                <button
+                  type="button"
+                  onClick={() => selectFunc(pin.default_function)}
+                  className="w-full text-left px-3 py-2 text-xs rounded-lg transition-all duration-200 outline-none focus:outline-none focus-visible:outline-none focus:ring-0 text-amber-500/80 hover:bg-amber-500/20 hover:text-amber-400 flex items-center gap-1.5"
+                  style={{ outline: "none", WebkitTapHighlightColor: "transparent" }}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                  恢复默认 ({pin.default_function})
+                </button>
+              </div>
+            )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

@@ -320,23 +320,14 @@ pub const CLK_RAW_AXI_SUB_NODES: &[&str] = &[
 pub const CLK_CAM0PLL_SUB_NODES: &[&str] = &["clk_cam0_vip"];
 
 /// clk_disppll sub-nodes
-pub const CLK_DISPPLL_SUB_NODES: &[&str] = &[
-    "clk_cam2_vip",
-    "clk_cam1_vip",
-    "clk_sys_disp",
-];
+pub const CLK_DISPPLL_SUB_NODES: &[&str] = &["clk_cam2_vip", "clk_cam1_vip", "clk_sys_disp"];
 
 /// clk_sys_disp sub-nodes
 pub const CLK_SYS_DISP_SUB_NODES: &[&str] = &["clk_vo_mac_vip"];
 
 /// clk_a0pll sub-nodes
-pub const CLK_A0PLL_SUB_NODES: &[&str] = &[
-    "clk_aud3",
-    "clk_aud2",
-    "clk_aud1",
-    "clk_aud0",
-    "clk_audsrc",
-];
+pub const CLK_A0PLL_SUB_NODES: &[&str] =
+    &["clk_aud3", "clk_aud2", "clk_aud1", "clk_aud0", "clk_audsrc"];
 
 /// clk_rvpll sub-nodes
 pub const CLK_RVPLL_SUB_NODES: &[&str] = &["clk_rv1"];

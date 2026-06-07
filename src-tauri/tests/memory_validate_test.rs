@@ -1,5 +1,5 @@
 use cvicubemx_lib::memory::{
-    validate_memory, MemoryRegion, get_default_memory_regions, validate_memory_constraints
+    get_default_memory_regions, validate_memory, validate_memory_constraints, MemoryRegion,
 };
 
 #[test]
@@ -57,7 +57,7 @@ fn test_memory_layout_validation_integration() {
 #[test]
 fn test_memory_constraints_integration() {
     let mut regions = get_default_memory_regions();
-    
+
     // 强制违反约束 1: RTOS_ION_ADDR >= FSBL_C906L_START_ADDR + RTOS_SYS_SIZE
     // FSBL_C906L_START 默认是 0x800a0000, RTOS_SYS 大小 4M = 0x400000
     // 它们的和是 0x804a0000

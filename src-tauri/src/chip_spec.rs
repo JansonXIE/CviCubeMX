@@ -2,7 +2,6 @@
 ///
 /// 从 C++ chipconfig.cpp: getPinCountForChip() 提取的 6 款芯片规格数据。
 /// 每款芯片包含: chip_type, package (QFN/BGA), pin_count, BGA 行列参数。
-
 use serde::{Deserialize, Serialize};
 
 /// 芯片规格结构
@@ -77,23 +76,46 @@ pub fn get_all_chip_specs() -> Vec<ChipSpec> {
     ]
 }
 
+/// 芯片名称规范化函数，支持传入带板级后缀的芯片型号，如 "cv1842hp_wevb_0014a_emmc"
+pub fn normalize_chip_type(chip_type: &str) -> String {
+    let lower = chip_type.to_lowercase();
+    if lower.contains("cv1801c") {
+        "cv1801c".to_string()
+    } else if lower.contains("cv1801h") {
+        "cv1801h".to_string()
+    } else if lower.contains("cv1811c") {
+        "cv1811c".to_string()
+    } else if lower.contains("cv1811h") {
+        "cv1811h".to_string()
+    } else if lower.contains("cv1840cp") || lower.contains("cv1841cp") || lower.contains("cv1842cp")
+    {
+        "cv1842cp".to_string()
+    } else if lower.contains("cv1842hp") || lower.contains("cv1843hp") {
+        "cv1842hp".to_string()
+    } else {
+        lower
+    }
+}
+
 /// 根据芯片型号查找规格
 ///
 /// 对应 C++ chipconfig.cpp: getPinCountForChip()
 #[tauri::command]
 pub fn load_chip_spec(chip_type: String) -> Result<ChipSpec, String> {
+    let normalized = normalize_chip_type(&chip_type);
     get_all_chip_specs()
         .iter()
-        .find(|spec| spec.chip_type == chip_type)
+        .find(|spec| spec.chip_type == normalized)
         .cloned()
         .ok_or_else(|| format!("Unknown chip type: {}", chip_type))
 }
 
 /// 辅助: 获取芯片规格 (内部使用)
 pub fn get_chip_spec(chip_type: &str) -> Result<ChipSpec, String> {
+    let normalized = normalize_chip_type(chip_type);
     get_all_chip_specs()
         .iter()
-        .find(|spec| spec.chip_type == chip_type)
+        .find(|spec| spec.chip_type == normalized)
         .cloned()
         .ok_or_else(|| format!("Unknown chip type: {}", chip_type))
 }

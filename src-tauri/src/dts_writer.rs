@@ -14,8 +14,13 @@ pub struct DtsWriter;
 
 impl DtsWriter {
     /// Update a single peripheral's status in the file content.
-    pub fn update_status(parser: &mut DtsParser, peripheral: &str, status: &str) -> Result<(), String> {
-        let info = parser.get_peripheral(peripheral)
+    pub fn update_status(
+        parser: &mut DtsParser,
+        peripheral: &str,
+        status: &str,
+    ) -> Result<(), String> {
+        let info = parser
+            .get_peripheral(peripheral)
             .cloned()
             .ok_or_else(|| format!("未找到外设: {}", peripheral))?;
 
@@ -32,8 +37,13 @@ impl DtsWriter {
     }
 
     /// Update a peripheral's clock-frequency in the file content.
-    pub fn update_clock_frequency(parser: &mut DtsParser, peripheral: &str, frequency: i32) -> Result<(), String> {
-        let info = parser.get_peripheral(peripheral)
+    pub fn update_clock_frequency(
+        parser: &mut DtsParser,
+        peripheral: &str,
+        frequency: i32,
+    ) -> Result<(), String> {
+        let info = parser
+            .get_peripheral(peripheral)
             .cloned()
             .ok_or_else(|| format!("未找到外设: {}", peripheral))?;
 
@@ -50,8 +60,13 @@ impl DtsWriter {
     }
 
     /// Update a peripheral's #pwm-cells in the file content.
-    pub fn update_pwm_cells(parser: &mut DtsParser, peripheral: &str, cells: i32) -> Result<(), String> {
-        let info = parser.get_peripheral(peripheral)
+    pub fn update_pwm_cells(
+        parser: &mut DtsParser,
+        peripheral: &str,
+        cells: i32,
+    ) -> Result<(), String> {
+        let info = parser
+            .get_peripheral(peripheral)
             .cloned()
             .ok_or_else(|| format!("未找到外设: {}", peripheral))?;
 
@@ -68,8 +83,13 @@ impl DtsWriter {
     }
 
     /// Update a peripheral's current-speed in the file content.
-    pub fn update_current_speed(parser: &mut DtsParser, peripheral: &str, speed: i32) -> Result<(), String> {
-        let info = parser.get_peripheral(peripheral)
+    pub fn update_current_speed(
+        parser: &mut DtsParser,
+        peripheral: &str,
+        speed: i32,
+    ) -> Result<(), String> {
+        let info = parser
+            .get_peripheral(peripheral)
             .cloned()
             .ok_or_else(|| format!("未找到外设: {}", peripheral))?;
 
@@ -88,24 +108,34 @@ impl DtsWriter {
     /// Update a peripheral's sysdma channels (ch-remap) in the file content.
     ///
     /// Also handles DMA config cascade updates for affected peripherals.
-    pub fn update_sysdma_channels(parser: &mut DtsParser, peripheral: &str, channels: Vec<String>) -> Result<(), String> {
+    pub fn update_sysdma_channels(
+        parser: &mut DtsParser,
+        peripheral: &str,
+        channels: Vec<String>,
+    ) -> Result<(), String> {
         // Save the previous channels (parsed from current DTS file content)
         let previous_channels = Self::get_previous_sysdma_channels(parser);
 
-        let channel_names: Vec<String> = channels.iter()
+        let channel_names: Vec<String> = channels
+            .iter()
             .map(|ch| SysdmaChannelMap::channel_name(ch))
             .collect();
 
         let ch_remap_value = if channel_names.len() >= 8 {
             let first_line: Vec<&str> = channel_names[0..4].iter().map(|s| s.as_str()).collect();
             let second_line: Vec<&str> = channel_names[4..8].iter().map(|s| s.as_str()).collect();
-            format!("{}\n\t\t\t\t\t{}", first_line.join(" "), second_line.join(" "))
+            format!(
+                "{}\n\t\t\t\t\t{}",
+                first_line.join(" "),
+                second_line.join(" ")
+            )
         } else {
             channel_names.join(" ")
         };
 
         // If the node doesn't exist in the file, create it
-        let node_pos = DtsParser::find_node_position_in_content(parser.get_file_content(), peripheral);
+        let node_pos =
+            DtsParser::find_node_position_in_content(parser.get_file_content(), peripheral);
         if node_pos.is_none() && peripheral == "sysdma_remap" {
             Self::create_sysdma_remap_node(parser, &channels);
             parser.set_peripheral_sysdma_channels(peripheral, channels.clone())?;
@@ -212,19 +242,25 @@ impl DtsWriter {
 
     /// Create a new sysdma_remap node in the file content — mirrors C++ `createSysdmaRemapNode`.
     fn create_sysdma_remap_node(parser: &mut DtsParser, channels: &[String]) {
-        let channel_names: Vec<String> = channels.iter()
+        let channel_names: Vec<String> = channels
+            .iter()
             .map(|ch| SysdmaChannelMap::channel_name(ch))
             .collect();
 
         let ch_remap_value = if channel_names.len() >= 8 {
             let first_line: Vec<&str> = channel_names[0..4].iter().map(|s| s.as_str()).collect();
             let second_line: Vec<&str> = channel_names[4..8].iter().map(|s| s.as_str()).collect();
-            format!("{}\n\t\t\t\t\t{}", first_line.join(" "), second_line.join(" "))
+            format!(
+                "{}\n\t\t\t\t\t{}",
+                first_line.join(" "),
+                second_line.join(" ")
+            )
         } else {
             channel_names.join(" ")
         };
 
-        let status = parser.get_peripheral("sysdma_remap")
+        let status = parser
+            .get_peripheral("sysdma_remap")
             .map(|i| i.status.as_str())
             .unwrap_or("okay");
 
@@ -264,9 +300,11 @@ impl DtsWriter {
             let default_channel = default_channels.get(i).cloned().unwrap_or_default();
 
             if channel_number != &default_channel {
-                let peripheral_node = SysdmaChannelMap::peripheral_node_from_channel(channel_number);
+                let peripheral_node =
+                    SysdmaChannelMap::peripheral_node_from_channel(channel_number);
                 if let Some(node) = peripheral_node {
-                    peripheral_channels.entry(node)
+                    peripheral_channels
+                        .entry(node)
                         .or_default()
                         .push((i, channel_number.clone()));
                 }
@@ -279,7 +317,13 @@ impl DtsWriter {
                 let (channel_idx, _) = channels[0];
                 let is_rx = channel_idx % 2 == 0;
                 let channel_type = if is_rx { "rx" } else { "tx" };
-                Self::add_dma_config_to_peripheral(parser, &peripheral_node, &channel_idx.to_string(), "", channel_type);
+                Self::add_dma_config_to_peripheral(
+                    parser,
+                    &peripheral_node,
+                    &channel_idx.to_string(),
+                    "",
+                    channel_type,
+                );
             } else if channels.len() == 2 {
                 let (idx1, num1) = channels[0].clone();
                 let (idx2, num2) = channels[1].clone();
@@ -299,7 +343,13 @@ impl DtsWriter {
                     }
                 };
 
-                Self::add_dma_config_to_peripheral(parser, &peripheral_node, &rx_index, &tx_index, "txrx");
+                Self::add_dma_config_to_peripheral(
+                    parser,
+                    &peripheral_node,
+                    &rx_index,
+                    &tx_index,
+                    "txrx",
+                );
             }
         }
     }
@@ -310,7 +360,8 @@ impl DtsWriter {
         previous_channels: &[String],
         new_channels: &[String],
     ) {
-        let mut peripherals_to_clean: std::collections::HashSet<String> = std::collections::HashSet::new();
+        let mut peripherals_to_clean: std::collections::HashSet<String> =
+            std::collections::HashSet::new();
 
         for i in 0..8 {
             let prev = previous_channels.get(i).cloned().unwrap_or_default();
@@ -339,7 +390,10 @@ impl DtsWriter {
     ) {
         let (dmas_line, dma_names_line, capability_line) = match capability {
             "txrx" => (
-                format!("\n\t\tdmas = <&dmac {} 1 1\n\t\t\t&dmac {} 1 1>;", channel_index1, channel_index2),
+                format!(
+                    "\n\t\tdmas = <&dmac {} 1 1\n\t\t\t&dmac {} 1 1>;",
+                    channel_index1, channel_index2
+                ),
                 "\n\t\tdma-names = \"rx\", \"tx\";".to_string(),
                 "\n\t\tcapability = \"txrx\";".to_string(),
             ),
@@ -356,9 +410,24 @@ impl DtsWriter {
             _ => return,
         };
 
-        Self::update_or_add_property(parser, peripheral_node, r#"\s*dmas\s*=\s*<[^>]*>\s*;"#, dmas_line);
-        Self::update_or_add_property(parser, peripheral_node, r#"\s*dma-names\s*=\s*[^;]+;"#, dma_names_line);
-        Self::update_or_add_property(parser, peripheral_node, r#"\s*capability\s*=\s*[^;]+;"#, capability_line);
+        Self::update_or_add_property(
+            parser,
+            peripheral_node,
+            r#"\s*dmas\s*=\s*<[^>]*>\s*;"#,
+            dmas_line,
+        );
+        Self::update_or_add_property(
+            parser,
+            peripheral_node,
+            r#"\s*dma-names\s*=\s*[^;]+;"#,
+            dma_names_line,
+        );
+        Self::update_or_add_property(
+            parser,
+            peripheral_node,
+            r#"\s*capability\s*=\s*[^;]+;"#,
+            capability_line,
+        );
     }
 
     /// Remove DMA configuration from a peripheral node.
@@ -369,7 +438,12 @@ impl DtsWriter {
     }
 
     /// Update or add a property line within a node.
-    fn update_or_add_property(parser: &mut DtsParser, peripheral: &str, property_regex: &str, new_line: String) {
+    fn update_or_add_property(
+        parser: &mut DtsParser,
+        peripheral: &str,
+        property_regex: &str,
+        new_line: String,
+    ) {
         let content = parser.get_file_content();
 
         if let Some((start, end)) = DtsParser::find_node_position_in_content(content, peripheral) {
@@ -531,9 +605,10 @@ sysdma_remap {
         let mut parser = DtsParser::new();
         parser.load_content(content);
 
-        let new_channels: Vec<String> = vec![
-            "0", "5", "12", "13", "42", "42", "4", "7"
-        ].into_iter().map(|s| s.to_string()).collect();
+        let new_channels: Vec<String> = vec!["0", "5", "12", "13", "42", "42", "4", "7"]
+            .into_iter()
+            .map(|s| s.to_string())
+            .collect();
 
         DtsWriter::update_sysdma_channels(&mut parser, "sysdma_remap", new_channels).unwrap();
 
@@ -573,14 +648,15 @@ sysdma_remap {
         // 修改通道：将 12 更改为 8（这是 uart0_rx）
         // 这样会导致 uart0 (因为映射了 8) 添加 DMA 配置。
         // 原本默认的 12 不再是 12，那么之前映射了 12 的 uart2 应该被清除 DMA 配置。
-        let new_channels: Vec<String> = vec![
-            "0", "5", "8", "13", "42", "42", "4", "7"
-        ].into_iter().map(|s| s.to_string()).collect();
+        let new_channels: Vec<String> = vec!["0", "5", "8", "13", "42", "42", "4", "7"]
+            .into_iter()
+            .map(|s| s.to_string())
+            .collect();
 
         DtsWriter::update_sysdma_channels(&mut parser, "sysdma_remap", new_channels).unwrap();
 
         let new_content = parser.get_file_content();
-        
+
         // 检查 uart0 应该被加入了单 rx 的 DMA 配置
         assert!(new_content.contains("&uart0 {"));
         assert!(new_content.contains("dmas = <&dmac 2 1 1>;")); // 对应 channel_index1 = 2 (因为通道 8 在 new_channels 的索引是 2)

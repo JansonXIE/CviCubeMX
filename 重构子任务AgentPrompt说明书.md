@@ -11,7 +11,7 @@
 ### Agent Prompt
 
 ```
-你是 CviCubeMX 项目的重构工程师。当前项目根目录是 D:\Users\jianxing.xie\Desktop\IDE\CviCubeMX_TS_tauri。
+你是 CviCubeMX 项目的重构工程师。当前项目根目录是 C:\Users\jansonxie\Desktop\github_code\CviCubeMX。
 
 任务: 初始化 Tauri v2 + React + TypeScript 项目骨架。
 
@@ -56,7 +56,7 @@ C++ 参考源码 (理解原有结构):
 ### Agent Prompt
 
 ```
-你是 CviCubeMX 项目的重构工程师。当前项目根目录是 D:\Users\jianxing.xie\Desktop\IDE\CviCubeMX_TS_tauri。
+你是 CviCubeMX 项目的重构工程师。当前项目根目录是 C:\Users\jansonxie\Desktop\github_code\CviCubeMX。
 
 任务: 实现 Rust 后端的引脚数据模块 (对应重构计划 M2 + M9)。
 
@@ -110,13 +110,13 @@ C++ 参考源码 (必须读取并理解):
 ### Agent Prompt
 
 ```
-你是 CviCubeMX 项目的重构工程师。当前项目根目录是 D:\Users\jianxing.xie\Desktop\IDE\CviCubeMX_TS_tauri。
+你是 CviCubeMX 项目的重构工程师。当前项目根目录是 C:\Users\jansonxie\Desktop\github_code\CviCubeMX。
 
 任务: 实现 Rust 后端的 DTS (设备树) 解析和写入模块 (对应重构计划 M3)。
 
 C++ 参考源码 (必须读取并理解):
 - src/dtsconfig.h (117行): PeripheralInfo struct (name, status, clockName, clockFreq, clockFrequency, pwmCells, currentSpeed, sysdmaChannels, 各种 has* 标志, lineNumber)
-- src/dtsconfig.cpp (949行): 
+- src/dtsconfig.cpp (949行):
   - parseDtsFile(): 解析整个 .dtsi 文件
   - parseNode(): 解析单个外设节点 (提取 status, clock-frequency, #pwm-cells, current-speed, ch-remap 等属性)
   - findNodePosition(): 查找节点在文件中的位置 (用于行级定位修改)
@@ -168,12 +168,12 @@ C++ 参考源码 (必须读取并理解):
 ### Agent Prompt
 
 ```
-你是 CviCubeMX 项目的重构工程师。当前项目根目录是 D:\Users\jianxing.xie\Desktop\IDE\CviCubeMX_TS_tauri。
+你是 CviCubeMX 项目的重构工程师。当前项目根目录是 C:\Users\jansonxie\Desktop\github_code\CviCubeMX。
 
 任务: 实现 Rust 后端的时钟树频率计算模块 (对应重构计划 M4)。
 
 C++ 参考源码 (必须读取并理解):
-- src/clockconfig.h (703行): 
+- src/clockconfig.h (703行):
   - PLLConfig struct: name, enabled, inputFreq, outputFreq, divider (支持小数), multiplier, source
   - ClockOutput struct: name, source, divider, multiplier, frequency, enabled
   - ModulePosition struct: moduleName, x, y, width, height
@@ -225,7 +225,7 @@ C++ 参考源码 (必须读取并理解):
 ### Agent Prompt
 
 ```
-你是 CviCubeMX 项目的重构工程师。当前项目根目录是 D:\Users\jianxing.xie\Desktop\IDE\CviCubeMX_TS_tauri。
+你是 CviCubeMX 项目的重构工程师。当前项目根目录是 C:\Users\jansonxie\Desktop\github_code\CviCubeMX。
 
 任务: 实现 Rust 后端的内存配置校验和 Flash 分区校验模块 (对应重构计划 M5 + M6)。
 
@@ -282,7 +282,7 @@ C++ 参考源码 (必须读取并理解):
 ### Agent Prompt
 
 ```
-你是 CviCubeMX 项目的重构工程师。当前项目根目录是 D:\Users\jianxing.xie\Desktop\IDE\CviCubeMX_TS_tauri。
+你是 CviCubeMX 项目的重构工程师。当前项目根目录是 C:\Users\jansonxie\Desktop\github_code\CviCubeMX。
 
 任务: 实现 Rust 后端的代码生成器模块 (对应重构计划 M7)。
 
@@ -337,8 +337,8 @@ C++ 参考源码 (必须读取并理解):
 
 ### Agent Prompt
 
-```
-你是 CviCubeMX 项目的重构工程师。当前项目根目录是 D:\Users\jianxing.xie\Desktop\IDE\CviCubeMX_TS_tauri。
+````
+你是 CviCubeMX 项目的重构工程师。当前项目根目录是 C:\Users\jansonxie\Desktop\github_code\CviCubeMX。
 
 任务: 实现 Rust SSE 流式推送和前端 AI 聊天面板 (对应重构计划 M8)。
 
@@ -383,7 +383,7 @@ C++ 参考源码 (必须读取并理解):
 2. data: [DONE] → null ✓
 3. Markdown 检测: # 标题、```代码块、**bold**、-列表 ✓
 4. npx vitest run 中 M8 相关测试 (codegenAIPinTool.test.ts 的 M8 部分) 参考数据与实现一致
-```
+````
 
 ---
 
@@ -392,7 +392,7 @@ C++ 参考源码 (必须读取并理解):
 ### Agent Prompt
 
 ```
-你是 CviCubeMX 项目的重构工程师。当前项目根目录是 D:\Users\jianxing.xie\Desktop\IDE\CviCubeMX_TS_tauri。
+你是 CviCubeMX 项目的重构工程师。当前项目根目录是 C:\Users\jansonxie\Desktop\github_code\CviCubeMX。
 
 前提: 子任务 0 (Tauri 骨架) 和子任务 1-6 (Rust 后端) 已完成。
 
@@ -474,7 +474,7 @@ C++ 参考源码 (理解原有 UI 交互):
 ### Agent Prompt
 
 ```
-你是 CviCubeMX 项目的重构工程师。当前项目根目录是 D:\Users\jianxing.xie\Desktop\IDE\CviCubeMX_TS_tauri。
+你是 CviCubeMX 项目的重构工程师。当前项目根目录是 C:\Users\jansonxie\Desktop\github_code\CviCubeMX。
 
 前提: 子任务 0-7 全部完成。
 
@@ -539,6 +539,7 @@ C++ 参考源码 (理解原有 UI 交互):
 ```
 
 **并行分组:**
+
 - **Group A** (可同时启动): 子任务 0
 - **Group B** (可同时启动): 子任务 1, 2, 3, 4, 5, 6
 - **Group C** (可同时启动): 子任务 7

@@ -102,7 +102,10 @@ pub fn parse_flash_size(size_str: &str) -> u64 {
 /// 5. Enabled partition sizes must be a multiple of 64 KB (hard error, matching C++ UI behavior)
 ///
 /// Returns `Ok(())` if valid, or `Err(message)` describing the first problem found.
-pub fn validate_partition_layout(partitions: &[FlashPartition], flash_size_kb: u64) -> Result<(), String> {
+pub fn validate_partition_layout(
+    partitions: &[FlashPartition],
+    flash_size_kb: u64,
+) -> Result<(), String> {
     // 1. Check unique partition numbers
     let mut seen_numbers = std::collections::HashSet::new();
     for p in partitions {
@@ -151,44 +154,84 @@ pub fn validate_partition_layout(partitions: &[FlashPartition], flash_size_kb: u
 pub fn default_partitions() -> Vec<FlashPartition> {
     vec![
         FlashPartition {
-            partition_number: 2, label: "2nd".into(),
-            size: 3072, size_string: format_flash_size(3072),
-            file: "yoc.bin".into(), mountpoint: "".into(), type_field: "".into(), enabled: true,
+            partition_number: 2,
+            label: "2nd".into(),
+            size: 3072,
+            size_string: format_flash_size(3072),
+            file: "yoc.bin".into(),
+            mountpoint: "".into(),
+            type_field: "".into(),
+            enabled: true,
         },
         FlashPartition {
-            partition_number: 3, label: "BOOT".into(),
-            size: 8192, size_string: format_flash_size(8192),
-            file: "boot.emmc".into(), mountpoint: "".into(), type_field: "".into(), enabled: true,
+            partition_number: 3,
+            label: "BOOT".into(),
+            size: 8192,
+            size_string: format_flash_size(8192),
+            file: "boot.emmc".into(),
+            mountpoint: "".into(),
+            type_field: "".into(),
+            enabled: true,
         },
         FlashPartition {
-            partition_number: 4, label: "MISC".into(),
-            size: 512, size_string: format_flash_size(512),
-            file: "logo.jpg".into(), mountpoint: "".into(), type_field: "".into(), enabled: true,
+            partition_number: 4,
+            label: "MISC".into(),
+            size: 512,
+            size_string: format_flash_size(512),
+            file: "logo.jpg".into(),
+            mountpoint: "".into(),
+            type_field: "".into(),
+            enabled: true,
         },
         FlashPartition {
-            partition_number: 5, label: "ENV".into(),
-            size: 128, size_string: format_flash_size(128),
-            file: "".into(), mountpoint: "".into(), type_field: "".into(), enabled: true,
+            partition_number: 5,
+            label: "ENV".into(),
+            size: 128,
+            size_string: format_flash_size(128),
+            file: "".into(),
+            mountpoint: "".into(),
+            type_field: "".into(),
+            enabled: true,
         },
         FlashPartition {
-            partition_number: 6, label: "ROOTFS".into(),
-            size: 70656, size_string: format_flash_size(70656),
-            file: "rootfs.emmc".into(), mountpoint: "".into(), type_field: "".into(), enabled: true,
+            partition_number: 6,
+            label: "ROOTFS".into(),
+            size: 70656,
+            size_string: format_flash_size(70656),
+            file: "rootfs.emmc".into(),
+            mountpoint: "".into(),
+            type_field: "".into(),
+            enabled: true,
         },
         FlashPartition {
-            partition_number: 7, label: "SYSTEM".into(),
-            size: 40960, size_string: format_flash_size(40960),
-            file: "system.emmc".into(), mountpoint: "/mnt/system".into(), type_field: "ext4".into(), enabled: true,
+            partition_number: 7,
+            label: "SYSTEM".into(),
+            size: 40960,
+            size_string: format_flash_size(40960),
+            file: "system.emmc".into(),
+            mountpoint: "/mnt/system".into(),
+            type_field: "ext4".into(),
+            enabled: true,
         },
         FlashPartition {
-            partition_number: 8, label: "CFG".into(),
-            size: 15240, size_string: format_flash_size(15240),
-            file: "cfg.emmc".into(), mountpoint: "mnt/cfg".into(), type_field: "ext4".into(), enabled: true,
+            partition_number: 8,
+            label: "CFG".into(),
+            size: 15240,
+            size_string: format_flash_size(15240),
+            file: "cfg.emmc".into(),
+            mountpoint: "mnt/cfg".into(),
+            type_field: "ext4".into(),
+            enabled: true,
         },
         FlashPartition {
-            partition_number: 9, label: "DATA".into(),
-            size: 3145728, size_string: format_flash_size(3145728),
-            file: "data.emmc".into(), mountpoint: "mnt/data".into(), type_field: "ext4".into(), enabled: true,
+            partition_number: 9,
+            label: "DATA".into(),
+            size: 3145728,
+            size_string: format_flash_size(3145728),
+            file: "data.emmc".into(),
+            mountpoint: "mnt/data".into(),
+            type_field: "ext4".into(),
+            enabled: true,
         },
     ]
 }
@@ -199,7 +242,12 @@ pub const DEFAULT_FLASH_SIZE_KB: u64 = 32 * 1024 * 1024; // 32 GB = 33554432 KB
 // ── JSON / defconfig export ──────────────────────────────────────────────────
 
 /// Export flash partitions to a JSON file (matching C++ `exportToJson`).
-pub fn export_flash_json_file(partitions: &[FlashPartition], flash_size: &str, partition_count: i32, path: &str) -> Result<(), String> {
+pub fn export_flash_json_file(
+    partitions: &[FlashPartition],
+    flash_size: &str,
+    partition_count: i32,
+    path: &str,
+) -> Result<(), String> {
     let root = serde_json::json!({
         "flashSize": flash_size,
         "partitionCount": partition_count,
@@ -211,13 +259,24 @@ pub fn export_flash_json_file(partitions: &[FlashPartition], flash_size: &str, p
 
 /// Import flash partitions from a JSON file (matching C++ `importFromJson`).
 pub fn import_flash_json_file(path: &str) -> Result<(Vec<FlashPartition>, String, i32), String> {
-    let content = fs::read_to_string(path).map_err(|e| format!("Failed to read JSON file: {}", e))?;
-    let root: serde_json::Value = serde_json::from_str(&content).map_err(|e| format!("JSON parse error: {}", e))?;
+    let content =
+        fs::read_to_string(path).map_err(|e| format!("Failed to read JSON file: {}", e))?;
+    let root: serde_json::Value =
+        serde_json::from_str(&content).map_err(|e| format!("JSON parse error: {}", e))?;
 
-    let flash_size = root.get("flashSize").and_then(|v| v.as_str()).unwrap_or("32GB").to_string();
-    let partition_count = root.get("partitionCount").and_then(|v| v.as_i64()).unwrap_or(9) as i32;
+    let flash_size = root
+        .get("flashSize")
+        .and_then(|v| v.as_str())
+        .unwrap_or("32GB")
+        .to_string();
+    let partition_count = root
+        .get("partitionCount")
+        .and_then(|v| v.as_i64())
+        .unwrap_or(9) as i32;
 
-    let arr = root.get("partitions").and_then(|v| v.as_array())
+    let arr = root
+        .get("partitions")
+        .and_then(|v| v.as_array())
         .ok_or_else(|| "Missing 'partitions' array in JSON".to_string())?;
 
     let mut partitions = Vec::new();
@@ -233,7 +292,11 @@ pub fn import_flash_json_file(path: &str) -> Result<(Vec<FlashPartition>, String
 /// Export flash config to a defconfig file (matching C++ `exportToDefconfig`).
 ///
 /// Updates `CONFIG_PARTITION_N_*` lines in the defconfig.
-pub fn write_flash_defconfig(partitions: &[FlashPartition], source_path: &str, chip_type: &str) -> Result<(), String> {
+pub fn write_flash_defconfig(
+    partitions: &[FlashPartition],
+    source_path: &str,
+    chip_type: &str,
+) -> Result<(), String> {
     let chip = if chip_type.is_empty() || chip_type == "请选择芯片型号" {
         "cv1842hp_wevb_0014a_emmc"
     } else {
@@ -243,7 +306,10 @@ pub fn write_flash_defconfig(partitions: &[FlashPartition], source_path: &str, c
     let defconfig_path = Path::new(source_path).join(&defconfig_rel);
 
     if !defconfig_path.exists() {
-        return Err(format!("Defconfig file does not exist: {}", defconfig_path.display()));
+        return Err(format!(
+            "Defconfig file does not exist: {}",
+            defconfig_path.display()
+        ));
     }
 
     let content = fs::read_to_string(&defconfig_path)
@@ -282,7 +348,9 @@ pub fn write_flash_defconfig(partitions: &[FlashPartition], source_path: &str, c
             let has_enabled = lines.iter().any(|l| l.starts_with(&enabled_prefix));
             if !has_enabled {
                 // Find a good insertion point
-                let insert_pos = lines.iter().position(|l| l.contains("# Partition Configuration"))
+                let insert_pos = lines
+                    .iter()
+                    .position(|l| l.contains("# Partition Configuration"))
                     .map(|i| i + 3)
                     .unwrap_or(lines.len());
 
@@ -326,7 +394,11 @@ pub fn export_flash_json(partitions: Vec<FlashPartition>, path: String) -> Resul
 }
 
 #[tauri::command]
-pub fn export_flash_defconfig(partitions: Vec<FlashPartition>, source_path: String, chip_type: String) -> Result<(), String> {
+pub fn export_flash_defconfig(
+    partitions: Vec<FlashPartition>,
+    source_path: String,
+    chip_type: String,
+) -> Result<(), String> {
     write_flash_defconfig(&partitions, &source_path, &chip_type)
 }
 
@@ -359,13 +431,16 @@ mod tests {
 
     #[test]
     fn test_validate_partition_layout_total_exceeds_flash() {
-        let partitions = vec![
-            FlashPartition {
-                partition_number: 2, label: "BIG".into(), size: DEFAULT_FLASH_SIZE_KB + 1024,
-                size_string: format_flash_size(DEFAULT_FLASH_SIZE_KB + 1024),
-                file: "".into(), mountpoint: "".into(), type_field: "".into(), enabled: true,
-            },
-        ];
+        let partitions = vec![FlashPartition {
+            partition_number: 2,
+            label: "BIG".into(),
+            size: DEFAULT_FLASH_SIZE_KB + 1024,
+            size_string: format_flash_size(DEFAULT_FLASH_SIZE_KB + 1024),
+            file: "".into(),
+            mountpoint: "".into(),
+            type_field: "".into(),
+            enabled: true,
+        }];
         let result = validate_partition_layout(&partitions, DEFAULT_FLASH_SIZE_KB);
         assert!(result.is_err());
         assert!(result.unwrap_err().contains("exceeds flash capacity"));
@@ -373,13 +448,16 @@ mod tests {
 
     #[test]
     fn test_validate_partition_layout_disabled_not_counted() {
-        let partitions = vec![
-            FlashPartition {
-                partition_number: 2, label: "BIG".into(), size: DEFAULT_FLASH_SIZE_KB + 1024,
-                size_string: "".into(), file: "".into(), mountpoint: "".into(),
-                type_field: "".into(), enabled: false, // disabled → not counted
-            },
-        ];
+        let partitions = vec![FlashPartition {
+            partition_number: 2,
+            label: "BIG".into(),
+            size: DEFAULT_FLASH_SIZE_KB + 1024,
+            size_string: "".into(),
+            file: "".into(),
+            mountpoint: "".into(),
+            type_field: "".into(),
+            enabled: false, // disabled → not counted
+        }];
         // Even though total size > flash, disabled partition doesn't count
         assert!(validate_partition_layout(&partitions, DEFAULT_FLASH_SIZE_KB).is_ok());
     }
@@ -388,13 +466,16 @@ mod tests {
     fn test_validate_partition_layout_size_not_multiple_of_64_is_soft_warning() {
         // 64 KB alignment is a soft UI warning in C++, not a hard validation error.
         // Our validation follows the same approach: it does NOT reject non-aligned sizes.
-        let partitions = vec![
-            FlashPartition {
-                partition_number: 2, label: "BAD_SIZE".into(), size: 100,
-                size_string: "".into(), file: "".into(), mountpoint: "".into(),
-                type_field: "".into(), enabled: true,
-            },
-        ];
+        let partitions = vec![FlashPartition {
+            partition_number: 2,
+            label: "BAD_SIZE".into(),
+            size: 100,
+            size_string: "".into(),
+            file: "".into(),
+            mountpoint: "".into(),
+            type_field: "".into(),
+            enabled: true,
+        }];
         let result = validate_partition_layout(&partitions, DEFAULT_FLASH_SIZE_KB);
         // Non-64-aligned size does NOT cause a hard validation error
         assert!(result.is_ok());
@@ -404,14 +485,24 @@ mod tests {
     fn test_validate_partition_layout_duplicate_number() {
         let partitions = vec![
             FlashPartition {
-                partition_number: 2, label: "A".into(), size: 1024,
-                size_string: "".into(), file: "".into(), mountpoint: "".into(),
-                type_field: "".into(), enabled: true,
+                partition_number: 2,
+                label: "A".into(),
+                size: 1024,
+                size_string: "".into(),
+                file: "".into(),
+                mountpoint: "".into(),
+                type_field: "".into(),
+                enabled: true,
             },
             FlashPartition {
-                partition_number: 2, label: "B".into(), size: 2048,
-                size_string: "".into(), file: "".into(), mountpoint: "".into(),
-                type_field: "".into(), enabled: true,
+                partition_number: 2,
+                label: "B".into(),
+                size: 2048,
+                size_string: "".into(),
+                file: "".into(),
+                mountpoint: "".into(),
+                type_field: "".into(),
+                enabled: true,
             },
         ];
         let result = validate_partition_layout(&partitions, DEFAULT_FLASH_SIZE_KB);
@@ -421,13 +512,16 @@ mod tests {
 
     #[test]
     fn test_validate_partition_layout_empty_label_enabled() {
-        let partitions = vec![
-            FlashPartition {
-                partition_number: 2, label: "".into(), size: 1024,
-                size_string: "".into(), file: "".into(), mountpoint: "".into(),
-                type_field: "".into(), enabled: true,
-            },
-        ];
+        let partitions = vec![FlashPartition {
+            partition_number: 2,
+            label: "".into(),
+            size: 1024,
+            size_string: "".into(),
+            file: "".into(),
+            mountpoint: "".into(),
+            type_field: "".into(),
+            enabled: true,
+        }];
         let result = validate_partition_layout(&partitions, DEFAULT_FLASH_SIZE_KB);
         assert!(result.is_err());
         assert!(result.unwrap_err().contains("empty label"));
@@ -480,13 +574,16 @@ mod tests {
     #[test]
     fn test_validate_partition_size_multiple_64_for_disabled() {
         // Disabled partitions should NOT be checked for 64 KB alignment
-        let partitions = vec![
-            FlashPartition {
-                partition_number: 2, label: "BAD".into(), size: 100,
-                size_string: "".into(), file: "".into(), mountpoint: "".into(),
-                type_field: "".into(), enabled: false,
-            },
-        ];
+        let partitions = vec![FlashPartition {
+            partition_number: 2,
+            label: "BAD".into(),
+            size: 100,
+            size_string: "".into(),
+            file: "".into(),
+            mountpoint: "".into(),
+            type_field: "".into(),
+            enabled: false,
+        }];
         assert!(validate_partition_layout(&partitions, DEFAULT_FLASH_SIZE_KB).is_ok());
     }
 }

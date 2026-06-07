@@ -293,8 +293,7 @@ pub fn set_peripheral_status(
     // Write back to file
     if let Some(path) = parser.get_file_path() {
         let content = parser.get_file_content().to_string();
-        std::fs::write(path, content)
-            .map_err(|e| format!("无法写入文件: {}", e))?;
+        std::fs::write(path, content).map_err(|e| format!("无法写入文件: {}", e))?;
     }
 
     Ok(())
@@ -313,8 +312,7 @@ pub fn set_peripheral_clock_frequency(
     // Write back to file
     if let Some(path) = parser.get_file_path() {
         let content = parser.get_file_content().to_string();
-        std::fs::write(path, content)
-            .map_err(|e| format!("无法写入文件: {}", e))?;
+        std::fs::write(path, content).map_err(|e| format!("无法写入文件: {}", e))?;
     }
 
     Ok(())
@@ -333,8 +331,7 @@ pub fn set_peripheral_pwm_cells(
     // Write back to file
     if let Some(path) = parser.get_file_path() {
         let content = parser.get_file_content().to_string();
-        std::fs::write(path, content)
-            .map_err(|e| format!("无法写入文件: {}", e))?;
+        std::fs::write(path, content).map_err(|e| format!("无法写入文件: {}", e))?;
     }
 
     Ok(())
@@ -353,8 +350,7 @@ pub fn set_peripheral_current_speed(
     // Write back to file
     if let Some(path) = parser.get_file_path() {
         let content = parser.get_file_content().to_string();
-        std::fs::write(path, content)
-            .map_err(|e| format!("无法写入文件: {}", e))?;
+        std::fs::write(path, content).map_err(|e| format!("无法写入文件: {}", e))?;
     }
 
     Ok(())
@@ -373,8 +369,7 @@ pub fn set_peripheral_sysdma_channels(
     // Write back to file
     if let Some(path) = parser.get_file_path() {
         let content = parser.get_file_content().to_string();
-        std::fs::write(path, content)
-            .map_err(|e| format!("无法写入文件: {}", e))?;
+        std::fs::write(path, content).map_err(|e| format!("无法写入文件: {}", e))?;
     }
 
     Ok(())
@@ -393,7 +388,10 @@ mod tests {
         assert_eq!(info.pwm_cells, 1);
         assert_eq!(info.current_speed, 115200);
         assert_eq!(info.clock_frequency, 0);
-        assert_eq!(info.sysdma_channels, PeripheralInfo::default_sysdma_channels());
+        assert_eq!(
+            info.sysdma_channels,
+            PeripheralInfo::default_sysdma_channels()
+        );
     }
 
     #[test]
@@ -427,23 +425,41 @@ mod tests {
 
     #[test]
     fn test_peripheral_node_from_channel() {
-        assert_eq!(SysdmaChannelMap::peripheral_node_from_channel("8"), Some("uart0".to_string()));
-        assert_eq!(SysdmaChannelMap::peripheral_node_from_channel("12"), Some("uart2".to_string()));
-        assert_eq!(SysdmaChannelMap::peripheral_node_from_channel("40"), Some("uart4".to_string()));
-        assert_eq!(SysdmaChannelMap::peripheral_node_from_channel("0"), Some("i2s0".to_string()));
-        assert_eq!(SysdmaChannelMap::peripheral_node_from_channel("16"), Some("spi0".to_string()));
-        assert_eq!(SysdmaChannelMap::peripheral_node_from_channel("24"), Some("i2c0".to_string()));
+        assert_eq!(
+            SysdmaChannelMap::peripheral_node_from_channel("8"),
+            Some("uart0".to_string())
+        );
+        assert_eq!(
+            SysdmaChannelMap::peripheral_node_from_channel("12"),
+            Some("uart2".to_string())
+        );
+        assert_eq!(
+            SysdmaChannelMap::peripheral_node_from_channel("40"),
+            Some("uart4".to_string())
+        );
+        assert_eq!(
+            SysdmaChannelMap::peripheral_node_from_channel("0"),
+            Some("i2s0".to_string())
+        );
+        assert_eq!(
+            SysdmaChannelMap::peripheral_node_from_channel("16"),
+            Some("spi0".to_string())
+        );
+        assert_eq!(
+            SysdmaChannelMap::peripheral_node_from_channel("24"),
+            Some("i2c0".to_string())
+        );
         assert_eq!(SysdmaChannelMap::peripheral_node_from_channel("43"), None); // out of range
     }
 
     #[test]
     fn test_is_channel_rx() {
-        assert!(SysdmaChannelMap::is_channel_rx("0"));   // CVI_I2S0_RX
-        assert!(!SysdmaChannelMap::is_channel_rx("1"));  // CVI_I2S0_TX
-        assert!(SysdmaChannelMap::is_channel_rx("12"));  // CVI_UART2_RX
+        assert!(SysdmaChannelMap::is_channel_rx("0")); // CVI_I2S0_RX
+        assert!(!SysdmaChannelMap::is_channel_rx("1")); // CVI_I2S0_TX
+        assert!(SysdmaChannelMap::is_channel_rx("12")); // CVI_UART2_RX
         assert!(!SysdmaChannelMap::is_channel_rx("13")); // CVI_UART2_TX
-        assert!(SysdmaChannelMap::is_channel_rx("37"));  // CVI_AUDSRC — special
-        assert!(SysdmaChannelMap::is_channel_rx("42"));  // CVI_SPI_NAND — special
+        assert!(SysdmaChannelMap::is_channel_rx("37")); // CVI_AUDSRC — special
+        assert!(SysdmaChannelMap::is_channel_rx("42")); // CVI_SPI_NAND — special
     }
 
     #[test]

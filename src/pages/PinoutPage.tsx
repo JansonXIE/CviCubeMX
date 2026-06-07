@@ -1,40 +1,15 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useChipStore } from "../stores/chipStore";
-import { usePeripheralStore } from "../stores/peripheralStore";
-import PeripheralTree from "../components/PeripheralTree";
 import ChipCanvas from "../components/ChipCanvas";
 import { Search, Save, Cpu } from "lucide-react";
 import { invoke } from "@tauri-apps/api/core";
-
-const CHIP_OPTIONS = [
-  { value: "cv1801c", label: "CV1801C (QFN-64)" },
-  { value: "cv1801h", label: "CV1801H (BGA-60)" },
-  { value: "cv1811c", label: "CV1811C (QFN-88)" },
-  { value: "cv1811h", label: "CV1811H (BGA-84)" },
-  { value: "cv1842cp", label: "CV1842CP (QFN-88)" },
-  { value: "cv1842hp", label: "CV1842HP (BGA-221)" },
-];
+import { useSdkStore } from "../stores/sdkStore";
 
 export default function PinoutPage() {
-  const { selectChip, searchPin, chipType, isLoading } = useChipStore();
-  const { loadPeripherals } = usePeripheralStore();
+  const { searchPin, isLoading, pins } = useChipStore();
+  const { sdkPath, chipType, setIsOnboardingOpen } = useSdkStore();
   const [searchValue, setSearchValue] = useState("");
-  const [selectedChipType, setSelectedChipType] = useState("cv1842hp");
   const [genResult, setGenResult] = useState<string | null>(null);
-
-  // 初始化选择默认芯片
-  useEffect(() => {
-    handleChipSelect(selectedChipType);
-  }, []);
-
-  const handleChipSelect = async (type: string) => {
-    setSelectedChipType(type);
-    await selectChip(type);
-    
-    // 假设 DTS 路径位于 boards_pinout/芯片/dts
-    const mockDtsPath = `boards_pinout/${type}/dts`;
-    await loadPeripherals(mockDtsPath);
-  };
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
@@ -43,12 +18,30 @@ export default function PinoutPage() {
   };
 
   const handleGenerateCode = async () => {
+    if (!sdkPath || !chipType) {
+      setGenResult("请先配置全局 SDK 源码路径和芯片型号");
+      return;
+    }
     setGenResult(null);
     try {
-      // 触发 Rust 端的代码生成命令
-      const result = await invoke<string>("generate_code", { chipType: selectedChipType });
-      setGenResult("代码生成成功！");
-      setTimeout(() => setGenResult(null), 3000);
+      // 过滤出 user_configured = true 的引脚配置供合并
+      const pinConfigs = Array.from(pins.values())
+        .filter((pin) => pin.user_configured)
+        .map((pin) => ({
+          pin_name: pin.pin_name,
+          function: pin.current_function,
+          user_configured: pin.user_configured,
+        }));
+
+      // 触发 Rust 端的代码生成/合并命令
+      const result = await invoke<string>("generate_board_init_code", {
+        sdkPath,
+        chipType,
+        pinConfigs,
+      });
+
+      setGenResult(`代码生成成功！已写入/更新: build/boards/cv184x/${chipType}/u-boot/cvi_board_init.c`);
+      setTimeout(() => setGenResult(null), 4000);
     } catch (e) {
       setGenResult(`代码生成失败: ${e}`);
       setTimeout(() => setGenResult(null), 5000);
@@ -82,29 +75,29 @@ export default function PinoutPage() {
               value={searchValue}
               onChange={handleSearchChange}
               placeholder="搜索引脚编号 / 功能..."
-              className="bg-slate-950/80 border border-slate-800 focus:border-indigo-500 focus:ring-0 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-200 w-52 placeholder-slate-600 transition-all"
+              className="bg-slate-950/80 border border-slate-800 focus:border-indigo-500 focus:ring-0 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-200 w-52 placeholder-slate-600 transition-all focus:outline-none"
             />
           </div>
 
-          {/* 芯片下拉选型 */}
-          <select
-            value={selectedChipType}
-            onChange={(e) => handleChipSelect(e.target.value)}
-            disabled={isLoading}
-            className="bg-slate-950/80 border border-slate-800 focus:border-indigo-500 focus:ring-0 rounded-xl px-4 py-2 text-xs text-slate-200 transition-all font-mono"
+          {/* 芯片型号展示 */}
+          <div className="flex items-center gap-2 bg-slate-950/80 border border-slate-800 rounded-xl px-4 py-2 text-xs text-slate-300 font-mono">
+            <span>芯片: {chipType || "未选型"}</span>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setIsOnboardingOpen(true)}
+            className="px-3 py-2 bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 rounded-xl text-xs font-semibold border border-slate-700 transition-all focus:outline-none focus:ring-0"
           >
-            {CHIP_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
+            更改配置
+          </button>
 
           {/* 生成代码按钮 */}
           <button
             type="button"
             onClick={handleGenerateCode}
-            className="bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white px-5 py-2 rounded-xl text-xs font-bold shadow-lg shadow-indigo-500/20 flex items-center gap-1.5 transition-all focus:outline-none focus:ring-0"
+            disabled={isLoading}
+            className="bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white px-5 py-2 rounded-xl text-xs font-bold shadow-lg shadow-indigo-500/20 flex items-center gap-1.5 transition-all focus:outline-none focus:ring-0 disabled:opacity-50"
           >
             <Save size={14} />
             生成驱动代码
@@ -118,17 +111,9 @@ export default function PinoutPage() {
         </div>
       )}
 
-      {/* 主面板布局：左侧外设树，右侧引脚画布 */}
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6 overflow-hidden">
-        {/* 左侧外设资源 (1/3) */}
-        <div className="lg:col-span-1 h-full min-h-[400px] overflow-hidden">
-          <PeripheralTree />
-        </div>
-
-        {/* 右侧引脚画布 (2/3) */}
-        <div className="lg:col-span-2 h-full overflow-hidden">
-          <ChipCanvas />
-        </div>
+      {/* 主面板布局：引脚画布满宽 */}
+      <div className="flex-1 w-full h-full overflow-hidden">
+        <ChipCanvas />
       </div>
     </div>
   );

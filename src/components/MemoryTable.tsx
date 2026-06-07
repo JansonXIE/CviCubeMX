@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useMemoryStore, MemoryRegion } from "../stores/memoryStore";
 import { Plus, Trash2, ShieldAlert, CheckCircle, RefreshCw, Save } from "lucide-react";
+import { useSdkStore } from "../stores/sdkStore";
 
 // 十六进制格式化
 function formatHex(val: number): string {
@@ -20,6 +21,7 @@ function formatSizeReadable(sizeInBytes: number): string {
 }
 
 export default function MemoryTable() {
+  const { sdkPath, chipType } = useSdkStore();
   const {
     regions,
     isLoading,
@@ -90,10 +92,13 @@ export default function MemoryTable() {
   };
 
   const handleExport = async () => {
+    if (!sdkPath || !chipType) {
+      alert("请先在顶部配置全局 SDK 源码路径和芯片型号！");
+      return;
+    }
     setExportSuccess(false);
     try {
-      // 传递 mock 路径及默认芯片型号
-      await exportDefconfig("boards_pinout/cv1842hp/defconfig", "cv1842hp");
+      await exportDefconfig(sdkPath, chipType);
       setExportSuccess(true);
       setTimeout(() => setExportSuccess(false), 3000);
     } catch (err) {
@@ -121,7 +126,7 @@ export default function MemoryTable() {
       {exportSuccess && (
         <div className="flex items-center gap-2 bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 p-4 rounded-xl text-xs font-semibold animate-fade-in">
           <CheckCircle size={16} />
-          <span>配置成功导出至 boards_pinout/cv1842hp/defconfig ！</span>
+          <span>配置成功同步导出至 SDK 中的 defconfig ！</span>
         </div>
       )}
 

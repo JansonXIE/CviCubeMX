@@ -4,10 +4,14 @@ use cvicubemx_lib::chip_spec::{get_all_chip_specs, get_chip_spec, load_chip_spec
 fn test_get_all_chip_specs() {
     let specs = get_all_chip_specs();
     assert_eq!(specs.len(), 6);
-    
+
     // 校验 package 类型
-    assert!(specs.iter().any(|s| s.chip_type == "cv1842hp" && s.package == "BGA"));
-    assert!(specs.iter().any(|s| s.chip_type == "cv1811c" && s.package == "QFN"));
+    assert!(specs
+        .iter()
+        .any(|s| s.chip_type == "cv1842hp" && s.package == "BGA"));
+    assert!(specs
+        .iter()
+        .any(|s| s.chip_type == "cv1811c" && s.package == "QFN"));
 }
 
 #[test]

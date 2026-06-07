@@ -6,7 +6,6 @@
 /// - parse_function_select_cell: Description 列解析
 /// - pin_sort_key: 引脚自然排序
 /// - BGA 四角剔除
-
 use std::collections::HashMap;
 
 /// 功能名称重映射规则 (8条)
@@ -53,9 +52,7 @@ pub fn parse_function_select_cell(content: &str) -> (Vec<String>, String) {
     for line in content.lines() {
         let trimmed = line.trim();
         // 跳过空行、标题行和 "Others" 行
-        if trimmed.is_empty()
-            || trimmed.contains("function select")
-            || trimmed.contains("Others :")
+        if trimmed.is_empty() || trimmed.contains("function select") || trimmed.contains("Others :")
         {
             continue;
         }
@@ -78,10 +75,7 @@ pub fn parse_function_select_cell(content: &str) -> (Vec<String>, String) {
                     found_default = true;
                 } else {
                     // 非 default 功能
-                    let func_name = func_info
-                        .trim()
-                        .replace('[', "_")
-                        .replace(']', "");
+                    let func_name = func_info.trim().replace('[', "_").replace(']', "");
                     let func_name = apply_remap(&func_name, &remap);
                     if !func_name.is_empty() {
                         functions.push(func_name);
@@ -93,7 +87,8 @@ pub fn parse_function_select_cell(content: &str) -> (Vec<String>, String) {
 
     // 无 (default) 标记时的默认功能查找逻辑
     if !found_default && !functions.is_empty() {
-        let gpio_fallback: Vec<&String> = functions.iter().filter(|f| f.contains("XGPIO")).collect();
+        let gpio_fallback: Vec<&String> =
+            functions.iter().filter(|f| f.contains("XGPIO")).collect();
         if !gpio_fallback.is_empty() {
             default_function = gpio_fallback[0].clone();
         } else {
@@ -117,7 +112,10 @@ pub fn parse_function_select_cell(content: &str) -> (Vec<String>, String) {
 
 /// 应用 FUNCTION_NAME_REMAP 重映射
 fn apply_remap(func_name: &str, remap: &HashMap<&str, &'static str>) -> String {
-    remap.get(func_name).map(|v| v.to_string()).unwrap_or_else(|| func_name.to_string())
+    remap
+        .get(func_name)
+        .map(|v| v.to_string())
+        .unwrap_or_else(|| func_name.to_string())
 }
 
 /// BGA 四角排除引脚 (针对 C++ 通用循环的 17x15 网格)

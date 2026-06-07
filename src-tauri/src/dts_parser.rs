@@ -3,8 +3,8 @@
 //! Parses `.dtsi` file content into structured `PeripheralInfo` data,
 //! preserving line number information for precise line-level modifications.
 
-use std::collections::HashMap;
 use regex::Regex;
+use std::collections::HashMap;
 
 use crate::peripheral::PeripheralInfo;
 
@@ -85,7 +85,11 @@ impl DtsParser {
     }
 
     /// Set peripheral clock frequency (in-memory only).
-    pub fn set_peripheral_clock_frequency(&mut self, peripheral: &str, frequency: i32) -> Result<(), String> {
+    pub fn set_peripheral_clock_frequency(
+        &mut self,
+        peripheral: &str,
+        frequency: i32,
+    ) -> Result<(), String> {
         if let Some(info) = self.peripherals.get_mut(peripheral) {
             info.clock_frequency = frequency;
             info.has_clock_freq = true;
@@ -107,7 +111,11 @@ impl DtsParser {
     }
 
     /// Set peripheral current speed (in-memory only).
-    pub fn set_peripheral_current_speed(&mut self, peripheral: &str, speed: i32) -> Result<(), String> {
+    pub fn set_peripheral_current_speed(
+        &mut self,
+        peripheral: &str,
+        speed: i32,
+    ) -> Result<(), String> {
         if let Some(info) = self.peripherals.get_mut(peripheral) {
             info.current_speed = speed;
             info.has_current_speed = true;
@@ -118,7 +126,11 @@ impl DtsParser {
     }
 
     /// Set peripheral sysdma channels (in-memory only).
-    pub fn set_peripheral_sysdma_channels(&mut self, peripheral: &str, channels: Vec<String>) -> Result<(), String> {
+    pub fn set_peripheral_sysdma_channels(
+        &mut self,
+        peripheral: &str,
+        channels: Vec<String>,
+    ) -> Result<(), String> {
         if let Some(info) = self.peripherals.get_mut(peripheral) {
             info.sysdma_channels = channels;
             info.has_sysdma_channels = true;
@@ -157,8 +169,7 @@ impl DtsParser {
         ];
 
         for pattern in &scan_patterns {
-            let regex = Regex::new(pattern)
-                .expect("Invalid peripheral pattern regex");
+            let regex = Regex::new(pattern).expect("Invalid peripheral pattern regex");
 
             for cap in regex.captures_iter(&self.file_content) {
                 // The first capture group is the node name
@@ -178,7 +189,8 @@ impl DtsParser {
             sysdma_info.status = "okay".to_string();
             sysdma_info.has_status = true;
             sysdma_info.has_sysdma_channels = true;
-            self.peripherals.insert("sysdma_remap".to_string(), sysdma_info);
+            self.peripherals
+                .insert("sysdma_remap".to_string(), sysdma_info);
         }
     }
 
@@ -190,7 +202,10 @@ impl DtsParser {
         info.name = node_name.to_string();
 
         // Parse status
-        if let Some(caps) = Regex::new(r#"status\s*=\s*"([^"]+)";"#).unwrap().captures(node_content) {
+        if let Some(caps) = Regex::new(r#"status\s*=\s*"([^"]+)";"#)
+            .unwrap()
+            .captures(node_content)
+        {
             info.status = caps[1].to_string();
             info.has_status = true;
         } else {
@@ -199,10 +214,16 @@ impl DtsParser {
         }
 
         // Parse clocks
-        if let Some(caps) = Regex::new(r"clocks\s*=\s*<([^>]+)>;").unwrap().captures(node_content) {
+        if let Some(caps) = Regex::new(r"clocks\s*=\s*<([^>]+)>;")
+            .unwrap()
+            .captures(node_content)
+        {
             let clock_content = &caps[1];
             info.has_clock = true;
-            if let Some(clock_caps) = Regex::new(r"CV184X_CLK_(\w+)").unwrap().captures(clock_content) {
+            if let Some(clock_caps) = Regex::new(r"CV184X_CLK_(\w+)")
+                .unwrap()
+                .captures(clock_content)
+            {
                 info.clock_name = clock_caps[1].to_string();
             }
         } else {
@@ -210,7 +231,10 @@ impl DtsParser {
         }
 
         // Parse clock-frequency
-        if let Some(caps) = Regex::new(r"clock-frequency\s*=\s*<([^>]+)>;").unwrap().captures(node_content) {
+        if let Some(caps) = Regex::new(r"clock-frequency\s*=\s*<([^>]+)>;")
+            .unwrap()
+            .captures(node_content)
+        {
             info.clock_freq = caps[1].to_string();
             info.has_clock_freq = true;
             info.clock_frequency = caps[1].trim().parse::<i32>().unwrap_or(0);
@@ -220,7 +244,10 @@ impl DtsParser {
         }
 
         // Parse #pwm-cells
-        if let Some(caps) = Regex::new(r"#pwm-cells\s*=\s*<([^>]+)>;").unwrap().captures(node_content) {
+        if let Some(caps) = Regex::new(r"#pwm-cells\s*=\s*<([^>]+)>;")
+            .unwrap()
+            .captures(node_content)
+        {
             info.has_pwm_cells = true;
             info.pwm_cells = caps[1].trim().parse::<i32>().unwrap_or(1);
         } else {
@@ -229,7 +256,10 @@ impl DtsParser {
         }
 
         // Parse current-speed (UART only)
-        if let Some(caps) = Regex::new(r"current-speed\s*=\s*<([^>]+)>;").unwrap().captures(node_content) {
+        if let Some(caps) = Regex::new(r"current-speed\s*=\s*<([^>]+)>;")
+            .unwrap()
+            .captures(node_content)
+        {
             info.has_current_speed = true;
             info.current_speed = caps[1].trim().parse::<i32>().unwrap_or(115200);
         } else {
@@ -238,7 +268,10 @@ impl DtsParser {
         }
 
         // Parse ch-remap (SYSDMA only)
-        if let Some(caps) = Regex::new(r"ch-remap\s*=\s*<([^>]+)>;").unwrap().captures(node_content) {
+        if let Some(caps) = Regex::new(r"ch-remap\s*=\s*<([^>]+)>;")
+            .unwrap()
+            .captures(node_content)
+        {
             info.has_sysdma_channels = true;
             let ch_remap_content = caps[1].trim();
             let channels: Vec<String> = ch_remap_content
@@ -385,7 +418,10 @@ mod tests {
         assert!(info.has_sysdma_channels);
         // CVI_I2S0_RX->0, CVI_I2S2_TX->5, CVI_I2S1_RX->2, CVI_I2S1_TX->3
         // CVI_SPI_NAND->42, CVI_SPI_NAND->42, CVI_I2S2_RX->4, CVI_I2S3_TX->7
-        assert_eq!(info.sysdma_channels, vec!["0", "5", "2", "3", "42", "42", "4", "7"]);
+        assert_eq!(
+            info.sysdma_channels,
+            vec!["0", "5", "2", "3", "42", "42", "4", "7"]
+        );
     }
 
     #[test]
@@ -395,13 +431,20 @@ mod tests {
         parser.load_content(content);
 
         let info = parser.get_peripheral("sysdma_remap").unwrap();
-        assert_eq!(info.sysdma_channels, PeripheralInfo::default_sysdma_channels());
-        assert_eq!(info.sysdma_channels, vec!["0", "5", "12", "13", "42", "42", "4", "7"]);
+        assert_eq!(
+            info.sysdma_channels,
+            PeripheralInfo::default_sysdma_channels()
+        );
+        assert_eq!(
+            info.sysdma_channels,
+            vec!["0", "5", "12", "13", "42", "42", "4", "7"]
+        );
     }
 
     #[test]
     fn test_line_number_calculation() {
-        let content = "/* comment line 1 */\n/* comment line 2 */\n&i2c0 {\n\tstatus = \"okay\";\n};";
+        let content =
+            "/* comment line 1 */\n/* comment line 2 */\n&i2c0 {\n\tstatus = \"okay\";\n};";
         let mut parser = DtsParser::new();
         parser.load_content(content);
 
@@ -433,12 +476,16 @@ mod tests {
 
     #[test]
     fn test_sysdma_channels_numeric_form() {
-        let content = "sysdma_remap {\n\tch-remap = <0 5 12 13 42 42 4 7>;\n\tstatus = \"okay\";\n};\n";
+        let content =
+            "sysdma_remap {\n\tch-remap = <0 5 12 13 42 42 4 7>;\n\tstatus = \"okay\";\n};\n";
         let mut parser = DtsParser::new();
         parser.load_content(content);
 
         let info = parser.get_peripheral("sysdma_remap").unwrap();
-        assert_eq!(info.sysdma_channels, vec!["0", "5", "12", "13", "42", "42", "4", "7"]);
+        assert_eq!(
+            info.sysdma_channels,
+            vec!["0", "5", "12", "13", "42", "42", "4", "7"]
+        );
     }
 
     #[test]

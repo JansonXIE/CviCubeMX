@@ -1,8 +1,8 @@
-use serde::{Deserialize, Serialize};
-use tauri::{AppHandle, Emitter, Manager};
-use reqwest::Client;
-use std::path::PathBuf;
 use futures_util::StreamExt;
+use reqwest::Client;
+use serde::{Deserialize, Serialize};
+use std::path::PathBuf;
+use tauri::{AppHandle, Emitter, Manager};
 use tokio::io::AsyncBufReadExt;
 
 /// AI API 配置
@@ -80,8 +80,7 @@ fn config_file_path(app: &AppHandle) -> Result<PathBuf, String> {
         .path()
         .app_data_dir()
         .map_err(|e| format!("获取应用数据目录失败: {}", e))?;
-    std::fs::create_dir_all(&app_dir)
-        .map_err(|e| format!("创建应用数据目录失败: {}", e))?;
+    std::fs::create_dir_all(&app_dir).map_err(|e| format!("创建应用数据目录失败: {}", e))?;
     Ok(app_dir.join("ai_config.json"))
 }
 
@@ -131,7 +130,11 @@ pub async fn send_ai_message(
             .text()
             .await
             .unwrap_or_else(|_| "无法读取错误响应体".to_string());
-        return Err(format!("API 错误 (HTTP {}): {}", status.as_u16(), error_body));
+        return Err(format!(
+            "API 错误 (HTTP {}): {}",
+            status.as_u16(),
+            error_body
+        ));
     }
 
     // 流式读取 SSE 响应
@@ -178,10 +181,9 @@ pub async fn send_ai_message(
 #[tauri::command]
 pub fn save_ai_config(app_handle: AppHandle, config: AiApiConfig) -> Result<(), String> {
     let path = config_file_path(&app_handle)?;
-    let json = serde_json::to_string_pretty(&config)
-        .map_err(|e| format!("序列化配置失败: {}", e))?;
-    std::fs::write(&path, json)
-        .map_err(|e| format!("写入配置文件失败: {}", e))?;
+    let json =
+        serde_json::to_string_pretty(&config).map_err(|e| format!("序列化配置失败: {}", e))?;
+    std::fs::write(&path, json).map_err(|e| format!("写入配置文件失败: {}", e))?;
     Ok(())
 }
 
@@ -193,10 +195,9 @@ pub fn load_ai_config(app_handle: AppHandle) -> Result<AiApiConfig, String> {
         // 配置文件不存在，返回默认配置
         return Ok(AiApiConfig::default());
     }
-    let json = std::fs::read_to_string(&path)
-        .map_err(|e| format!("读取配置文件失败: {}", e))?;
-    let config: AiApiConfig = serde_json::from_str(&json)
-        .map_err(|e| format!("解析配置文件失败: {}", e))?;
+    let json = std::fs::read_to_string(&path).map_err(|e| format!("读取配置文件失败: {}", e))?;
+    let config: AiApiConfig =
+        serde_json::from_str(&json).map_err(|e| format!("解析配置文件失败: {}", e))?;
     Ok(config)
 }
 
