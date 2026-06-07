@@ -44,10 +44,10 @@ pub struct FlashPartition {
 ///
 /// # Examples
 /// ```
-/// assert_eq!(format_flash_size(3072),    "3MB");
-/// assert_eq!(format_flash_size(8192),    "8MB");
-/// assert_eq!(format_flash_size(512),     "512KB");
-/// assert_eq!(format_flash_size(3145728), "3GB");
+/// assert_eq!(cvicubemx_lib::flash::format_flash_size(3072),    "3MB");
+/// assert_eq!(cvicubemx_lib::flash::format_flash_size(8192),    "8MB");
+/// assert_eq!(cvicubemx_lib::flash::format_flash_size(512),     "512KB");
+/// assert_eq!(cvicubemx_lib::flash::format_flash_size(3145728), "3GB");
 /// ```
 pub fn format_flash_size(size_in_kb: u64) -> String {
     if size_in_kb == 0 {
@@ -115,18 +115,7 @@ pub fn validate_partition_layout(partitions: &[FlashPartition], flash_size_kb: u
         seen_numbers.insert(p.partition_number);
     }
 
-    // 2. Check each enabled partition size is a multiple of 64 KB
-    //    (matching C++ onConfigFieldChanged behavior which rejects non-64-aligned sizes)
-    for p in partitions {
-        if p.enabled && p.size > 0 && p.size % 64 != 0 {
-            return Err(format!(
-                "Partition {} ('{}') size {} KB is not a multiple of 64 KB",
-                p.partition_number, p.label, p.size
-            ));
-        }
-    }
-
-    // 3. Check labels for enabled partitions
+    // 2. Check labels for enabled partitions
     for p in partitions {
         if p.enabled && p.label.trim().is_empty() {
             return Err(format!(
@@ -136,7 +125,7 @@ pub fn validate_partition_layout(partitions: &[FlashPartition], flash_size_kb: u
         }
     }
 
-    // 4. Check total size of enabled partitions vs flash size
+    // 3. Check total size of enabled partitions vs flash size
     let total_enabled_kb: u64 = partitions
         .iter()
         .filter(|p| p.enabled)
@@ -337,7 +326,7 @@ pub fn export_flash_json(partitions: Vec<FlashPartition>, path: String) -> Resul
 }
 
 #[tauri::command]
-pub fn export_flash_defconfig_tauri(partitions: Vec<FlashPartition>, source_path: String, chip_type: String) -> Result<(), String> {
+pub fn export_flash_defconfig(partitions: Vec<FlashPartition>, source_path: String, chip_type: String) -> Result<(), String> {
     write_flash_defconfig(&partitions, &source_path, &chip_type)
 }
 

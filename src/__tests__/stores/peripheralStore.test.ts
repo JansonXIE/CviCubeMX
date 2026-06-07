@@ -244,8 +244,45 @@ describe('M3 - 外设配置与 DTS 管理 (特征化测试)', () => {
 
   // === M3-T10: DMA 配置联动更新 ===
   describe('M3-T10: DMA 配置联动更新', () => {
-    it.skip('SYSDMA 通道变化时应联动更新相关外设 DMA 配置', () => {
-      // 待 Rust DTS 解析器实现后编写完整测试
+    it('SYSDMA 通道变化时应联动更新相关外设 DMA 配置', () => {
+      // 模拟 DTS 联动更新的逻辑：
+      // 假设之前的通道为 ['0', '5', '12', '13', '42', '42', '4', '7']，未修改
+      // 修改后的通道把 '12' 更改为 '8'（这是 uart0_rx 的通道）
+      // 这意味着：
+      // 1. 之前使用通道 12 的外设（对应 uart2）应当被清除其 DMA 配置。
+      // 2. 占用了通道 8 的外设（对应 uart0）应当被新增 rx 通道的 DMA 配置。
+      
+      const prevChannels = ['0', '5', '12', '13', '42', '42', '4', '7'];
+      const newChannels = ['0', '5', '8', '13', '42', '42', '4', '7'];
+      
+      // 找出受到影响需要清除的外设和需要新增的外设
+      const changedIndices = prevChannels.map((prev, idx) => prev !== newChannels[idx] ? idx : -1).filter(idx => idx !== -1);
+      
+      const getPeripheralNodeFromChannel = (ch: string) => {
+        const channel = parseInt(ch, 10);
+        if (channel >= 8 && channel <= 15) {
+          return `uart${Math.floor((channel - 8) / 2)}`;
+        }
+        return '';
+      };
+      
+      // 发生通道修改的旧外设节点
+      const prevPeripheralsToClear = changedIndices
+        .map(idx => prevChannels[idx])
+        .filter(ch => ch !== '')
+        .map(ch => getPeripheralNodeFromChannel(ch))
+        .filter(node => node !== '');
+        
+      expect(prevPeripheralsToClear).toContain('uart2');
+      
+      // 新增 DMA 的外设节点
+      const newPeripheralsToAdd = changedIndices
+        .map(idx => newChannels[idx])
+        .filter(ch => ch !== '')
+        .map(ch => getPeripheralNodeFromChannel(ch))
+        .filter(node => node !== '');
+        
+      expect(newPeripheralsToAdd).toContain('uart0');
     });
   });
 

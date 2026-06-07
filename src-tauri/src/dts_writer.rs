@@ -22,7 +22,7 @@ impl DtsWriter {
         Self::update_property_in_node(
             parser,
             peripheral,
-            r#"status\s*=\s*"[^"]+"\s*;"#,
+            r#"\s*status\s*=\s*"[^"]+"\s*;"#,
             format!("\n\t\tstatus = \"{}\";", status),
             info.has_status || status != "okay",
         )?;
@@ -40,7 +40,7 @@ impl DtsWriter {
         Self::update_property_in_node(
             parser,
             peripheral,
-            r"clock-frequency\s*=\s*<[^>]+>\s*;",
+            r#"\s*clock-frequency\s*=\s*<[^>]+>\s*;"#,
             format!("\n\t\tclock-frequency = <{}>;", frequency),
             info.has_clock_freq && frequency > 0,
         )?;
@@ -58,7 +58,7 @@ impl DtsWriter {
         Self::update_property_in_node(
             parser,
             peripheral,
-            r"#pwm-cells\s*=\s*<[^>]+>\s*;",
+            r#"\s*#pwm-cells\s*=\s*<[^>]+>\s*;"#,
             format!("\n\t\t#pwm-cells = <{}>;", cells),
             info.has_pwm_cells && cells > 0,
         )?;
@@ -76,7 +76,7 @@ impl DtsWriter {
         Self::update_property_in_node(
             parser,
             peripheral,
-            r"current-speed\s*=\s*<[^>]+>\s*;",
+            r#"\s*current-speed\s*=\s*<[^>]+>\s*;"#,
             format!("\n\t\tcurrent-speed = <{}>;", speed),
             info.has_current_speed && speed > 0,
         )?;
@@ -116,7 +116,7 @@ impl DtsWriter {
         Self::update_property_in_node(
             parser,
             peripheral,
-            r"ch-remap\s*=\s*<[^>]+>\s*;",
+            r#"\s*ch-remap\s*=\s*<[^>]+>\s*;"#,
             format!("\n\t\tch-remap = <{}>;", ch_remap_value),
             true,
         )?;
@@ -356,16 +356,16 @@ impl DtsWriter {
             _ => return,
         };
 
-        Self::update_or_add_property(parser, peripheral_node, r"dmas\s*=\s*<[^>]*>\s*;", dmas_line);
-        Self::update_or_add_property(parser, peripheral_node, r#"dma-names\s*=\s*"[^"]*";"#, dma_names_line);
-        Self::update_or_add_property(parser, peripheral_node, r#"capability\s*=\s*"[^"]*";"#, capability_line);
+        Self::update_or_add_property(parser, peripheral_node, r#"\s*dmas\s*=\s*<[^>]*>\s*;"#, dmas_line);
+        Self::update_or_add_property(parser, peripheral_node, r#"\s*dma-names\s*=\s*[^;]+;"#, dma_names_line);
+        Self::update_or_add_property(parser, peripheral_node, r#"\s*capability\s*=\s*[^;]+;"#, capability_line);
     }
 
     /// Remove DMA configuration from a peripheral node.
     fn remove_dma_config_from_peripheral(parser: &mut DtsParser, peripheral_node: &str) {
         Self::remove_property(parser, peripheral_node, r"\s*dmas\s*=\s*<[^>]*>\s*;");
-        Self::remove_property(parser, peripheral_node, r#"dma-names\s*=\s*"[^"]*";"#);
-        Self::remove_property(parser, peripheral_node, r#"capability\s*=\s*"[^"]*";"#);
+        Self::remove_property(parser, peripheral_node, r#"\s*dma-names\s*=\s*[^;]+;"#);
+        Self::remove_property(parser, peripheral_node, r#"\s*capability\s*=\s*[^;]+;"#);
     }
 
     /// Update or add a property line within a node.
@@ -549,5 +549,42 @@ sysdma_remap {
 
         let result = DtsWriter::update_status(&mut parser, "nonexistent", "disabled");
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_sysdma_channel_update_and_dma_cascade() {
+        let content = "\
+&uart0 {
+	status = \"okay\";
+	current-speed = <115200>;
+};
+&i2c0 {
+	status = \"okay\";
+	clock-frequency = <100000>;
+};
+sysdma_remap {
+	ch-remap = <0 5 12 13 42 42 4 7>;
+	status = \"okay\";
+};
+";
+        let mut parser = DtsParser::new();
+        parser.load_content(content);
+
+        // 修改通道：将 12 更改为 8（这是 uart0_rx）
+        // 这样会导致 uart0 (因为映射了 8) 添加 DMA 配置。
+        // 原本默认的 12 不再是 12，那么之前映射了 12 的 uart2 应该被清除 DMA 配置。
+        let new_channels: Vec<String> = vec![
+            "0", "5", "8", "13", "42", "42", "4", "7"
+        ].into_iter().map(|s| s.to_string()).collect();
+
+        DtsWriter::update_sysdma_channels(&mut parser, "sysdma_remap", new_channels).unwrap();
+
+        let new_content = parser.get_file_content();
+        
+        // 检查 uart0 应该被加入了单 rx 的 DMA 配置
+        assert!(new_content.contains("&uart0 {"));
+        assert!(new_content.contains("dmas = <&dmac 2 1 1>;")); // 对应 channel_index1 = 2 (因为通道 8 在 new_channels 的索引是 2)
+        assert!(new_content.contains("dma-names = \"rx\";"));
+        assert!(new_content.contains("capability = \"rx\";"));
     }
 }

@@ -28,7 +28,8 @@ pub const CLK_1M_FREQUENCY_MHZ: f64 = 0.1;
 /// PLL configuration structure.
 /// Mirrors the C++ `PLLConfig` struct from clockconfig.h.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct PLLConfig {
+#[serde(rename_all = "camelCase")]
+pub struct PllConfig {
     /// PLL name (e.g. "clk_fpll", "clk_mipimpll")
     pub name: String,
     /// Whether this PLL is enabled
@@ -48,6 +49,7 @@ pub struct PLLConfig {
 /// Clock output structure.
 /// Mirrors the C++ `ClockOutput` struct from clockconfig.h.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ClockOutput {
     /// Output name (e.g. "clk_1M", "clk_cam1pll")
     pub name: String,
@@ -66,6 +68,7 @@ pub struct ClockOutput {
 /// Module position structure for UI layout.
 /// Mirrors the C++ `ModulePosition` struct from clockconfig.h.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ModulePosition {
     /// Module name
     pub module_name: String,
@@ -81,9 +84,10 @@ pub struct ModulePosition {
 
 /// Result of computing the full clock tree.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ClockTreeResult {
     /// All PLL configs with computed output frequencies
-    pub pll_configs: HashMap<String, PLLConfig>,
+    pub pll_configs: HashMap<String, PllConfig>,
     /// All output configs with computed frequencies
     pub outputs: HashMap<String, ClockOutput>,
     /// All sub-node groups with computed frequencies
@@ -690,7 +694,7 @@ mod tests {
     // === PLLConfig struct serialization ===
     #[test]
     fn test_pll_config_serialization() {
-        let config = PLLConfig {
+        let config = PllConfig {
             name: "clk_fpll".to_string(),
             enabled: true,
             input_freq: 25.0,
@@ -700,7 +704,7 @@ mod tests {
             source: "OSC".to_string(),
         };
         let json = serde_json::to_string(&config).unwrap();
-        let deserialized: PLLConfig = serde_json::from_str(&json).unwrap();
+        let deserialized: PllConfig = serde_json::from_str(&json).unwrap();
         assert_eq!(deserialized.name, "clk_fpll");
         assert_eq!(deserialized.output_freq, 1350.0);
     }

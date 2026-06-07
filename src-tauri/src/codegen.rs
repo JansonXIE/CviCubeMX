@@ -360,8 +360,8 @@ pub fn generate_code(chip_type: &str, pin_configs: &[PinConfig]) -> String {
     code += &format!("    // Pin configuration for {}\n", chip_type);
     code += "    // Package type: ";
 
-    let is_qfn = chip_type.ends_with('c') || chip_type.contains("cp_");
-    let is_bga = chip_type.ends_with('h') || chip_type.contains("hp_");
+    let is_qfn = chip_type.ends_with('c') || chip_type.contains("cp");
+    let is_bga = chip_type.ends_with('h') || chip_type.contains("hp");
 
     if is_qfn {
         code += "QFN (Quad Flat No-leads)\n";
@@ -491,12 +491,21 @@ pub fn update_existing_code(file_path: &str, pin_configs: &[PinConfig]) -> Resul
         // Step 1: 删除旧的生成块 (从 "// Generated" 到 "return 0;" 之间的内容)
         let mut new_content = content.clone();
 
-        // 使用 regex 删除旧的生成块
-        let re = regex::Regex::new(
-            r"\n*\s*// Generated PINMUX configurations\n.*?(?=\n*\s*return\s+0\s*;)"
-        ).map_err(|e| format!("Regex error: {}", e))?;
-
-        new_content = re.replace(&new_content, "").to_string();
+        if let Some(pos1) = new_content.find(generated_marker) {
+            if let Some(pos2) = new_content[pos1..].find("return 0;") {
+                let actual_pos2 = pos1 + pos2;
+                let mut start_pos = pos1;
+                while start_pos > 0 {
+                    let prev_char = new_content.as_bytes()[start_pos - 1];
+                    if prev_char == b'\n' || prev_char == b'\r' || prev_char == b' ' || prev_char == b'\t' {
+                        start_pos -= 1;
+                    } else {
+                        break;
+                    }
+                }
+                new_content.replace_range(start_pos..actual_pos2, "");
+            }
+        }
 
         // 清理多余换行符
         let re_multiline = regex::Regex::new(r"(\n\s*){3,}(\s*return\s+0\s*;)")

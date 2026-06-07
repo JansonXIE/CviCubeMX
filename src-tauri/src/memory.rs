@@ -74,7 +74,7 @@ pub fn check_memory_overlap(region1: &MemoryRegion, region2: &MemoryRegion) -> b
 /// 检查所有非零大小的区域是否存在重叠，以及地址是否在合理范围内
 /// 注意：与 C++ 源码一致，重叠检测是信息性的——它记录重叠但不阻止配置
 /// 此函数返回重叠区域列表作为警告，不作为硬错误
-pub fn validate_memory_layout(regions: &[MemoryRegion]) -> Result<Vec<String>, String> {
+pub fn validate_memory_layout(regions: &[MemoryRegion]) -> Result<(), String> {
     // 过滤出有实际大小的区域
     let mut sorted_regions: Vec<&MemoryRegion> = regions
         .iter()
@@ -84,19 +84,15 @@ pub fn validate_memory_layout(regions: &[MemoryRegion]) -> Result<Vec<String>, S
     // 按起始地址排序
     sorted_regions.sort_by_key(|r| r.start_address);
 
-    // 检查相邻区域是否重叠（信息性，不阻止配置）
-    let mut overlap_warnings: Vec<String> = Vec::new();
+    // 检查相邻区域是否重叠（现改为硬错误）
     for i in 0..sorted_regions.len() - 1 {
         let current = sorted_regions[i];
         let next = sorted_regions[i + 1];
 
         if check_memory_overlap(current, next) {
-            overlap_warnings.push(format!(
-                "{} ({}) 与 {} ({}) 存在重叠",
-                current.name,
-                format_address(current.start_address),
-                next.name,
-                format_address(next.start_address)
+            return Err(format!(
+                "内存重叠检测：区域 {} 与 {} 存在重叠",
+                current.name, next.name
             ));
         }
     }
@@ -113,7 +109,7 @@ pub fn validate_memory_layout(regions: &[MemoryRegion]) -> Result<Vec<String>, S
         }
     }
 
-    Ok(overlap_warnings)
+    Ok(())
 }
 
 /// 验证内存约束条件（对应 C++ 中的 validateMemoryConstraints）
@@ -246,12 +242,12 @@ pub fn load_memory_regions() -> Result<Vec<MemoryRegion>, String> {
 }
 
 #[tauri::command]
-pub fn validate_memory(regions: Vec<MemoryRegion>) -> Result<Vec<String>, String> {
-    // 先检查重叠（返回重叠警告列表）
-    let overlap_warnings = validate_memory_layout(&regions)?;
+pub fn validate_memory(regions: Vec<MemoryRegion>) -> Result<(), String> {
+    // 先检查重叠和地址范围
+    validate_memory_layout(&regions)?;
     // 再检查约束条件
     validate_memory_constraints(&regions)?;
-    Ok(overlap_warnings)
+    Ok(())
 }
 
 #[tauri::command]
@@ -447,7 +443,7 @@ mod tests {
 
     #[test]
     fn test_validate_memory_layout_overlap_warning() {
-        // Overlapping regions produce warnings, not errors
+        // Overlapping regions now produce hard errors
         let regions = vec![
             MemoryRegion {
                 name: "A".to_string(),
@@ -469,10 +465,9 @@ mod tests {
             },
         ];
         let result = validate_memory_layout(&regions);
-        assert!(result.is_ok()); // No hard error
-        let warnings = result.unwrap();
-        assert!(!warnings.is_empty()); // But has overlap warnings
-        assert!(warnings[0].contains("重叠"));
+        assert!(result.is_err());
+        let err_msg = result.unwrap_err();
+        assert!(err_msg.contains("重叠"));
     }
 
     #[test]
@@ -552,9 +547,10 @@ mod tests {
     #[test]
     fn test_validate_default_memory_regions() {
         let regions = get_default_memory_regions();
-        // 默认配置应该通过验证（不重叠）
+        // 默认配置中有重叠区域（如 KERNEL_MEMORY 与其他区域重叠），严格重叠检测下应该返回 Err
         let result = validate_memory_layout(&regions);
-        assert!(result.is_ok());
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("重叠"));
     }
 
     #[test]

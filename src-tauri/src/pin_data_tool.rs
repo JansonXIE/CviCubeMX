@@ -14,7 +14,7 @@ use std::collections::HashMap;
 pub fn get_function_name_remap() -> HashMap<&'static str, &'static str> {
     let mut map = HashMap::new();
     map.insert("CR_4WTMS", "CV_2WTMS_CR_4WTMS");
-    map.insert("CR_4WTCK", "CV_2WTCK_CR_2WTCK");
+    map.insert("CR_4WTCK", "CV_2WTCK_CR_4WTCK");
     map.insert("CR_4WTDI", "CV_SCL0__CR_4WTDI");
     map.insert("CR_4WTDO", "CV_SDA0__CR_4WTDO");
     map.insert("CR_SCL0", "CV_4WTDI_CR_SCL0");
@@ -176,7 +176,7 @@ mod tests {
     #[test]
     fn test_remap_cr_4wtck() {
         let remap = get_function_name_remap();
-        assert_eq!(remap.get("CR_4WTCK").copied(), Some("CV_2WTCK_CR_2WTCK"));
+        assert_eq!(remap.get("CR_4WTCK").copied(), Some("CV_2WTCK_CR_4WTCK"));
     }
 
     #[test]

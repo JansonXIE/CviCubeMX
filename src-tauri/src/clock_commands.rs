@@ -6,7 +6,7 @@
 use crate::clock_calc::{
     compute_clk_1m_subnode_frequency, compute_output_frequency, compute_pll_frequency,
     compute_subnode_frequency, compute_subpll_frequency, ClockOutput, ClockTreeResult,
-    ModulePosition, OSC_FREQUENCY_MHZ, PLLConfig, PLL_NAMES, SUB_NODE_GROUPS, SUB_PLL_NAMES,
+    ModulePosition, OSC_FREQUENCY_MHZ, PllConfig, PLL_NAMES, SUB_NODE_GROUPS, SUB_PLL_NAMES,
 };
 use std::collections::HashMap;
 use std::fs;
@@ -18,14 +18,14 @@ use std::path::Path;
 /// for PLLs, SubPLLs, and their sub-nodes.
 ///
 /// # Arguments
-/// * `configs` - Map of PLL name → PLLConfig (with multiplier/divider/source set)
+/// * `configs` - Map of PLL name to PllConfig (with multiplier/divider/source set)
 ///
 /// # Returns
 /// * `Ok(ClockTreeResult)` with all computed frequencies
 /// * `Err(String)` on computation error
 #[tauri::command]
 pub fn compute_clock_tree(
-    configs: HashMap<String, PLLConfig>,
+    configs: HashMap<String, PllConfig>,
 ) -> Result<ClockTreeResult, String> {
     let mut pll_configs = configs.clone();
     let mut outputs = HashMap::new();
@@ -153,14 +153,14 @@ pub fn compute_clock_tree(
 /// Helper: resolve the parent frequency for a sub-node group.
 ///
 /// Different sub-node groups have different parent sources:
-/// - clk_1M → from outputs (clk_1M frequency)
-/// - clk_cam1pll → from pll_configs (clk_cam1pll output)
-/// - clk_raw_axi → from clk_cam1pll sub-nodes (clk_raw_axi frequency)
-/// - clk_a0pll → from pll_configs (clk_a0pll output)
+/// - clk_1M ?from outputs (clk_1M frequency)
+/// - clk_cam1pll ?from pll_configs (clk_cam1pll output)
+/// - clk_raw_axi ?from clk_cam1pll sub-nodes (clk_raw_axi frequency)
+/// - clk_a0pll ?from pll_configs (clk_a0pll output)
 /// - etc.
 fn get_parent_frequency(
     parent_name: &str,
-    pll_configs: &HashMap<String, PLLConfig>,
+    pll_configs: &HashMap<String, PllConfig>,
     outputs: &HashMap<String, ClockOutput>,
 ) -> f64 {
     match parent_name {
@@ -280,7 +280,7 @@ fn get_parent_frequency(
 /// Save module positions to a JSON file.
 ///
 /// # Arguments
-/// * `positions` - Map of module name → ModulePosition
+/// * `positions` - Map of module name ?ModulePosition
 ///
 /// # Returns
 /// * `Ok(())` on success
@@ -329,13 +329,12 @@ pub fn load_module_positions() -> Result<HashMap<String, ModulePosition>, String
 /// Export clock configuration to defconfig format.
 ///
 /// This mirrors the C++ `exportToDefconfig()` function.
-/// It writes clock configuration values to a defconfig file
-/// in the format: `CONFIG_CLK_<NAME>=<VALUE>`
+/// It updates the CONFIG_OD_CLK_SEL config in the board's defconfig.
 ///
 /// # Arguments
 /// * `source_path` - Path to the SDK source directory
-/// * `chip_type` - Chip type string (e.g. "CV1800B")
-/// * `configs` - Map of PLL name → PLLConfig
+/// * `chip_type` - Chip type string (e.g. "cv1842hp")
+/// * `configs` - Map of PLL name to PllConfig (with multiplier/divider/source set)
 ///
 /// # Returns
 /// * `Ok(())` on success
@@ -344,46 +343,61 @@ pub fn load_module_positions() -> Result<HashMap<String, ModulePosition>, String
 pub fn export_clock_defconfig(
     source_path: String,
     chip_type: String,
-    configs: HashMap<String, PLLConfig>,
+    configs: HashMap<String, PllConfig>,
 ) -> Result<(), String> {
-    // Determine defconfig path based on chip type and source path
-    let defconfig_name = match chip_type.as_str() {
-        "CV1800B" => "cv1800b_aside",
-        "CV1811C" => "cv1811c_aside",
-        "CV1812H" => "cv1812h_aside",
-        _ => "generic_aside",
+    // 1. Determine if overclocked (CONFIG_OD_CLK_SEL = y)
+    // C++ applyOverclockConfig sets clk_appll multiplier to 44, clk_rvpll multiplier to 64
+    let is_overclock = if let Some(appll) = configs.get("clk_appll") {
+        appll.multiplier == 44
+    } else if let Some(rvpll) = configs.get("clk_rvpll") {
+        rvpll.multiplier == 64
+    } else {
+        false
     };
 
+    let value = if is_overclock { "y" } else { "n" };
+
+    // 2. Build defconfig path
+    // C++: QString defconfigPath = QString("%1/build/boards/cv184x/%2/%2_defconfig").arg(sourcePath).arg(chipType)
+    // Ensure lowercase chip type to match directory naming
+    let chip_type_lower = chip_type.to_lowercase();
     let defconfig_path = Path::new(&source_path)
-        .join("buildboards")
-        .join(chip_type)
-        .join("defconfig")
-        .join(defconfig_name);
+        .join("build")
+        .join("boards")
+        .join("cv184x")
+        .join(&chip_type_lower)
+        .join(format!("{}_defconfig", chip_type_lower));
 
-    // Build defconfig content from PLL configs
-    let mut lines = Vec::new();
+    if !defconfig_path.exists() {
+        return Err(format!("Defconfig file not found: {}", defconfig_path.display()));
+    }
 
-    for (pll_name, config) in &configs {
-        if !config.enabled {
-            continue;
+    // 3. Read existing defconfig file content
+    let content = fs::read_to_string(&defconfig_path)
+        .map_err(|e| format!("Failed to read defconfig file: {}", e))?;
+
+    let mut lines: Vec<String> = content.lines().map(|s| s.to_string()).collect();
+    let mut found_config = false;
+    let config_key = "CONFIG_OD_CLK_SEL=";
+
+    for line in &mut lines {
+        if line.starts_with(config_key) {
+            *line = format!("{}{}", config_key, value);
+            found_config = true;
+            break;
         }
-
-        // Format: CONFIG_CLK_<PLL_NAME>=<OUTPUT_FREQ>
-        let config_key = format!("CONFIG_CLK_{}", pll_name.to_uppercase());
-        let config_value = format!("{}MHz", config.output_freq as i32);
-        lines.push(format!("{}={}", config_key, config_value));
     }
 
-    // Write to file (append if exists, create if not)
-    let content = lines.join("\n");
-
-    if let Some(parent) = defconfig_path.parent() {
-        fs::create_dir_all(parent)
-            .map_err(|e| format!("Create directory error: {}", e))?;
+    // If config was not found, append it to the end
+    if !found_config {
+        lines.push(format!("{}{}", config_key, value));
     }
 
-    fs::write(&defconfig_path, content)
-        .map_err(|e| format!("Write error to {}: {}", defconfig_path.display(), e))?;
+    // 4. Write back to defconfig file
+    // C++ stream appends a newline at the end
+    let output_content = lines.join("\n") + "\n";
+    fs::write(&defconfig_path, output_content)
+        .map_err(|e| format!("Failed to write defconfig file: {}", e))?;
 
     Ok(())
 }
@@ -427,7 +441,7 @@ mod tests {
         // Create a basic PLL config for clk_mipimpll
         configs.insert(
             "clk_mipimpll".to_string(),
-            PLLConfig {
+            PllConfig {
                 name: "clk_mipimpll".to_string(),
                 enabled: true,
                 input_freq: OSC_FREQUENCY_MHZ,
@@ -451,7 +465,7 @@ mod tests {
 
         configs.insert(
             "clk_mipimpll".to_string(),
-            PLLConfig {
+            PllConfig {
                 name: "clk_mipimpll".to_string(),
                 enabled: true,
                 input_freq: OSC_FREQUENCY_MHZ,
@@ -464,7 +478,7 @@ mod tests {
 
         configs.insert(
             "clk_a0pll".to_string(),
-            PLLConfig {
+            PllConfig {
                 name: "clk_a0pll".to_string(),
                 enabled: true,
                 input_freq: 0.0, // will be set from MIPIMPLL output
@@ -479,7 +493,7 @@ mod tests {
 
         // Verify SubPLL (clk_a0pll) frequency
         let a0pll = result.pll_configs.get("clk_a0pll").unwrap();
-        // a0pll: input=1350, multiplier=2, divider=3 → 900
+        // a0pll: input=1350, multiplier=2, divider=3 ?900
         assert_eq!(a0pll.output_freq, 900.0);
         assert_eq!(a0pll.input_freq, 1350.0); // input should come from MIPIMPLL
     }
@@ -490,7 +504,7 @@ mod tests {
 
         configs.insert(
             "clk_mipimpll".to_string(),
-            PLLConfig {
+            PllConfig {
                 name: "clk_mipimpll".to_string(),
                 enabled: true,
                 input_freq: OSC_FREQUENCY_MHZ,
@@ -503,7 +517,7 @@ mod tests {
 
         configs.insert(
             "clk_a24k".to_string(),
-            PLLConfig {
+            PllConfig {
                 name: "clk_a24k".to_string(),
                 enabled: true,
                 input_freq: 0.0,
@@ -559,5 +573,73 @@ mod tests {
         // In that case, we verify it returns a valid HashMap regardless
         let result = load_module_positions();
         assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_export_clock_defconfig_overclock() {
+        let timestamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let temp_dir = std::env::temp_dir().join(format!("cvicubemx_test_{}", timestamp));
+        let build_dir = temp_dir.join("build").join("boards").join("cv184x").join("cv1842hp");
+        fs::create_dir_all(&build_dir).unwrap();
+
+        let defconfig_path = build_dir.join("cv1842hp_defconfig");
+        fs::write(&defconfig_path, "CONFIG_OD_CLK_SEL=n\nANOTHER_CONFIG=123\n").unwrap();
+
+        // 1. Test overclock config export (y)
+        let mut configs = HashMap::new();
+        configs.insert(
+            "clk_appll".to_string(),
+            PllConfig {
+                name: "clk_appll".to_string(),
+                enabled: true,
+                input_freq: OSC_FREQUENCY_MHZ,
+                output_freq: 0.0,
+                divider: 1.0,
+                multiplier: 44, // overclock multiplier
+                source: "OSC".to_string(),
+            },
+        );
+
+        let result = export_clock_defconfig(
+            temp_dir.to_string_lossy().to_string(),
+            "cv1842hp".to_string(),
+            configs,
+        );
+        assert!(result.is_ok());
+
+        let content = fs::read_to_string(&defconfig_path).unwrap();
+        assert!(content.contains("CONFIG_OD_CLK_SEL=y"));
+        assert!(content.contains("ANOTHER_CONFIG=123"));
+
+        // 2. Test normal config export (n)
+        let mut configs_normal = HashMap::new();
+        configs_normal.insert(
+            "clk_appll".to_string(),
+            PllConfig {
+                name: "clk_appll".to_string(),
+                enabled: true,
+                input_freq: OSC_FREQUENCY_MHZ,
+                output_freq: 0.0,
+                divider: 1.0,
+                multiplier: 40, // normal multiplier
+                source: "OSC".to_string(),
+            },
+        );
+
+        let result = export_clock_defconfig(
+            temp_dir.to_string_lossy().to_string(),
+            "cv1842hp".to_string(),
+            configs_normal,
+        );
+        assert!(result.is_ok());
+
+        let content = fs::read_to_string(&defconfig_path).unwrap();
+        assert!(content.contains("CONFIG_OD_CLK_SEL=n"));
+
+        // Clean up
+        fs::remove_dir_all(&temp_dir).ok();
     }
 }

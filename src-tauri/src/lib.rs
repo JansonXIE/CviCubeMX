@@ -52,7 +52,7 @@ pub fn run() {
             flash::load_partitions,
             flash::validate_partitions,
             flash::export_flash_json,
-            flash::export_flash_defconfig_tauri,
+            flash::export_flash_defconfig,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

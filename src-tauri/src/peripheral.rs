@@ -255,13 +255,13 @@ impl SysdmaChannelMap {
 /// Stores a single `DtsParser` instance that holds both the parsed
 /// peripheral data and the raw file content (for writer modifications).
 pub struct DtsState {
-    parser: DtsParser,
+    pub parser: std::sync::Mutex<DtsParser>,
 }
 
 impl DtsState {
     pub fn new() -> Self {
         DtsState {
-            parser: DtsParser::new(),
+            parser: std::sync::Mutex::new(DtsParser::new()),
         }
     }
 }
@@ -274,7 +274,7 @@ pub fn load_dts_peripherals(
     state: tauri::State<'_, DtsState>,
     file_path: String,
 ) -> Result<Vec<PeripheralInfo>, String> {
-    let mut parser = state.parser.clone();
+    let mut parser = state.parser.lock().map_err(|e| e.to_string())?;
     parser.load_file(&file_path)?;
     let peripherals: Vec<PeripheralInfo> = parser.get_peripherals().values().cloned().collect();
     Ok(peripherals)
@@ -287,12 +287,13 @@ pub fn set_peripheral_status(
     peripheral: String,
     status: String,
 ) -> Result<(), String> {
-    let mut parser = state.parser.clone();
+    let mut parser = state.parser.lock().map_err(|e| e.to_string())?;
     DtsWriter::update_status(&mut parser, &peripheral, &status)?;
 
     // Write back to file
-    if let Some(path) = state.parser.get_file_path() {
-        std::fs::write(&path, parser.get_file_content())
+    if let Some(path) = parser.get_file_path() {
+        let content = parser.get_file_content().to_string();
+        std::fs::write(path, content)
             .map_err(|e| format!("无法写入文件: {}", e))?;
     }
 
@@ -306,12 +307,13 @@ pub fn set_peripheral_clock_frequency(
     peripheral: String,
     frequency: i32,
 ) -> Result<(), String> {
-    let mut parser = state.parser.clone();
+    let mut parser = state.parser.lock().map_err(|e| e.to_string())?;
     DtsWriter::update_clock_frequency(&mut parser, &peripheral, frequency)?;
 
     // Write back to file
-    if let Some(path) = state.parser.get_file_path() {
-        std::fs::write(&path, parser.get_file_content())
+    if let Some(path) = parser.get_file_path() {
+        let content = parser.get_file_content().to_string();
+        std::fs::write(path, content)
             .map_err(|e| format!("无法写入文件: {}", e))?;
     }
 
@@ -325,12 +327,13 @@ pub fn set_peripheral_pwm_cells(
     peripheral: String,
     cells: i32,
 ) -> Result<(), String> {
-    let mut parser = state.parser.clone();
+    let mut parser = state.parser.lock().map_err(|e| e.to_string())?;
     DtsWriter::update_pwm_cells(&mut parser, &peripheral, cells)?;
 
     // Write back to file
-    if let Some(path) = state.parser.get_file_path() {
-        std::fs::write(&path, parser.get_file_content())
+    if let Some(path) = parser.get_file_path() {
+        let content = parser.get_file_content().to_string();
+        std::fs::write(path, content)
             .map_err(|e| format!("无法写入文件: {}", e))?;
     }
 
@@ -344,12 +347,13 @@ pub fn set_peripheral_current_speed(
     peripheral: String,
     speed: i32,
 ) -> Result<(), String> {
-    let mut parser = state.parser.clone();
+    let mut parser = state.parser.lock().map_err(|e| e.to_string())?;
     DtsWriter::update_current_speed(&mut parser, &peripheral, speed)?;
 
     // Write back to file
-    if let Some(path) = state.parser.get_file_path() {
-        std::fs::write(&path, parser.get_file_content())
+    if let Some(path) = parser.get_file_path() {
+        let content = parser.get_file_content().to_string();
+        std::fs::write(path, content)
             .map_err(|e| format!("无法写入文件: {}", e))?;
     }
 
@@ -363,12 +367,13 @@ pub fn set_peripheral_sysdma_channels(
     peripheral: String,
     channels: Vec<String>,
 ) -> Result<(), String> {
-    let mut parser = state.parser.clone();
+    let mut parser = state.parser.lock().map_err(|e| e.to_string())?;
     DtsWriter::update_sysdma_channels(&mut parser, &peripheral, channels)?;
 
     // Write back to file
-    if let Some(path) = state.parser.get_file_path() {
-        std::fs::write(&path, parser.get_file_content())
+    if let Some(path) = parser.get_file_path() {
+        let content = parser.get_file_content().to_string();
+        std::fs::write(path, content)
             .map_err(|e| format!("无法写入文件: {}", e))?;
     }
 

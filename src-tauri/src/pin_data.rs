@@ -17,6 +17,8 @@ pub struct PinInfo {
     pub pin_num: String,
     /// PAD 名称 (已清理, 如 "PAD_MIPI_TXM4")
     pub pin_name: String,
+    /// 显示名称 (与 pin_num 保持一致，如 "A2" 或 "1")
+    pub display_name: String,
     /// 支持的功能列表
     pub supported_functions: Vec<String>,
     /// 默认功能
@@ -41,7 +43,7 @@ const PIN_DATA_JSON: &str = include_str!("../pin_data.json");
 
 /// 全局用户配置存储
 /// key = (chip_type, pin_name), value = user-selected function
-static USER_CONFIG: std::sync::LazyLock<Mutex<HashMap<(String, String), String>>> =
+static USER_CONFIG: std::sync::LazyLock<Mutex<HashMap<(String, String), (String, Option<String>)>>> =
     std::sync::LazyLock::new(|| Mutex::new(HashMap::new()));
 
 /// 解析嵌入的 JSON 数据
@@ -99,16 +101,15 @@ pub fn load_pin_data(chip_type: String) -> Result<Vec<PinInfo>, String> {
 
                 if let Some(raw) = bga_pins.get(&pin_num) {
                     // 有硬编码数据
-                    let current = user_config
+                    let (current, user_configured) = user_config
                         .get(&(chip_type.clone(), raw.pin_name.clone()))
-                        .cloned()
-                        .unwrap_or_else(|| raw.default_function.clone());
-                    let user_configured = user_config
-                        .contains_key(&(chip_type.clone(), raw.pin_name.clone()));
+                        .map(|(func, _state)| (func.clone(), true))
+                        .unwrap_or_else(|| (raw.default_function.clone(), false));
 
                     result.push(PinInfo {
                         pin_num: raw.pin_num.clone(),
                         pin_name: raw.pin_name.clone(),
+                        display_name: raw.pin_num.clone(),
                         supported_functions: raw.supported_functions.clone(),
                         default_function: raw.default_function.clone(),
                         current_function: current,
@@ -119,6 +120,7 @@ pub fn load_pin_data(chip_type: String) -> Result<Vec<PinInfo>, String> {
                     result.push(PinInfo {
                         pin_num: pin_num.clone(),
                         pin_name: pin_num.clone(), // 无PAD名称，用编号代替
+                        display_name: pin_num.clone(),
                         supported_functions: pin_data_tool::BASIC_FUNCTIONS.iter().map(|s| s.to_string()).collect(),
                         default_function: "GPIO".to_string(),
                         current_function: "GPIO".to_string(),
@@ -139,16 +141,15 @@ pub fn load_pin_data(chip_type: String) -> Result<Vec<PinInfo>, String> {
             let pin_num = i.to_string();
 
             if let Some(raw) = qfn_pins.get(&pin_num) {
-                let current = user_config
+                let (current, user_configured) = user_config
                     .get(&(chip_type.clone(), raw.pin_name.clone()))
-                    .cloned()
-                    .unwrap_or_else(|| raw.default_function.clone());
-                let user_configured = user_config
-                    .contains_key(&(chip_type.clone(), raw.pin_name.clone()));
+                    .map(|(func, _state)| (func.clone(), true))
+                    .unwrap_or_else(|| (raw.default_function.clone(), false));
 
                 result.push(PinInfo {
                     pin_num: raw.pin_num.clone(),
                     pin_name: raw.pin_name.clone(),
+                    display_name: raw.pin_num.clone(),
                     supported_functions: raw.supported_functions.clone(),
                     default_function: raw.default_function.clone(),
                     current_function: current,
@@ -159,6 +160,7 @@ pub fn load_pin_data(chip_type: String) -> Result<Vec<PinInfo>, String> {
                 result.push(PinInfo {
                     pin_num: pin_num.clone(),
                     pin_name: pin_num.clone(),
+                    display_name: pin_num.clone(),
                     supported_functions: pin_data_tool::BASIC_FUNCTIONS.iter().map(|s| s.to_string()).collect(),
                     default_function: "GPIO".to_string(),
                     current_function: "GPIO".to_string(),
@@ -179,9 +181,10 @@ pub fn set_pin_function(
     chip_type: String,
     pin_name: String,
     function: String,
+    state: Option<String>,
 ) -> Result<(), String> {
     let mut config = USER_CONFIG.lock().unwrap();
-    config.insert((chip_type, pin_name), function);
+    config.insert((chip_type, pin_name), (function, state));
     Ok(())
 }
 
@@ -299,7 +302,7 @@ mod tests {
 
     #[test]
     fn test_set_and_get_pin_function() {
-        set_pin_function("cv1842hp".to_string(), "PAD_MIPI_TXM4".to_string(), "UART0_TX".to_string()).unwrap();
+        set_pin_function("cv1842hp".to_string(), "PAD_MIPI_TXM4".to_string(), "UART0_TX".to_string(), None).unwrap();
 
         let result = load_pin_data("cv1842hp".to_string()).unwrap();
         let pin = result.iter().find(|p| p.pin_name == "PAD_MIPI_TXM4").unwrap();
