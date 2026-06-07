@@ -1,300 +1,338 @@
 # CviCubeMX - 芯片引脚配置工具
 
-CviCubeMX是一个基于Qt C++开发的芯片引脚配置工具，用于CV系列芯片的引脚功能配置和代码生成。
+CviCubeMX 是基于 **Tauri v2 + React + TypeScript + Rust** 重构的现代化 CV 系列芯片引脚配置工具，支持芯片选型、引脚功能配置、外设设备树配置、时钟树计算、内存/Flash 分区管理以及 AI 智能辅助功能。
 
-## 功能特性
+> ⚠️ **注意**：本项目已从 Qt C++ 架构完成重构，当前主线为 `TypeScript_tauri` 分支，基于 Tauri v2 桌面应用框架构建。旧 Qt 版本代码请切换至 `main` 分支查看。
 
-### 1. 芯片选型
-- 支持多种CV系列芯片：cv1801c、cv1801h、cv1811c、cv1811h、cv1842cp、cv1842hp
-- 自动识别芯片封装类型（QFN/BGA）
+---
 
-### 2. 引脚配置
-- **QFN封装** (cv1801c、cv1811c、cv1842cp)：方形引脚按钮，分布在芯片外围四周
-  - 引脚编号：从左侧第1号引脚开始，逆时针排列（左侧→底部→右侧→顶部）
-  - cv1801c/cv1801h: 64引脚 (每边16个)
-  - cv1811c/cv1811h: 88引脚 (每边22个)  
-  - cv1842cp: 88引脚 (每边22个)
-- **BGA封装** (cv1801h、cv1811h、cv1842hp)：圆形引脚按钮，分布在芯片内部网格
-  - 引脚编号：行号A-R（跳过I），列号1-15（如A1, B2, R15）
-  - cv1801h: 64引脚 (8x8网格)
-  - cv1811h: 88引脚 (自适应网格)
-  - cv1842hp: 225引脚 (15x15网格)
-- 支持多种引脚功能：GPIO、ADC、I2C、UART、SPI、PWM、Timer
+## ✨ 功能特性
 
-### 3. 外设配置 🆕
-- **设备树配置**：自动读取和修改 `cv184x_base.dtsi` 设备树文件
-- **外设状态管理**：可配置外设为 "okay" 或 "disabled" 状态
-- **时钟配置**：支持修改外设时钟名称和频率
-- **支持的外设**：PWM, I2C, SPI, UART, GPIO, ADC
-- **实时同步**：配置修改立即保存到设备树文件
+### 🔧 芯片选型
+- 支持 6 款 CV 系列芯片：`cv1801c`、`cv1801h`、`cv1811c`、`cv1811h`、`cv1842cp`、`cv1842hp`
+- 自动识别芯片封装类型（QFN/BGA）并渲染对应物理引脚视图
 
-### 4. 代码生成
-- 自动生成`cvi_board_init.c`文件
-- 包含完整的引脚复用配置代码
-- 生成标准的PINMUX宏调用
+### 📌 引脚配置
+- **QFN 封装**（`cv1801c`、`cv1811c`、`cv1842cp`）：方形引脚，四周逆时针排列
+  - cv1801c/cv1801h：64 引脚；cv1811c/cv1811h：88 引脚；cv1842cp：88 引脚
+- **BGA 封装**（`cv1801h`、`cv1811h`、`cv1842hp`）：圆形引脚，行列网格排布，自动剔除四角物理空焊点
+  - cv1842hp：221 有效引脚（15×15 网格剔除四角）
+- 右键点击引脚弹出功能选择菜单，按颜色编码区分功能类型：
+  - 🔘 灰色：GPIO &emsp; 🔴 红色：ADC &emsp; 🔵 蓝色：I2C &emsp; 🟢 绿色：UART &emsp; 🟠 橙色：SPI &emsp; 🟣 紫色：PWM
 
-## 系统要求
+### 🌳 外设配置（DTS 设备树）
+- 自动解析 `cv184x_base.dtsi` 设备树文件
+- 支持配置外设状态（`okay` / `disabled`）、时钟频率（`clock-frequency`）、PWM Cells（`#pwm-cells`）、UART 波特率（`current-speed`）
+- SYSDMA 通道重映射（`ch-remap`），修改通道时联动自动更新受影响外设的 `dmas` / `dma-names` / `capability` 属性
 
-- Windows 10/11
-- Qt 6.x
-- CMake 3.16+
-- C++17兼容的编译器
+### ⏱️ 时钟树计算
+- 可视化时钟树，支持调节主 PLL / SubPLL 的倍频器和分频器
+- 级联频率自动重算，叶子节点实时更新显示最终频率
+- 一键导出超频/普通时钟选项至 `{chip_type}_defconfig`
 
-## 构建说明
+### 💾 内存与 Flash 分区管理
+- 内存区域配置：支持手动增删修改，重叠区域/地址约束硬校验报错
+- Flash 分区表管理：容量进度条实时展示，超出额定容量自动红色预警
+- 支持导出 JSON 配置和 defconfig 格式
 
-### 使用CMake构建
+### 🤖 AI 智能辅助（AI Chat）
+- 内置 AI Chat 面板，支持流式 SSE 推送和 Markdown 渲染
+- 支持自定义 API Key / Base URL / Model 配置
 
-**方法1：使用批处理脚本（推荐）**
+### 🖨️ 代码生成
+- 基于 Handlebars 模板生成 `cvi_board_init.c` 初始化源码
+- 支持增量更新已有文件：在 `return 0;` 前精准插入 PINMUX 配置块
+- 自动生成 ETH / MIPI / Audio 的特殊寄存器初始化序列
+
+---
+
+## 🛠️ 开发环境
+
+| 依赖 | 版本要求 |
+|------|----------|
+| Node.js | ≥ 20 |
+| npm | ≥ 10 |
+| Rust | stable (via rustup) |
+| Tauri CLI | v2 |
+| TypeScript | ^5.4 |
+| React | ^18.3 |
+
+**Windows 额外依赖**：Microsoft C++ Build Tools 或 Visual Studio 2022（供 Rust 编译使用）
+
+---
+
+## 🚀 快速开始
+
+### 1. 克隆项目并切换分支
+
 ```bash
-# Windows
-.\build.bat
-
-# Linux
-chmod +x build.sh
-./build.sh
+git clone <repo-url>
+cd CviCubeMX
+git checkout TypeScript_tauri
 ```
 
-**方法2：手动构建**
+### 2. 安装依赖
+
 ```bash
-# 清理之前的构建
-rm -rf build
-
-# 配置项目（请根据您的Qt安装路径调整CMAKE_PREFIX_PATH）
-cmake -S . -B build -D CMAKE_BUILD_TYPE=Release -D CMAKE_PREFIX_PATH=C:/Qt/6.9.1/msvc2022_64 -D CMAKE_CXX_STANDARD=17 -D CMAKE_CXX_STANDARD_REQUIRED=ON -D CMAKE_CXX_FLAGS="/Zc:__cplusplus"
-
-# 编译项目
-cmake --build build --config Release
-
-# 打开正确的 Qt 命令行终端
-# 这一步至关重要。你需要使用一个已经配置好 Qt 环境变量的终端。
-# 点击 Windows 的“开始”菜单。
-# 在所有应用中找到你的 Qt 安装文件夹。
-# 点击并打开 "Qt 6.9.1 (MSVC 2022 64-bit)"。这会启动一个预先配置好的命令行窗口。
-# 运行 windeployqt 命令
-windeployqt "C:\Users\jansonxie\Desktop\CviCubeMX\build\bin\Release\CviCubeMX.exe"
+npm install
 ```
 
-### 使用Qt Creator
-1. 打开Qt Creator
-2. 选择"打开项目"
-3. 选择`CMakeLists.txt`文件
-4. 配置项目并构建
+### 3. 启动开发模式
 
-## 使用说明
+```bash
+npm run tauri:dev
+# 等价于: npx tauri dev
+```
 
-### 1. 启动应用
-运行生成的可执行文件`CviCubeMX.exe`
+这会启动 Vite Dev Server（端口 1420）并自动打开 Tauri 桌面窗口。
 
-### 2. 选择芯片
-1. 在"芯片选型"下拉框中选择目标芯片型号
-2. 点击"开始项目"按钮
+---
 
-### 3. 配置引脚
-1. 在芯片视图中点击引脚按钮
-2. 从弹出菜单中选择引脚功能
-3. 不同功能的引脚会显示不同颜色：
-   - 灰色：GPIO
-   - 红色：ADC
-   - 蓝色：I2C
-   - 绿色：UART
-   - 橙色：SPI
-   - 紫色：PWM
-   - 橘色：Timer
+## 📦 构建与发布
 
-### 4. 配置外设 🆕
-1. 在左侧配置面板中展开"外设"节点
-2. 点击所需的外设类型（PWM, I2C, SPI, UART, GPIO, ADC）
-3. 从弹出菜单选择具体的外设实例（如PWM0, I2C1等）
-4. 在配置对话框中设置：
-   - **外设选择**：选择要配置的具体外设
-   - **状态**：选择 "okay"（启用）或 "disabled"（禁用）
-   - **时钟名称**：查看或修改时钟名称
-   - **时钟频率**：设置时钟频率（1KHz - 500MHz）
-5. 点击"应用"保存配置到设备树文件
+### 开发构建（无打包）
 
-### 5. 生成代码
-1. 配置完成后点击"生成代码"按钮
-2. 选择保存位置
-3. 生成的代码文件包含完整的引脚配置
+仅验证前端和 Rust 桥接的构建完整性，不生成安装包：
 
-## 项目结构
+```bash
+npx tauri build --no-bundle
+```
+
+构建产物位于：`src-tauri/target/release/cvicubemx.exe`
+
+### 生产构建（生成安装包）
+
+```bash
+npx tauri build
+```
+
+生成 Windows NSIS 安装程序 / `.msi`，产物位于：
+
+```
+src-tauri/target/release/bundle/
+├── nsis/          # NSIS 安装包 (.exe)
+└── msi/           # Windows Installer (.msi)
+```
+
+### 仅构建前端
+
+```bash
+npm run build
+```
+
+前端打包产物输出到 `dist/` 目录。
+
+---
+
+## 🧪 测试
+
+### 前端单元测试（Vitest）
+
+```bash
+# 运行全套单元测试
+npx vitest run
+
+# 运行并生成覆盖率报告
+npx vitest run --coverage
+
+# 监听模式（开发时使用）
+npx vitest
+```
+
+**当前测试通过状态**：
+```
+Test Files  7 passed (7)
+     Tests  165 passed (165)
+  Coverage  v8 (src/stores: ~57% | src/utils: ~97%)
+```
+
+### Rust 后端测试（cargo test）
+
+```bash
+# 运行全部测试（单元测试 + 集成测试）
+cd src-tauri
+cargo test
+
+# 仅运行单元测试
+cargo test --lib
+
+# 仅运行集成测试
+cargo test --test '*'
+```
+
+**当前测试通过状态**：
+```
+running 199 tests
+test result: ok. 199 passed; 0 failed; 0 ignored
+```
+
+集成测试覆盖以下模块：
+- `chip_spec_test` — 芯片规格加载与引脚数校验
+- `pin_data_test` — BGA 四角剔除、PAD 名清洗、重映射规则
+- `dts_parser_test` — 设备树属性解析与 DMA 联动修改
+- `clock_calc_test` — PLL 时钟级联频率重算与 defconfig 导出
+- `memory_validate_test` — 内存重叠与地址约束硬校验
+- `flash_validate_test` — Flash 分区容量溢出与标签校验
+- `codegen_test` — 代码生成与增量占位符合并
+
+### 端到端一键测试脚本
+
+```bash
+# Linux / macOS / Git Bash
+bash scripts/e2e_test.sh
+```
+
+此脚本自动串联执行：前端构建 → Vitest 覆盖率测试 → Rust 全套测试 → Tauri 打包验证。
+
+---
+
+## 🔄 CI/CD（GitHub Actions）
+
+向 `TypeScript_tauri` 分支提交 PR 时，将自动触发三个强门禁 Job，**全部通过方可合并**：
+
+| Job | 内容 |
+|-----|------|
+| `frontend-tests` | `npm ci` → `npm run build` → `npx vitest run --coverage` |
+| `rust-tests` | `cargo build` → `cargo test --lib` |
+| `integration-tests` | `cargo test --test '*'` → `npx tauri build --no-bundle` |
+
+配置文件：[`.github/workflows/test.yml`](.github/workflows/test.yml)
+
+---
+
+## 📁 项目结构
 
 ```
 CviCubeMX/
-├── src/                    # 源代码文件
-│   ├── main.cpp           # 主程序入口
-│   ├── mainwindow.cpp     # 主窗口实现
-│   ├── chipconfig.cpp     # 芯片配置类
-│   ├── pinwidget.cpp      # 引脚部件类
-│   └── codegenerator.cpp  # 代码生成器
-├── include/               # 头文件
-│   ├── cvi_board_init.h   # 板级初始化头文件
-│   └── pinmux.h          # 引脚复用定义
-├── resources/             # 资源文件
-│   └── style.qss         # 样式表
-├── CMakeLists.txt        # CMake构建文件
-├── CHIP_SPECS.md         # 芯片规格说明
-├── QUICKSTART.md         # 快速开始指南
-└── README.md             # 说明文档
+├── src/                        # 前端 React 源码
+│   ├── App.tsx                 # 主应用路由与布局
+│   ├── main.tsx                # 入口文件
+│   ├── components/             # 可复用 UI 组件
+│   │   ├── ChipCanvas.tsx      # 芯片物理引脚视图（QFN/BGA）
+│   │   ├── PinButton.tsx       # 引脚交互按钮
+│   │   ├── PeripheralTree.tsx  # 外设资源树
+│   │   ├── ConfigDialog.tsx    # 外设参数配置弹窗
+│   │   ├── MemoryTable.tsx     # 内存区域配置表格
+│   │   ├── PartitionTable.tsx  # Flash 分区配置表格
+│   │   └── ChatPanel.tsx       # AI Chat 对话面板
+│   ├── pages/                  # 页面组件
+│   │   ├── PinoutPage.tsx      # 引脚配置页
+│   │   ├── ClockPage.tsx       # 时钟树配置页
+│   │   ├── MemoryPage.tsx      # 内存配置页
+│   │   ├── FlashPage.tsx       # Flash 分区页
+│   │   ├── AIChatPage.tsx      # AI 智能助手页
+│   │   └── CodeGenPage.tsx     # 代码生成页
+│   ├── stores/                 # Zustand 状态管理
+│   │   ├── chipStore.ts        # 芯片选型 Store
+│   │   ├── clockStore.ts       # 时钟树 Store
+│   │   ├── peripheralStore.ts  # 外设配置 Store
+│   │   ├── memoryStore.ts      # 内存配置 Store
+│   │   ├── flashStore.ts       # Flash 分区 Store
+│   │   └── chatStore.ts        # AI Chat Store
+│   └── __tests__/              # Vitest 单元测试
+│
+├── src-tauri/                  # Rust 后端（Tauri）
+│   ├── src/
+│   │   ├── lib.rs              # Crate 入口，注册所有 Tauri 命令
+│   │   ├── chip_spec.rs        # 芯片规格模块（M2）
+│   │   ├── pin_data.rs         # 引脚数据模块（M2）
+│   │   ├── pin_data_tool.rs    # 引脚工具函数
+│   │   ├── peripheral.rs       # 外设信息与 DTS 状态（M3）
+│   │   ├── dts_parser.rs       # 设备树解析器（M3）
+│   │   ├── dts_writer.rs       # 设备树写入器（M3）
+│   │   ├── clock_calc.rs       # 时钟频率计算（M4）
+│   │   ├── clock_commands.rs   # 时钟 Tauri 命令（M4）
+│   │   ├── memory.rs           # 内存配置与校验（M5）
+│   │   ├── flash.rs            # Flash 分区与校验（M6）
+│   │   ├── codegen.rs          # 代码生成器（M7）
+│   │   ├── codegen_commands.rs # 代码生成 Tauri 命令（M7）
+│   │   └── ai_chat.rs          # AI SSE 流式请求（M8）
+│   ├── tests/                  # Rust 集成测试
+│   │   ├── chip_spec_test.rs
+│   │   ├── pin_data_test.rs
+│   │   ├── dts_parser_test.rs
+│   │   ├── clock_calc_test.rs
+│   │   ├── memory_validate_test.rs
+│   │   ├── flash_validate_test.rs
+│   │   └── codegen_test.rs
+│   ├── templates/
+│   │   └── cvi_board_init.c.hbs    # Handlebars 代码生成模板
+│   ├── pin_data.json               # 芯片引脚原始数据
+│   ├── Cargo.toml
+│   └── tauri.conf.json
+│
+├── scripts/
+│   ├── e2e_test.sh             # 端到端一键测试脚本
+│   └── run_all_tests.sh        # 前后端测试脚本
+│
+├── .github/
+│   └── workflows/
+│       └── test.yml            # GitHub Actions CI/CD
+│
+├── package.json
+├── vite.config.ts
+├── vitest.config.ts
+├── tsconfig.json
+└── README.md
 ```
 
-## 生成代码示例
+---
 
-**QFN封装芯片(cv1801c)的代码示例：**
+## 💡 生成代码示例
+
+配置完引脚后，生成的 `cvi_board_init.c` 代码示例：
+
 ```c
 /**
  * @file cvi_board_init.c
  * @brief Board initialization file generated by CviCubeMX
- * @author CviCubeMX Tool
- * @date 2025-07-13 12:00:00
  */
 
 #include "cvi_board_init.h"
 #include "pinmux.h"
 
-/**
- * @brief Initialize board pin multiplexing
- * @note Generated for chip: cv1801c
- */
-void cvi_board_init(void)
+int cvi_board_init(void)
 {
-    // Pin configuration for cv1801c
-    // Package type: QFN (Quad Flat No-leads)
+    // Generated PINMUX configurations
+    PINMUX_CONFIG(PAD_MIPI_TXM4, XGPIOC_18);
 
-    // I2C pins configuration
-    PINMUX(GPIOA11, IIC0_SDA);  // Pin 12
-    PINMUX(GPIOA12, IIC0_SCL);  // Pin 13
+    // UART0 group
+    PINMUX_CONFIG(UART0_TX, UART0_TX);
+    PINMUX_CONFIG(UART0_RX, UART0_RX);
 
-    // UART pins configuration
-    PINMUX(GPIOA13, UART0_TX);  // Pin 14
-    PINMUX(GPIOA14, UART0_RX);  // Pin 15
+    /* Special sequence: configure EPHY for GPIO on ETH pads */
+    mmio_write(0x03009804, mmio_read(0x03009804) | 0x1);
+    // ... (ETH / MIPI / Audio 特殊寄存器序列)
+
+    return 0;
 }
 ```
 
-**BGA封装芯片(cv1842hp)的代码示例：**
-```c
-void cvi_board_init(void)
-{
-    // Pin configuration for cv1842hp
-    // Package type: BGA (Ball Grid Array)
+---
 
-    // I2C pins configuration
-    PINMUX(GPIOA0, IIC0_SDA);   // Pin A1
-    PINMUX(GPIOA1, IIC0_SCL);   // Pin A2
+## ❓ 故障排除
 
-    // UART pins configuration
-    PINMUX(GPIOA2, UART0_TX);   // Pin A3
-    PINMUX(GPIOA3, UART0_RX);   // Pin A4
-}
-```
+### `cargo build` 失败：找不到 MSVC 工具链
+- 安装 [Microsoft C++ Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/) 或 Visual Studio 2022（需勾选「使用 C++ 的桌面开发」）
+- 或通过 `rustup target add x86_64-pc-windows-msvc` 添加目标
 
-## 部署和运行
+### `npx tauri dev` 启动失败：WebView2 未安装
+- 下载并安装 [Microsoft Edge WebView2 Runtime](https://developer.microsoft.com/zh-cn/microsoft-edge/webview2/)
 
-### Windows部署
+### 前端 Vitest 测试失败
+- 确认已运行 `npm install` 安装所有依赖，包括 `@vitest/coverage-v8`
+- 检查 `vitest.config.ts` 中的 `setupFiles` 路径是否正确
 
-构建完成后，您需要确保Qt运行时库可用。有以下几种方法：
+### Rust 测试失败：集成测试找不到模块
+- 确认在 `src-tauri/src/lib.rs` 中所有模块已以 `pub mod` 形式导出
+- 集成测试需通过 `use cvicubemx_lib::<module>` 引用
 
-**方法1：使用windeployqt（推荐）**
-```bash
-# 在Qt安装目录的bin文件夹中找到windeployqt.exe
-# 例如：C:\Qt\6.9.1\msvc2022_64\bin\windeployqt.exe
+---
 
-# 部署应用程序
-C:\Qt\6.9.1\msvc2022_64\bin\windeployqt.exe build\bin\CviCubeMX.exe
+## 📄 许可证
 
-# 运行应用程序
-.\build\bin\CviCubeMX.exe
-```
+本项目采用 MIT 许可证。详情请参见 LICENSE 文件。
 
-**方法2：添加Qt到系统PATH**
-```bash
-# 将Qt的bin目录添加到系统PATH环境变量
-# 例如：C:\Qt\6.9.1\msvc2022_64\bin
-```
+## 📬 联系方式
 
-**方法3：手动复制DLL文件**
-将以下DLL文件从Qt安装目录复制到exe同目录：
-- Qt6Core.dll
-- Qt6Widgets.dll
-- Qt6Gui.dll
-- 以及其他依赖的DLL文件
-
-### Linux部署
-
-```bash
-# 确保Qt6已安装
-sudo apt install qt6-base-dev qt6-tools-dev cmake
-
-# 设置环境变量
-export LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu/qt6:$LD_LIBRARY_PATH
-
-# 运行应用程序
-./build/bin/CviCubeMX
-```
-
-## 故障排除
-
-### 常见问题和解决方案
-
-**1. "找不到Qt6Widgets.dll"错误**
-- **原因**: Qt运行时库不在系统PATH中
-- **解决方案**: 
-  - 使用windeployqt工具部署应用程序
-  - 或将Qt的bin目录添加到系统PATH
-  - 或手动复制必要的DLL文件
-
-**2. CMake配置失败**
-- **原因**: 找不到Qt6或CMake版本过低
-- **解决方案**: 
-  - 确认Qt6正确安装
-  - 检查CMAKE_PREFIX_PATH是否指向正确的Qt安装目录
-  - 升级CMake到3.16或更高版本
-
-**3. 编译错误**
-- **原因**: 编译器不支持C++17或Qt版本不兼容
-- **解决方案**: 
-  - 确认使用支持C++17的编译器
-  - 检查Qt版本是否为6.x
-  - 确认编译器与Qt版本匹配
-
-**4. 运行时崩溃**
-- **原因**: 缺少必要的运行时库或插件
-- **解决方案**: 
-  - 使用windeployqt完整部署
-  - 检查是否缺少Visual C++运行时库
-  - 确认所有Qt插件已正确部署
-
-### 创建便携版本
-
-要创建可在其他计算机上运行的便携版本：
-
-```bash
-# 1. 构建Release版本
-cmake --build build --config Release
-
-# 2. 创建部署目录
-mkdir CviCubeMX_Portable
-cp build/bin/CviCubeMX.exe CviCubeMX_Portable/
-
-# 3. 使用windeployqt部署
-C:\Qt\6.9.1\msvc2022_64\bin\windeployqt.exe CviCubeMX_Portable\CviCubeMX.exe
-
-# 4. 复制Visual C++运行时库（如果需要）
-# 5. 测试在其他计算机上运行
-```
-
-### 获取技术支持
-
-如果遇到其他问题，请：
-1. 检查Qt和编译器版本兼容性
-2. 查看编译和运行时错误日志
-3. 确认系统环境变量配置
-4. 参考Qt官方文档进行故障排除
-
-## 许可证
-
-本项目采用MIT许可证。详情请参见LICENSE文件。
-
-## 联系方式
-
-如有问题或建议，请联系项目维护者。
+如有问题或建议，请通过 GitHub Issues 联系项目维护者。

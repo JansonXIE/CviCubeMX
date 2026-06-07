@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- **CI/CD 与集成测试完善 (Subtask 8)**:
+  - **Rust 后端集成测试用例**:
+    - 创建了 5 个新的 Rust 集成测试文件：[dts_parser_test.rs](file:///C:/Users/jansonxie/Desktop/github_code/CviCubeMX/src-tauri/tests/dts_parser_test.rs)、[clock_calc_test.rs](file:///C:/Users/jansonxie/Desktop/github_code/CviCubeMX/src-tauri/tests/clock_calc_test.rs)、[memory_validate_test.rs](file:///C:/Users/jansonxie/Desktop/github_code/CviCubeMX/src-tauri/tests/memory_validate_test.rs)、[flash_validate_test.rs](file:///C:/Users/jansonxie/Desktop/github_code/CviCubeMX/src-tauri/tests/flash_validate_test.rs)、[codegen_test.rs](file:///C:/Users/jansonxie/Desktop/github_code/CviCubeMX/src-tauri/tests/codegen_test.rs)。
+    - 全面覆盖了引脚、芯片、DTS修改、时钟计算重构、内存重叠约束校验、Flash分区大小软硬件提示、代码生成及增量替换合并功能。
+  - **E2E 自动化一键测试脚本 (`scripts/e2e_test.sh`)**:
+    - 编写了统一脚本，级联跑完前端构建、前端 Vitest 验证（带覆盖率）、Rust 后端单元与集成测试、Tauri 应用开发打包检查（`npx tauri build --no-bundle`）。
+  - **GitHub Actions Pipeline 更新 (`test.yml`)**:
+    - 将流水线细化并拆分为 `frontend-tests`、`rust-tests` 和 `integration-tests` 三个独立的强门禁 Job，全部通过方可合并至 `TypeScript_tauri` 主线分支。
+    - 添加了前端覆盖率报告输出，保障代码变更透明可追踪。
+
+### Added
 - **前端 Store 与 UI 组件重构 (M2 + M3 + M4 + M5 + M6 UI)**:
   - **交互引脚按钮 (`PinButton.tsx`)**: 实现具有毛玻璃右键上下文复用功能选择菜单、悬停信息提示 (Tooltip)、匹配检索高亮闪烁、GPIO/ADC/I2C/UART/SPI/PWM 颜色编码，并抑制默认黑边框。
   - **芯片物理视图画布 (`ChipCanvas.tsx`)**: 支持 QFN（四周逆时针 Grid 排序）和 BGA（行列网格排布且四角物理剔除）两种物理排布拓扑，中间包含芯片参数核心小部件。

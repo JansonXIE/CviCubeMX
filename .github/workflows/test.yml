@@ -14,15 +14,41 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: 'npm'
       - name: Install frontend deps
         run: npm ci
-      - name: Run Vitest
-        run: npx vitest run --reporter=verbose
+      - name: Run build check
+        run: npm run build
+      - name: Run Vitest with Coverage
+        run: npx vitest run --coverage --reporter=verbose
 
   rust-tests:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-      - name: Run cargo test
-        run: cd src-tauri && cargo test --verbose
+      - name: Install Rust dependencies & build
+        run: |
+          cd src-tauri
+          cargo build --verbose
+      - name: Run cargo test (unit tests)
+        run: |
+          cd src-tauri
+          cargo test --lib --verbose
+
+  integration-tests:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Run cargo integration tests
+        run: |
+          cd src-tauri
+          cargo test --test '*' --verbose
+      - name: Install dependencies and verify tauri build
+        run: |
+          npm ci
+          npx tauri build --no-bundle
