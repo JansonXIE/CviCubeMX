@@ -148,7 +148,7 @@ pub fn generate_mipi_sequence(pin_functions: &HashMap<String, String>) -> String
 
     // TX pads: i/2 映射到 bit 位
     for (i, pad) in txm_pads.iter().enumerate() {
-        let func = pin_functions.get(pad).map(|s| s.as_str()).unwrap_or("");
+        let func = pin_functions.get(*pad).map(|s| s.as_str()).unwrap_or("");
         if is_gpio_mode(func) {
             val_low |= 1u32 << (i / 2);
             val_top |= 1u32 << (i / 2 + 8);
@@ -163,7 +163,7 @@ pub fn generate_mipi_sequence(pin_functions: &HashMap<String, String>) -> String
     let mut mask_rx: u32 = 0;
     let mut val_rx: u32 = 0;
     for (i, pad) in rx_pads.iter().enumerate() {
-        let func = pin_functions.get(pad).map(|s| s.as_str()).unwrap_or("");
+        let func = pin_functions.get(*pad).map(|s| s.as_str()).unwrap_or("");
         if is_gpio_mode(func) {
             mask_rx |= 1u32 << (16 + i / 2);
             val_rx |= 1u32 << (16 + i / 2);
@@ -225,9 +225,9 @@ pub fn generate_audio_sequence(pin_functions: &HashMap<String, String>) -> Strin
     let pin_value2 = pin_functions.get(p2).map(|s| s.clone()).unwrap_or_default();
 
     if pin_functions.contains_key(p1) || pin_functions.contains_key(p2) {
-        let mask: u32 = 0x3u << 22;
+        let mask: u32 = 0x3u32 << 22;
         let val: u32 = if is_gpio_mode(&pin_value1) || is_gpio_mode(&pin_value2) {
-            0x1u << 22
+            0x1u32 << 22
         } else {
             0
         };
@@ -235,9 +235,9 @@ pub fn generate_audio_sequence(pin_functions: &HashMap<String, String>) -> Strin
             "    mmio_write(0x03002204, (mmio_read(0x03002204) & ~0x{:X}) | 0x{:X});\n",
             mask, val
         );
-        let mask: u32 = 0x3u << 2;
+        let mask: u32 = 0x3u32 << 2;
         let val: u32 = if is_gpio_mode(&pin_value1) || is_gpio_mode(&pin_value2) {
-            0x1u << 2
+            0x1u32 << 2
         } else {
             0
         };
@@ -255,9 +255,9 @@ pub fn generate_audio_sequence(pin_functions: &HashMap<String, String>) -> Strin
     let pin_value4 = pin_functions.get(p4).map(|s| s.clone()).unwrap_or_default();
 
     if pin_functions.contains_key(p3) || pin_functions.contains_key(p4) {
-        let mask: u32 = 0x3u << 24;
+        let mask: u32 = 0x3u32 << 24;
         let val: u32 = if is_gpio_mode(&pin_value3) || is_gpio_mode(&pin_value4) {
-            0x1u << 24
+            0x1u32 << 24
         } else {
             0
         };
@@ -265,9 +265,9 @@ pub fn generate_audio_sequence(pin_functions: &HashMap<String, String>) -> Strin
             "    mmio_write(0x03002204, (mmio_read(0x03002204) & ~0x{:X}) | 0x{:X});\n",
             mask, val
         );
-        let mask: u32 = 0x3u;
+        let mask: u32 = 0x3u32;
         let val: u32 = if is_gpio_mode(&pin_value3) || is_gpio_mode(&pin_value4) {
-            0x1u
+            0x1u32
         } else {
             0
         };
@@ -560,7 +560,7 @@ pub fn update_existing_code(file_path: &str, pin_configs: &[PinConfig]) -> Resul
                 new_content += "}";
             } else {
                 // 没有配置要添加，保持原样
-                new_content += content[return_pos..].to_string();
+                new_content += &content[return_pos..];
             }
 
             // 写回文件

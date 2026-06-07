@@ -5,5 +5,38 @@
 /* CviCubeMX 自定义全局样式 */
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #0f172a; /* tailwind slate-900 */
+  color: #f8fafc; /* tailwind slate-50 */
+}
+
+/* 彻底消除按键时的默认黑色边框 / 轮廓 */
+button, input, select, textarea {
+  outline: none !important;
+}
+
+button:focus {
+  outline: none !important;
+  box-shadow: none;
+}
+
+/* 优化滚动条样式，使其更加现代化和细致 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #334155; /* tailwind slate-700 */
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #475569; /* tailwind slate-600 */
 }
