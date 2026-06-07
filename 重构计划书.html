@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CviCubeMX 框架重构计划书 — C++/Qt → TypeScript + Rust + Tauri</title>
+<style>
+  :root {
+    --sidebar-width: 280px;
+    --primary: #2563eb;
+    --primary-light: #dbeafe;
+    --primary-dark: #1e40af;
+    --bg: #f8fafc;
+    --card-bg: #ffffff;
+    --text: #1e293b;
+    --text-secondary: #64748b;
+    --border: #e2e8f0;
+    --success: #16a34a;
+    --warning: #ea580c;
+    --danger: #dc2626;
+    --info: #0ea5e9;
+    --radius: 8px;
+    --shadow: 0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.06);
+    --shadow-md: 0 4px 6px rgba(0,0,0,.07),0 2px 4px rgba(0,0,0,.06);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html { scroll-behavior:smooth; }
+  body { font-family: 'Segoe UI', 'Microsoft YaHei', system-ui, -apple-system, sans-serif; background:var(--bg); color:var(--text); line-height:1.7; display:flex; }
+  a { color:var(--primary); text-decoration:none; }
+  a:hover { text-decoration:underline; }
+
+  /* ===== Sidebar ===== */
+  nav#sidebar {
+    position:fixed; top:0; left:0; bottom:0; width:var(--sidebar-width);
+    background:linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+    color:#e2e8f0; overflow-y:auto; z-index:100;
+    display:flex; flex-direction:column;
+  }
+  nav#sidebar .brand {
+    padding:24px 20px 20px; border-bottom:1px solid rgba(255,255,255,.08);
+  }
+  nav#sidebar .brand h1 { font-size:18px; font-weight:700; color:#fff; letter-spacing:-0.3px; }
+  nav#sidebar .brand p  { font-size:12px; color:#94a3b8; margin-top:4px; }
+  nav#sidebar .nav-section { padding:12px 20px 4px; font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:#64748b; }
+  nav#sidebar ul { list-style:none; padding:0 12px; }
+  nav#sidebar ul li a {
+    display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:6px;
+    font-size:13.5px; color:#cbd5e1; transition:all .15s;
+  }
+  nav#sidebar ul li a:hover { background:rgba(255,255,255,.06); color:#fff; text-decoration:none; }
+  nav#sidebar ul li a.active { background:var(--primary); color:#fff; font-weight:600; }
+  nav#sidebar .nav-icon { width:18px; text-align:center; font-size:14px; flex-shrink:0; }
+  nav#sidebar .footer { margin-top:auto; padding:16px 20px; border-top:1px solid rgba(255,255,255,.08); font-size:11px; color:#475569; }
+
+  /* ===== Main Content ===== */
+  main#content { margin-left:var(--sidebar-width); flex:1; padding:36px 48px 80px; max-width:1100px; }
+  section { margin-bottom:48px; }
+  h2 { font-size:26px; font-weight:700; color:#0f172a; margin-bottom:8px; letter-spacing:-0.4px; }
+  .section-desc { color:var(--text-secondary); font-size:15px; margin-bottom:24px; }
+  h3 { font-size:18px; font-weight:600; margin:28px 0 12px; color:#1e293b; }
+  h4 { font-size:15px; font-weight:600; margin:16px 0 8px; color:#334155; }
+
+  /* ===== Cards ===== */
+  .card {
+    background:var(--card-bg); border:1px solid var(--border); border-radius:var(--radius);
+    padding:24px; margin-bottom:20px; box-shadow:var(--shadow);
+  }
+  .card-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:20px; }
+
+  /* ===== Tables ===== */
+  table { width:100%; border-collapse:collapse; font-size:14px; margin:12px 0; }
+  th,td { padding:10px 14px; text-align:left; border-bottom:1px solid var(--border); }
+  th { background:#f1f5f9; font-weight:600; font-size:13px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:.04em; }
+  tr:hover td { background:#f8fafc; }
+
+  /* ===== Badges ===== */
+  .badge { display:inline-block; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:600; }
+  .badge-ts { background:#3178c6; color:#fff; }
+  .badge-rust { background:#dea584; color:#2d1f0d; }
+  .badge-tauri { background:#ffc131; color:#5b4300; }
+  .badge-react { background:#087ea4; color:#fff; }
+
+  /* ===== Tags ===== */
+  .tag { display:inline-block; padding:3px 10px; border-radius:4px; font-size:12px; font-weight:500; margin:2px; }
+  .tag-frontend { background:#dbeafe; color:#1e40af; }
+  .tag-backend { background:#fef3c7; color:#92400e; }
+  .tag-shared { background:#dcfce7; color:#166534; }
+
+  /* ===== Timeline / Phase ===== */
+  .phase { border-left:3px solid var(--primary); padding-left:20px; margin:24px 0; }
+  .phase h4 { color:var(--primary-dark); margin-top:0; }
+  .phase .duration { font-size:13px; color:var(--text-secondary); }
+
+  /* ===== Code ===== */
+  code { background:#f1f5f9; padding:1px 5px; border-radius:3px; font-size:13px; font-family:'Cascadia Code','Fira Code','Consolas',monospace; }
+  pre { background:#1e293b; color:#e2e8f0; padding:16px 20px; border-radius:var(--radius); overflow-x:auto; font-size:13px; line-height:1.6; margin:12px 0; }
+
+  /* ===== Architecture Diagram ===== */
+  .arch-diagram {
+    background:linear-gradient(135deg,#f0f9ff 0%,#e0f2fe 100%);
+    border:2px solid #bae6fd; border-radius:var(--radius); padding:28px;
+    text-align:center; margin:20px 0;
+  }
+  .arch-layer { display:flex; justify-content:center; gap:16px; flex-wrap:wrap; margin:10px 0; }
+  .arch-box {
+    background:#fff; border:2px solid var(--primary); border-radius:8px;
+    padding:14px 22px; font-weight:600; font-size:14px; min-width:140px;
+    box-shadow:var(--shadow-md);
+  }
+  .arch-box.rust { border-color:#dea584; background:#fef7f0; }
+  .arch-box.ts { border-color:#3178c6; background:#f0f6ff; }
+  .arch-box.tauri { border-color:#ffc131; background:#fffbf0; }
+  .arch-arrow { font-size:22px; color:var(--primary); margin:6px 0; }
+
+  /* ===== Print ===== */
+  @media print {
+    nav#sidebar { display:none; }
+    main#content { margin-left:0; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ==================== SIDEBAR ==================== -->
+<nav id="sidebar">
+  <div class="brand">
+    <h1>📐 CviCubeMX 重构</h1>
+    <p>C++/Qt → TS + Rust + Tauri</p>
+  </div>
+
+  <div class="nav-section">概述</div>
+  <ul>
+    <li><a href="#sec-overview"><span class="nav-icon">📋</span> 项目背景</a></li>
+    <li><a href="#sec-why"><span class="nav-icon">🎯</span> 重构动机</a></li>
+    <li><a href="#sec-architecture"><span class="nav-icon">🏗️</span> 目标架构</a></li>
+  </ul>
+
+  <div class="nav-section">模块划分</div>
+  <ul>
+    <li><a href="#sec-module-overview"><span class="nav-icon">🗂️</span> 模块总览</a></li>
+    <li><a href="#sec-module-app"><span class="nav-icon">🖥️</span> M1 应用外壳</a></li>
+    <li><a href="#sec-module-chip"><span class="nav-icon">🔲</span> M2 芯片选型与引脚</a></li>
+    <li><a href="#sec-module-peripheral"><span class="nav-icon">🔌</span> M3 外设配置</a></li>
+    <li><a href="#sec-module-clock"><span class="nav-icon">⏱️</span> M4 时钟树配置</a></li>
+    <li><a href="#sec-module-memory"><span class="nav-icon">🧠</span> M5 内存配置</a></li>
+    <li><a href="#sec-module-flash"><span class="nav-icon">💾</span> M6 Flash分区</a></li>
+    <li><a href="#sec-module-codegen"><span class="nav-icon">⚡</span> M7 代码生成器</a></li>
+    <li><a href="#sec-module-ai"><span class="nav-icon">🤖</span> M8 AI助手</a></li>
+    <li><a href="#sec-module-pin-data"><span class="nav-icon">📊</span> M9 引脚数据工具</a></li>
+  </ul>
+
+  <div class="nav-section">实施</div>
+  <ul>
+    <li><a href="#sec-roadmap"><span class="nav-icon">🗓️</span> 实施路线图</a></li>
+    <li><a href="#sec-tech-stack"><span class="nav-icon">🔧</span> 技术选型清单</a></li>
+    <li><a href="#sec-risks"><span class="nav-icon">⚠️</span> 风险与对策</a></li>
+  </ul>
+
+  <div class="footer">2026-06-02 · v1.0</div>
+</nav>
+
+<!-- ==================== MAIN CONTENT ==================== -->
+<main id="content">
+
+<!-- ===== OVERVIEW ===== -->
+<section id="sec-overview">
+  <h2>📋 项目背景</h2>
+  <p class="section-desc">
+    <strong>CviCubeMX</strong> 是一款芯片引脚配置工具，为 CV 系列芯片（cv1801c/h、cv1811c/h、cv1842cp/hp）提供引脚功能配置、外设管理、时钟树配置、内存布局、Flash 分区以及代码自动生成等一站式开发辅助能力。
+  </p>
+  <div class="card-grid">
+    <div class="card">
+      <h4>当前技术栈</h4>
+      <table>
+        <tr><td>语言</td><td><strong>C++17</strong></td></tr>
+        <tr><td>UI 框架</td><td><strong>Qt 6.x (Widgets)</strong></td></tr>
+        <tr><td>构建系统</td><td><strong>CMake 3.16+</strong></td></tr>
+        <tr><td>目标平台</td><td>Windows / Linux</td></tr>
+        <tr><td>代码规模</td><td>~12 个 .cpp + ~12 个 .h，ClockConfig 头文件 700+ 行</td></tr>
+      </table>
+    </div>
+    <div class="card">
+      <h4>核心功能清单</h4>
+      <ul style="padding-left:20px;font-size:14px;">
+        <li>6 款芯片选型，QFN/BGA 双封装</li>
+        <li>引脚功能可视化配置 (GPIO/ADC/I2C/UART/SPI/PWM/Timer)</li>
+        <li>设备树 (DTS) 解析与外设管理</li>
+        <li>时钟树 PLL 可视化与频点计算</li>
+        <li>内存区域 & Flash 分区管理</li>
+        <li>CODE 生成 cvi_board_init.c</li>
+        <li>AI 对话助手 (HTTP SSE 流式)</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ===== WHY ===== -->
+<section id="sec-why">
+  <h2>🎯 重构动机</h2>
+  <div class="card-grid">
+    <div class="card">
+      <h4>🔧 编译与依赖痛点</h4>
+      <p style="font-size:14px;color:var(--text-secondary);">
+        Qt 6.x + MSVC 工具链体积庞大（几 GB），windeployqt 部署流程繁琐，新开发者环境搭建门槛极高。每次发版需要手动打包 DLL。
+      </p>
+    </div>
+    <div class="card">
+      <h4>📦 跨平台与分发</h4>
+      <p style="font-size:14px;color:var(--text-secondary);">
+        Linux 下需要额外安装 qt6-base-dev，无法做到"下载即用"。Tauri 生成的二进制体积小（~5MB），自带 WebView，不需要运行时依赖。
+      </p>
+    </div>
+    <div class="card">
+      <h4>🧩 可维护性</h4>
+      <p style="font-size:14px;color:var(--text-secondary);">
+        C++/Qt 代码 UI 与逻辑强耦合，ClockConfig 单文件 700+ 行声明 + 数千行实现。TypeScript + React 组件化拆分，Rust 处理底层文件与计算逻辑，各司其职。
+      </p>
+    </div>
+    <div class="card">
+      <h4>🚀 开发效率</h4>
+      <p style="font-size:14px;color:var(--text-secondary);">
+        热更新 (HMR) 前端秒级刷新，Rust 编译虽慢但只改后端时才触发。TypeScript 生态丰富（图表库、UI 库），可大幅加速时钟树可视化等复杂 UI 的开发。
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ===== ARCHITECTURE ===== -->
+<section id="sec-architecture">
+  <h2>🏗️ 目标架构</h2>
+  <div class="arch-diagram">
+    <div style="font-size:14px;color:#0369a1;font-weight:600;margin-bottom:12px;">三层架构：前端 → IPC桥 → 后端</div>
+    <div class="arch-layer">
+      <div class="arch-box ts">
+        <span class="badge badge-ts">TS</span><br>
+        React 18 + Vite<br>
+        <small style="color:#64748b;">UI 渲染 · 状态管理 · 路由</small>
+      </div>
+    </div>
+    <div class="arch-arrow">⬇️ Tauri IPC (invoke / event)</div>
+    <div class="arch-layer">
+      <div class="arch-box tauri">
+        <span class="badge badge-tauri">Tauri v2</span><br>
+        WebView Shell<br>
+        <small style="color:#64748b;">窗口管理 · 菜单 · 文件对话框</small>
+      </div>
+    </div>
+    <div class="arch-arrow">⬇️ Command 调用</div>
+    <div class="arch-layer">
+      <div class="arch-box rust">
+        <span class="badge badge-rust">Rust</span><br>
+        Backend Core<br>
+        <small style="color:#64748b;">文件 I/O · DTS 解析 · 代码生成 · 计算</small>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h4>数据流示意图</h4>
+    <pre>
+┌─────────────────────────────────────────────────────┐
+│  React Frontend (TypeScript)                        │
+│  ┌──────────┐ ┌──────────┐ ┌──────────────────┐   │
+│  │ Sidebar  │ │ PinView  │ │ ClockTree Canvas │   │
+│  │ Navigator│ │ (Canvas) │ │ (HTML5 Canvas)   │   │
+│  └──────────┘ └──────────┘ └──────────────────┘   │
+│         │            │               │              │
+│         └────────────┼───────────────┘              │
+│                      │ invoke("command", args)       │
+└──────────────────────┼──────────────────────────────┘
+                       │ Tauri IPC Bridge
+┌──────────────────────┼──────────────────────────────┐
+│  Rust Backend        ▼                              │
+│  ┌──────────┐ ┌──────────┐ ┌──────────────────┐   │
+│  │ Cmd::    │ │ Cmd::    │ │ Cmd::            │   │
+│  │ chip_*   │ │ dts_*    │ │ generate_code    │   │
+│  └──────────┘ └──────────┘ └──────────────────┘   │
+│         │            │               │              │
+│         ▼            ▼               ▼              │
+│  ┌──────────────────────────────────────────────┐  │
+│  │  File System: .dtsi / defconfig / .xlsx      │  │
+│  └──────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────┘</pre>
+  </div>
+</section>
+
+<!-- ===== MODULE OVERVIEW ===== -->
+<section id="sec-module-overview">
+  <h2>🗂️ 模块总览</h2>
+  <table>
+    <thead>
+      <tr><th style="width:50px">#</th><th>模块名称</th><th>原 C++ 文件</th><th>前端 (TS)</th><th>后端 (Rust)</th><th>优先级</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>M1</td><td><strong>应用外壳 & 导航</strong></td><td>main.cpp, mainwindow.cpp/h</td><td><span class="badge badge-react">React</span> App Shell, Sidebar, TabBar</td><td><span class="badge badge-rust">Rust</span> Tauri 配置, Menu</td><td>🔴 P0</td></tr>
+      <tr><td>M2</td><td><strong>芯片选型 & 引脚视图</strong></td><td>chipconfig.cpp/h, pinwidget.cpp/h</td><td><span class="badge badge-react">React</span> ChipCanvas, PinButton</td><td><span class="badge badge-rust">Rust</span> 引脚数据加载, 状态管理</td><td>🔴 P0</td></tr>
+      <tr><td>M3</td><td><strong>外设配置 (DTS)</strong></td><td>dtsconfig.cpp/h, peripheralconfigdialog.cpp/h</td><td><span class="badge badge-react">React</span> PeripheralPanel, ConfigDialog</td><td><span class="badge badge-rust">Rust</span> DTS 解析器, 读写引擎</td><td>🔴 P0</td></tr>
+      <tr><td>M4</td><td><strong>时钟树配置</strong></td><td>clockconfig.cpp/h</td><td><span class="badge badge-react">React</span> ClockTreeCanvas (Canvas/SVG)</td><td><span class="badge badge-rust">Rust</span> 频率计算, PLL 约束校验</td><td>🟡 P1</td></tr>
+      <tr><td>M5</td><td><strong>内存配置</strong></td><td>memoryconfig.cpp/h</td><td><span class="badge badge-react">React</span> MemoryTable, MemoryMap</td><td><span class="badge badge-rust">Rust</span> 地址校验, defconfig 导出</td><td>🟡 P1</td></tr>
+      <tr><td>M6</td><td><strong>Flash 分区</strong></td><td>flashconfig.cpp/h</td><td><span class="badge badge-react">React</span> PartitionTable, PartitionMap</td><td><span class="badge badge-rust">Rust</span> 分区校验, defconfig 导出</td><td>🟡 P1</td></tr>
+      <tr><td>M7</td><td><strong>代码生成器</strong></td><td>codegenerator.cpp/h</td><td><span class="badge badge-react">React</span> CodePreview, ExportDialog</td><td><span class="badge badge-rust">Rust</span> 模板引擎, PINMUX 宏生成</td><td>🟢 P2</td></tr>
+      <tr><td>M8</td><td><strong>AI 对话助手</strong></td><td>aichatdialog.cpp/h</td><td><span class="badge badge-react">React</span> ChatPanel (Markdown, SSE)</td><td><span class="badge badge-rust">Rust</span> HTTP Client (reqwest), SSE 流</td><td>🟢 P2</td></tr>
+      <tr><td>M9</td><td><strong>引脚数据生成工具</strong></td><td>boards_pinout/generate_pins.py</td><td>—</td><td><span class="badge badge-rust">Rust</span> CLI 工具 (xlsx → JSON)</td><td>🟢 P2</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ===== M1: APP SHELL ===== -->
+<section id="sec-module-app">
+  <h2>🖥️ M1 — 应用外壳与导航</h2>
+  <p class="section-desc">对应原 <code>main.cpp</code> + <code>mainwindow.cpp/.h</code>，负责窗口管理、侧边栏路由、顶部 Tab 切换、菜单栏。</p>
+
+  <h3>前端组件树</h3>
+  <pre>
+App
+├── Sidebar                    // 左侧导航
+│   ├── BrandLogo
+│   ├── NavGroup "配置"
+│   │   ├── NavItem "引脚配置"  (Pinout)
+│   │   ├── NavItem "外设管理"  (Peripheral)
+│   │   ├── NavItem "时钟树"    (Clock)
+│   │   └── NavItem "内存/Flash"
+│   └── NavGroup "工具"
+│       ├── NavItem "代码生成"  (CodeGen)
+│       └── NavItem "AI 助手"   (AIChat)
+├── TopBar                      // 芯片选型 + 操作按钮
+│   ├── ChipSelector (ComboBox)
+│   ├── StartProjectButton
+│   └── GenerateCodeButton
+├── ConfigTabs (TabBar)         // 原 QTabWidget
+│   ├── Tab: Pinout
+│   ├── Tab: Clock
+│   ├── Tab: Memory
+│   └── Tab: Flash
+└── ContentArea (react-router)
+    ├── WelcomePage
+    ├── PinoutPage
+    ├── PeripheralPage
+    ├── ClockPage
+    ├── MemoryPage
+    ├── FlashPage
+    ├── CodeGenPage
+    └── AIChatPage</pre>
+
+  <h3>后端 Rust Commands</h3>
+  <table>
+    <tr><th>Command</th><th>参数</th><th>返回值</th><th>说明</th></tr>
+    <tr><td><code>get_app_config</code></td><td>—</td><td>AppConfig</td><td>读取上次会话配置 (芯片、路径)</td></tr>
+    <tr><td><code>save_app_config</code></td><td>AppConfig</td><td>()</td><td>持久化会话状态</td></tr>
+    <tr><td><code>select_source_path</code></td><td>—</td><td>String</td><td>打开原生文件夹选择对话框</td></tr>
+    <tr><td><code>validate_source_path</code></td><td>path: String</td><td>bool</td><td>校验路径是否包含必要的 SDK 文件</td></tr>
+  </table>
+</section>
+
+<!-- ===== M2: CHIP & PIN ===== -->
+<section id="sec-module-chip">
+  <h2>🔲 M2 — 芯片选型与引脚视图</h2>
+  <p class="section-desc">对应原 <code>chipconfig.cpp/.h</code> + <code>pinwidget.cpp/.h</code> + <code>pinfunction.cpp/.h</code>，是应用的核心交互界面。</p>
+
+  <h3>前端设计要点</h3>
+  <div class="card-grid">
+    <div class="card">
+      <h4>芯片选择流程</h4>
+      <ol style="font-size:14px;padding-left:20px;">
+        <li>用户在 TopBar 下拉框选择芯片型号</li>
+        <li>前端调用 <code>invoke("load_chip_spec", {chipType})</code></li>
+        <li>Rust 返回 <code>ChipSpec</code>（封装类型、引脚数、布局参数）</li>
+        <li>根据封装类型渲染 QFN（四边方形）/ BGA（网格圆形）布局</li>
+      </ol>
+    </div>
+    <div class="card">
+      <h4>QFN 布局渲染</h4>
+      <p style="font-size:14px;">
+        使用 CSS Grid + 绝对定位，将 N 个方形 PinButton 分布在芯片四边（左→底→右→顶逆时针）。
+        每个按钮点击弹出 ContextMenu 选择功能，选中后变色。
+      </p>
+    </div>
+    <div class="card">
+      <h4>BGA 布局渲染</h4>
+      <p style="font-size:14px;">
+        使用 CSS Grid 渲染 N×N 网格（如 15×15），按行号 A-R（跳过 I）+ 列号 1-15 定位。
+        圆形按钮，悬浮时显示 PAD 名称 tooltip。
+      </p>
+    </div>
+    <div class="card">
+      <h4>引脚搜索与闪烁</h4>
+      <p style="font-size:14px;">
+        原 <code>onSearchTextChanged</code> + <code>onBlinkTimeout</code> 逻辑：
+        输入引脚号 → 滚动到该引脚 → CSS animation 闪烁高亮 3 次后常亮。
+      </p>
+    </div>
+  </div>
+
+  <h3>后端 Rust 数据模型</h3>
+  <pre>
+// Rust structs — 对应原 ChipConfig / PinFunction
+#[derive(Serialize, Deserialize)]
+struct ChipSpec {
+    chip_type: String,         // "cv1801c" | "cv1842hp" | ...
+    package: PackageType,      // QFN | BGA
+    pin_count: u32,
+    layout: ChipLayout,        // 布局参数
+}
+
+#[derive(Serialize, Deserialize)]
+struct PinInfo {
+    pin_name: String,          // PAD_MIPI_TXM4
+    display_name: String,      // A2 (BGA) 或 12 (QFN)
+    supported_functions: Vec&lt;String&gt;,  // ["XGPIOA_0", "UART0_TX", ...]
+    default_function: String,  // "XGPIOA_0"
+    current_function: String,  // 用户当前选择
+    user_configured: bool,     // 是否被用户主动修改
+}
+
+#[tauri::command]
+fn load_chip_spec(chip_type: String) -> Result&lt;ChipSpec, String&gt; { ... }
+
+#[tauri::command]
+fn load_pin_data(chip_type: String) -> Result&lt;Vec&lt;PinInfo&gt;, String&gt; { ... }
+
+#[tauri::command]
+fn set_pin_function(chip_type: String, pin_name: String, function: String, state: State&lt;AppState&gt;) -> Result&lt;(), String&gt; { ... }</pre>
+
+  <h3>前端状态管理（Zustand store）</h3>
+  <pre>
+interface ChipStore {
+  chipType: string | null;
+  chipSpec: ChipSpec | null;
+  pins: Map&lt;string, PinInfo&gt;;
+  searchText: string;
+  highlightedPins: Set&lt;string&gt;;
+
+  selectChip(type: string): Promise&lt;void&gt;;
+  setPinFunction(pin: string, fn: string): Promise&lt;void&gt;;
+  searchPin(text: string): void;
+}</pre>
+</section>
+
+<!-- ===== M3: PERIPHERAL ===== -->
+<section id="sec-module-peripheral">
+  <h2>🔌 M3 — 外设配置与 DTS 管理</h2>
+  <p class="section-desc">对应原 <code>dtsconfig.cpp/.h</code> + <code>peripheralconfigdialog.cpp/.h</code>，是设备树文件 (.dtsi) 的读写引擎。</p>
+
+  <div class="card">
+    <h4>原 Qt 实现 → Tauri 迁移映射</h4>
+    <table>
+      <tr><th>原 Qt 组件 / 类</th><th>前端 React</th><th>后端 Rust</th></tr>
+      <tr><td>QTreeWidget (左侧外设树)</td><td><code>&lt;PeripheralTree&gt;</code> 递归 Tree 组件</td><td>—</td></tr>
+      <tr><td>PeripheralConfigDialog (弹窗)</td><td><code>&lt;ConfigDialog&gt;</code> Modal + Form</td><td>—</td></tr>
+      <tr><td>DtsConfig::parseDtsFile()</td><td>—</td><td><code>dts_parser::parse(content: &str) -> DtsAst</code></td></tr>
+      <tr><td>DtsConfig::saveDtsFile()</td><td>—</td><td><code>dts_writer::write(ast: &DtsAst) -> String</code></td></tr>
+      <tr><td>setPeripheralStatus / setPeripheralClock</td><td>—</td><td>单个 <code>#[tauri::command]</code> 原子操作</td></tr>
+    </table>
+  </div>
+
+  <h3>Rust DTS 解析器设计</h3>
+  <pre>
+// 使用 pest 或 nom 解析器库，或手写递归下降解析
+// DTS 节点结构：
+// &amp;i2c0 { status = "okay"; clock-frequency = &lt;100000&gt;; };
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct DtsNode {
+    name: String,                        // "i2c0"
+    properties: HashMap&lt;String, String&gt;,  // "status" -> "okay"
+    children: Vec&lt;DtsNode&gt;,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct PeripheralInfo {
+    name: String,
+    status: String,           // "okay" | "disabled"
+    clock_name: Option&lt;String&gt;,
+    clock_frequency: Option&lt;u32&gt;,
+    pwm_cells: Option&lt;u32&gt;,
+    current_speed: Option&lt;u32&gt;,  // UART 波特率
+    sysdma_channels: Vec&lt;String&gt;,
+    line_number: usize,
+}</pre>
+</section>
+
+<!-- ===== M4: CLOCK ===== -->
+<section id="sec-module-clock">
+  <h2>⏱️ M4 — 时钟树配置</h2>
+  <p class="section-desc">对应原 <code>clockconfig.cpp/.h</code>，是整个项目中最复杂的模块（700+ 行头文件声明 + 数千行实现），包含 OSC→PLL→子PLL→输出节点的完整时钟树可视化、拖拽缩放、连接线绘制。</p>
+
+  <div class="card">
+    <h4>难点分析</h4>
+    <ul style="font-size:14px;padding-left:20px;">
+      <li>原 Qt 使用 <code>paintEvent</code> + <code>QPainter</code> 手绘连接线和箭头</li>
+      <li>~20 个 PLL/子 PLL 区域，每个有独立的 divider/multiplier 控件</li>
+      <li>拖拽和缩放模块位置（自定义 ResizeHandle 八个方向）</li>
+      <li>左侧时钟树 QTreeWidget 导航 + 右侧 Canvas 流程布局</li>
+      <li>搜索定位 + 高亮闪烁</li>
+    </ul>
+  </div>
+
+  <h3>方案 A：HTML5 Canvas（推荐）</h3>
+  <div class="card">
+    <h4>技术选型</h4>
+    <p style="font-size:14px;">
+      使用 <strong>React Flow</strong> 或 <strong>自研 Canvas 引擎</strong> 渲染节点图。
+      React Flow 自带节点拖拽、缩放、连线、MiniMap，但定制节点样式需额外开发。
+      若对性能和控制力要求极高，可用 <strong>Konva.js</strong> (Canvas 2D) 或 <strong>PixiJS</strong> (WebGL)。
+    </p>
+    <table>
+      <tr><th>原 Qt 特性</th><th>React Flow / Konva 替代</th></tr>
+      <tr><td>PLL GroupBox + SpinBox</td><td>自定义 Node 组件，内含 Input 控件</td></tr>
+      <tr><td>drawConnectionLines (手绘)</td><td>React Flow Edge / Konva Line + Arrow</td></tr>
+      <tr><td>拖拽模块位置</td><td>React Flow 内置 onNodeDrag</td></tr>
+      <tr><td>缩放手柄 (8方向 Resize)</td><td>自定义 React Flow Node 的 resize handle</td></tr>
+      <tr><td>QTreeWidget 导航</td><td>左侧 Tree 组件，点击 → setCenter(node)</td></tr>
+      <tr><td>搜索 + 定位 + 高亮</td><td>filter → setCenter + className 切换动画</td></tr>
+    </table>
+  </div>
+
+  <h3>后端 Rust 时钟计算</h3>
+  <pre>
+// 将原 C++ 的 updatePLLFrequency / updateOutputFrequency 等计算逻辑迁移到 Rust
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct PllConfig {
+    name: String,
+    enabled: bool,
+    input_freq_mhz: f64,
+    output_freq_mhz: f64,
+    divider: f64,
+    multiplier: u32,
+    source: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct ClockOutput {
+    name: String,
+    source: String,
+    divider: u32,
+    multiplier: u32,
+    frequency_mhz: f64,
+    enabled: bool,
+}
+
+#[tauri::command]
+fn compute_clock_tree(configs: HashMap&lt;String, PllConfig&gt;) -> Result&lt;ClockTreeResult, String&gt; {
+    // 级联计算：OSC(25MHz) → PLL → SubPLL → Outputs
+    // 校验频率约束
+    // 返回完整时钟树的各节点频率
+}</pre>
+</section>
+
+<!-- ===== M5: MEMORY ===== -->
+<section id="sec-module-memory">
+  <h2>🧠 M5 — 内存区域配置</h2>
+  <p class="section-desc">对应原 <code>memoryconfig.cpp/.h</code>，管理 256MB 内存空间的区域划分，支持增删改、重叠校验、defconfig 导出。</p>
+
+  <h3>迁移映射</h3>
+  <table>
+    <tr><th>原 Qt</th><th>前端 React</th><th>后端 Rust</th></tr>
+    <tr><td>QTableWidget (6列)</td><td><code>&lt;DataGrid&gt;</code> (TanStack Table / AG Grid)</td><td>—</td></tr>
+    <tr><td>QTextEdit (内存可视化)</td><td><code>&lt;MemoryMapCanvas&gt;</code> Canvas 堆叠条</td><td>—</td></tr>
+    <tr><td>增/删/重置/导入/导出按钮</td><td>按钮组 + 文件选择</td><td>—</td></tr>
+    <tr><td>validateMemoryLayout</td><td>—</td><td><code>validate_memory_layout(regions) -> Result</code></td></tr>
+    <tr><td>exportToDefconfig</td><td>—</td><td><code>export_memory_defconfig(regions, path)</code></td></tr>
+    <tr><td>JSON 导入/导出</td><td>—</td><td><code>import/export_memory_json</code></td></tr>
+  </table>
+</section>
+
+<!-- ===== M6: FLASH ===== -->
+<section id="sec-module-flash">
+  <h2>💾 M6 — Flash 分区管理</h2>
+  <p class="section-desc">对应原 <code>flashconfig.cpp/.h</code>，管理 SPI Flash/NAND 分区表，支持分区增删、大小校验、可视化。</p>
+
+  <h3>迁移映射</h3>
+  <table>
+    <tr><th>原 Qt</th><th>前端 React</th><th>后端 Rust</th></tr>
+    <tr><td>QTableWidget (7列: 序号/启用/标签/大小/文件/挂载点/类型)</td><td><code>&lt;PartitionTable&gt;</code></td><td>—</td></tr>
+    <tr><td>分区可视化 QTextEdit</td><td><code>&lt;PartitionBar&gt;</code> 色块堆叠条</td><td>—</td></tr>
+    <tr><td>validatePartitionLayout</td><td>—</td><td><code>validate_partitions(parts) -> Result</code></td></tr>
+  </table>
+</section>
+
+<!-- ===== M7: CODEGEN ===== -->
+<section id="sec-module-codegen">
+  <h2>⚡ M7 — 代码生成器</h2>
+  <p class="section-desc">对应原 <code>codegenerator.cpp/.h</code> + 头文件 <code>cvi_board_init.h</code>，根据引脚配置自动生成 C 代码。</p>
+
+  <h3>后端 Rust 模板引擎</h3>
+  <pre>
+// 使用 Tera 或 Handlebars 模板引擎
+// 模板文件: templates/cvi_board_init.c.hbs
+
+#[tauri::command]
+fn generate_code(chip_type: String, pin_configs: Vec&lt;PinInfo&gt;, output_path: String) -> Result&lt;String, String&gt; {
+    // 1. 按引脚编号排序
+    // 2. 过滤掉未配置的引脚（仅 user_configured = true）
+    // 3. 生成 PINMUX(GPIOxx, FUNCTION); 宏调用
+    // 4. 渲染模板 → 输出 .c 文件
+}
+
+#[tauri::command]
+fn update_existing_code(file_path: String, pin_configs: Vec&lt;PinInfo&gt;) -> Result&lt;String, String&gt; {
+    // 增量更新已有 cvi_board_init.c
+}</pre>
+</section>
+
+<!-- ===== M8: AI CHAT ===== -->
+<section id="sec-module-ai">
+  <h2>🤖 M8 — AI 对话助手</h2>
+  <p class="section-desc">对应原 <code>aichatdialog.cpp/.h</code>，基于 HTTP SSE 的流式 AI 对话窗口。</p>
+
+  <div class="card">
+    <h4>前后端分工</h4>
+    <table>
+      <tr><th>层</th><th>职责</th></tr>
+      <tr><td>前端</td><td>聊天界面 (Markdown 渲染, 代码高亮, 流式追加), 消息历史列表</td></tr>
+      <tr><td>后端</td><td><code>reqwest</code> HTTP Client 连接 AI API, SSE 流解析, Event 推送 (<code>app_handle.emit()</code>)</td></tr>
+    </table>
+    <p style="font-size:14px;margin-top:12px;">
+      使用 Tauri 的 <strong>Event System</strong> 实现 SSE 流式推送：Rust 收到一个 chunk → <code>window.emit("ai-chunk", payload)</code> → React 用 <code>listen()</code> 接收并追加到消息末尾。
+    </p>
+  </div>
+</section>
+
+<!-- ===== M9: PIN DATA TOOL ===== -->
+<section id="sec-module-pin-data">
+  <h2>📊 M9 — 引脚数据生成工具</h2>
+  <p class="section-desc">对应原 <code>boards_pinout/generate_pins.py</code>，从 Excel 文件生成引脚配置数据。</p>
+
+  <div class="card">
+    <h4>从 Python 到 Rust CLI</h4>
+    <ul style="font-size:14px;padding-left:20px;">
+      <li>使用 <code>calamine</code> crate 读取 .xlsx 文件（无需 Excel 运行时）</li>
+      <li>解析 Description 列的 "0 : XGPIOA_0 (default)" 格式</li>
+      <li>应用 FUNCTION_NAME_REMAP 重映射规则</li>
+      <li>输出 JSON 文件供 Tauri 应用加载，替代原来生成 C++ 代码的方式</li>
+      <li>输出格式：
+        <pre>// 原来 → 两个 .cpp 文件内嵌到 Qt 项目
+// 现在 → 一个 pin_data.json
+{
+  "cv1842hp": [
+    {"pin_num":"A2","pin_name":"PAD_MIPI_TXM4","functions":["XGPIOA_0","UART0_TX"],"default":"XGPIOA_0"},
+    ...
+  ]
+}</pre>
+      </li>
+    </ul>
+  </div>
+</section>
+
+<!-- ===== ROADMAP ===== -->
+<section id="sec-roadmap">
+  <h2>🗓️ 实施路线图</h2>
+  <p class="section-desc">按模块拆分，逐步迭代，每阶段可独立验证。</p>
+
+  <div class="phase">
+    <h4>Phase 0 — 项目脚手架 <span class="duration">（第 1 周）</span></h4>
+    <table>
+      <tr><td>✅</td><td>初始化 <code>npm create tauri-app@latest</code> (React + TypeScript 模板)</td></tr>
+      <tr><td>✅</td><td>配置 Vite + React Router + Zustand + Tailwind CSS</td></tr>
+      <tr><td>✅</td><td>搭建 Rust 项目结构（crates: core, commands, parser）</td></tr>
+      <tr><td>✅</td><td>验证 Tauri IPC 通信 (invoke + event)</td></tr>
+      <tr><td>✅</td><td>还原 QSS → Tailwind 全局样式</td></tr>
+    </table>
+  </div>
+
+  <div class="phase">
+    <h4>Phase 1 — M1 + M2 核心交互 <span class="duration">（第 2-3 周）</span></h4>
+    <table>
+      <tr><td>✅</td><td>M1: App Shell (Sidebar + TopBar + TabBar + 路由)</td></tr>
+      <tr><td>✅</td><td>M2: 芯片选型下拉 → Rust 加载 ChipSpec</td></tr>
+      <tr><td>✅</td><td>M2: QFN / BGA 引脚视图渲染</td></tr>
+      <tr><td>✅</td><td>M2: 引脚功能选择 ContextMenu + 变色</td></tr>
+      <tr><td>✅</td><td>M2: 引脚搜索 + 滚动高亮闪烁</td></tr>
+      <tr><td>✅</td><td>M9: Rust CLI 工具将 Excel → JSON 引脚数据</td></tr>
+    </table>
+  </div>
+
+  <div class="phase">
+    <h4>Phase 2 — M3 外设配置 <span class="duration">（第 4-5 周）</span></h4>
+    <table>
+      <tr><td>✅</td><td>Rust DTS 解析器 (pest/nom)</td></tr>
+      <tr><td>✅</td><td>Rust DTS 写入器（保留注释和格式）</td></tr>
+      <tr><td>✅</td><td>前端 PeripheralTree + ConfigDialog</td></tr>
+      <tr><td>✅</td><td>外设状态切换 (okay/disabled) + 时钟/波特率/PWM 配置</td></tr>
+      <tr><td>✅</td><td>SYSDMA 通道映射配置</td></tr>
+    </table>
+  </div>
+
+  <div class="phase">
+    <h4>Phase 3 — M4 时钟树 <span class="duration">（第 6-8 周）</span>⚠️ 最复杂模块</h4>
+    <table>
+      <tr><td>✅</td><td>Rust 时钟计算公式迁移（PLL → SubPLL → Output）</td></tr>
+      <tr><td>✅</td><td>React Flow / Konva 节点图渲染</td></tr>
+      <tr><td>✅</td><td>PLL/SubPLL 自定义 Node 控件（multiplier, divider, freq 显示）</td></tr>
+      <tr><td>✅</td><td>连接线绘制（OSC→PLL→SubPLL→Outputs）</td></tr>
+      <tr><td>✅</td><td>拖拽调整模块位置 + 位置持久化</td></tr>
+      <tr><td>✅</td><td>左侧时钟树导航 + 搜索定位高亮</td></tr>
+      <tr><td>✅</td><td>defconfig 导出</td></tr>
+    </table>
+  </div>
+
+  <div class="phase">
+    <h4>Phase 4 — M5 + M6 + M7 <span class="duration">（第 9-10 周）</span></h4>
+    <table>
+      <tr><td>✅</td><td>M5: 内存区域表格 + 可视化 + Rust 校验</td></tr>
+      <tr><td>✅</td><td>M6: Flash 分区表格 + 可视化 + Rust 校验</td></tr>
+      <tr><td>✅</td><td>M7: Rust 模板引擎 → C 代码生成 + 预览 + 导出</td></tr>
+      <tr><td>✅</td><td>defconfig 统一导出通道</td></tr>
+    </table>
+  </div>
+
+  <div class="phase">
+    <h4>Phase 5 — M8 + 收尾 <span class="duration">（第 11-12 周）</span></h4>
+    <table>
+      <tr><td>✅</td><td>M8: AI 聊天面板 + SSE 流式接收</td></tr>
+      <tr><td>✅</td><td>端到端集成测试</td></tr>
+      <tr><td>✅</td><td>Windows / Linux 打包与 CI 配置</td></tr>
+      <tr><td>✅</td><td>文档更新</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- ===== TECH STACK ===== -->
+<section id="sec-tech-stack">
+  <h2>🔧 技术选型清单</h2>
+  <table>
+    <thead><tr><th>层级</th><th>技术</th><th>版本</th><th>用途</th></tr></thead>
+    <tbody>
+      <tr><td>前端框架</td><td><span class="badge badge-react">React</span></td><td>18.x</td><td>UI 组件化</td></tr>
+      <tr><td>构建工具</td><td>Vite</td><td>5.x</td><td>前端 HMR 开发服务器</td></tr>
+      <tr><td>类型系统</td><td><span class="badge badge-ts">TypeScript</span></td><td>5.x</td><td>全前端类型安全</td></tr>
+      <tr><td>样式方案</td><td>Tailwind CSS</td><td>3.x</td><td>Utility-first 样式（替代 QSS）</td></tr>
+      <tr><td>状态管理</td><td>Zustand</td><td>4.x</td><td>轻量级全局状态</td></tr>
+      <tr><td>路由</td><td>React Router</td><td>6.x</td><td>页面路由</td></tr>
+      <tr><td>表格组件</td><td>TanStack Table</td><td>8.x</td><td>高性能 DataGrid</td></tr>
+      <tr><td>图表/图形</td><td>React Flow / Konva.js</td><td>—</td><td>时钟树节点图</td></tr>
+      <tr><td>Markdown</td><td>react-markdown + remark-gfm</td><td>—</td><td>AI 对话渲染</td></tr>
+      <tr><td>桌面壳</td><td><span class="badge badge-tauri">Tauri</span></td><td>v2</td><td>WebView 容器</td></tr>
+      <tr><td>后端语言</td><td><span class="badge badge-rust">Rust</span></td><td>1.75+</td><td>系统调用、文件 I/O</td></tr>
+      <tr><td>DTS 解析</td><td>pest / nom</td><td>—</td><td>PEG / 组合子解析器</td></tr>
+      <tr><td>模板引擎</td><td>Tera</td><td>—</td><td>代码生成模板</td></tr>
+      <tr><td>Excel 读取</td><td>calamine</td><td>—</td><td>.xlsx 引脚数据读取 (M9)</td></tr>
+      <tr><td>HTTP 客户端</td><td>reqwest</td><td>—</td><td>AI API 调用 (SSE)</td></tr>
+      <tr><td>序列化</td><td>serde + serde_json</td><td>—</td><td>IPC 数据交换</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ===== RISKS ===== -->
+<section id="sec-risks">
+  <h2>⚠️ 风险与对策</h2>
+  <div class="card-grid">
+    <div class="card">
+      <h4>🔴 时钟树可视化难度</h4>
+      <p style="font-size:14px;color:var(--text-secondary);">
+        原 Qt 使用 QPainter 手绘，涉及拖拽、缩放、连接线等复杂交互。Canvas 方案需要大量自绘逻辑。
+      </p>
+      <p style="font-size:13px;margin-top:8px;"><strong>对策：</strong>优先评估 React Flow，若无法满足再使用 Konva.js 自研。Phase 3 预留 3 周缓冲。</p>
+    </div>
+    <div class="card">
+      <h4>🟡 DTS 文件格式保持</h4>
+      <p style="font-size:14px;color:var(--text-secondary);">
+        DTS 文件包含注释和特殊格式，解析-修改-写回必须保持非修改部分的原样。
+      </p>
+      <p style="font-size:13px;margin-top:8px;"><strong>对策：</strong>使用行级定位（记录 line_number），只做精确的字符串替换，而非完整 AST 序列化。</p>
+    </div>
+    <div class="card">
+      <h4>🟡 数据格式迁移</h4>
+      <p style="font-size:14px;color:var(--text-secondary);">
+        原 Python 脚本生成 C++ 代码，新方案改为 JSON。需要确保数据结构映射完整无误。
+      </p>
+      <p style="font-size:13px;margin-top:8px;"><strong>对策：</strong>先建立 JSON Schema 规范，双向比对 Python 输出与 Rust 输出。</p>
+    </div>
+    <div class="card">
+      <h4>🟢 功能回归</h4>
+      <p style="font-size:14px;color:var(--text-secondary);">
+        大规模重写可能导致功能遗漏。
+      </p>
+      <p style="font-size:13px;margin-top:8px;"><strong>对策：</strong>建立功能清单 Checklist，Phase 每步对照原 Qt 应用进行验收。</p>
+    </div>
+  </div>
+</section>
+
+</main>
+
+</body>
+</html>
