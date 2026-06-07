@@ -1,13 +1,16 @@
 import React from "react";
 import { BrowserRouter, Routes, Route, NavLink } from "react-router-dom";
 import { invoke } from "@tauri-apps/api/core";
-import { MapPin, Clock, Cpu, Zap, Beaker } from "lucide-react";
+import { MapPin, Clock, Cpu, Zap, Beaker, Settings, Code, MessageSquare } from "lucide-react";
 
 // 页面组件
 import PinoutPage from "./pages/PinoutPage";
+import PeripheralPage from "./pages/PeripheralPage";
 import ClockPage from "./pages/ClockPage";
 import MemoryPage from "./pages/MemoryPage";
 import FlashPage from "./pages/FlashPage";
+import CodeGenPage from "./pages/CodeGenPage";
+import AIChatPage from "./pages/AIChatPage";
 
 /**
  * 侧边栏 - 现代深色毛玻璃风格
@@ -15,9 +18,12 @@ import FlashPage from "./pages/FlashPage";
 function Sidebar() {
   const links = [
     { to: "/", label: "Pinout", icon: <MapPin size={20} /> },
+    { to: "/peripherals", label: "Peripherals", icon: <Settings size={20} /> },
     { to: "/clock", label: "Clock", icon: <Clock size={20} /> },
     { to: "/memory", label: "Memory", icon: <Cpu size={20} /> },
     { to: "/flash", label: "Flash", icon: <Zap size={20} /> },
+    { to: "/codegen", label: "CodeGen", icon: <Code size={20} /> },
+    { to: "/aichat", label: "AI Chat", icon: <MessageSquare size={20} /> },
   ];
 
   return (
@@ -99,9 +105,12 @@ function ContentArea() {
     <div className="bg-slate-800/30 rounded-2xl border border-slate-700/50 p-6 h-full shadow-2xl backdrop-blur-sm overflow-auto">
       <Routes>
         <Route path="/" element={<PinoutPage />} />
+        <Route path="/peripherals" element={<PeripheralPage />} />
         <Route path="/clock" element={<ClockPage />} />
         <Route path="/memory" element={<MemoryPage />} />
         <Route path="/flash" element={<FlashPage />} />
+        <Route path="/codegen" element={<CodeGenPage />} />
+        <Route path="/aichat" element={<AIChatPage />} />
       </Routes>
     </div>
   );

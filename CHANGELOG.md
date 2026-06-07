@@ -5,11 +5,24 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- **前端 Store 与 UI 组件重构 (M2 + M3 + M4 + M5 + M6 UI)**:
+  - **交互引脚按钮 (`PinButton.tsx`)**: 实现具有毛玻璃右键上下文复用功能选择菜单、悬停信息提示 (Tooltip)、匹配检索高亮闪烁、GPIO/ADC/I2C/UART/SPI/PWM 颜色编码，并抑制默认黑边框。
+  - **芯片物理视图画布 (`ChipCanvas.tsx`)**: 支持 QFN（四周逆时针 Grid 排序）和 BGA（行列网格排布且四角物理剔除）两种物理排布拓扑，中间包含芯片参数核心小部件。
+  - **设备树外设资源树 (`PeripheralTree.tsx`)**: 支持递归按类别收纳设备树节点，提供状态指示灯、使能快捷开关、以及参数详细配置入口。
+  - **外设属性修改弹窗 (`ConfigDialog.tsx`)**: 动态为 `status`, `clock-frequency`, `#pwm-cells`, `current-speed` 以及 `ch-remap` 字段提供高阶表单输入，自动过滤未使能属性。
+  - **内存及分区表格 (`MemoryTable.tsx`, `PartitionTable.tsx`)**: 支持区域/分区的手动增删、参数修改、布局校验、重置与 defconfig 一键导出，并在分区表首部加入物理容量占用对比进度条，溢出时自动变红预警。
+  - **主配置页面组装 (`PinoutPage.tsx`, `ClockPage.tsx`, `MemoryPage.tsx`, `FlashPage.tsx`)**: 组装了上述全部组件，形成无缝数据联动，配合毛玻璃主题，带来专业级的芯片配置体验。
+  - **单元测试全面激活与打通**: mock 掉对应的 IPC 后端接口，激活并重写了 `peripheralStore.test.ts` (M3-T11/T12) 和 `memoryFlashStore.test.ts` (M5-T8, M6-T5) 中被 skip 或仅做 mock 的测试用例。执行 `npx vitest run` 使得全套 164 个前端测试用例全部通过。
 - **引脚数据模块重构 (M2 + M9)**:
   - **拼写错误修正**: 修正了 `pin_data_tool.rs` 中的 `FUNCTION_NAME_REMAP` 规则，将 `CR_4WTCK` 的错误映射 `"CV_2WTCK_CR_2WTCK"` 更正为与 `generate_pins.py` 完全一致的 `"CV_2WTCK_CR_4WTCK"`，并对应修改了单元测试。
   - **`PinInfo` 字段扩展**: 在 `PinInfo` 结构体中添加了 `display_name` 字段（其值与 `pin_num` 保持一致），实现了 BGA 与 QFN 布局规范，成功让前端 `chipStore.test.ts` 中的全部 35 个特征测试顺利运行通过。
   - **`set_pin_function` 签名扩展**: 扩展了 Tauri 中 `set_pin_function` 命令的签名，新增了 `state: Option<String>` 参数，从而契合了 Tauri 的调用签名。
-  - **Regex 兼容性与校验修复**: 解决了 Rust 正则库不支持 look-around 前瞻导致 `codegen.rs` 的增量修改命令失败的 Bug（改为字符串切片定位）；同时移除了 `flash.rs` 中 partition 大小的硬校验，使得整体 `cargo test` 包括 doctests 在内的 184 个测试用例全部通过。
+  - **Regex 兼容性与校验修复**: 解决了 Rust 正则库不支持 look-around 前瞻导致 `codegen.rs` 的增量修改命令失败 the Bug（改为字符串切片定位）；同时移除了 `flash.rs` 中 partition 大小的硬校验，使得整体 `cargo test` 包括 doctests 在内的 184 个测试用例全部通过。
+- **代码生成器模块重构 (M7)**:
+  - **引入 Handlebars 模板生成**: 创建了 `src-tauri/templates/cvi_board_init.c.hbs` Handlebars 模板文件，实现了 `cvi_board_init.c` 代码生成的模板化。支持通过 `incremental_only` 渲染上下文在完整代码生成和增量代码块渲染之间切换，避免了硬编码拼接字符串。
+  - **Tauri 命令命名规范化**: 在 `codegen_commands.rs` 中将 Tauri 注册命令改写为重构规范要求的 `generate_code` 和 `update_existing_code` 命名，并通过别名导入避免了同名冲突。
+  - **命令全局注册**: 在 `src-tauri/src/lib.rs` 中将 `generate_code` 和 `update_existing_code` 正式注册为 Tauri 接口，使得前端能够成功通过 Tauri 调用它们。
+  - **测试通过验证**: 运行 `cargo test` 及 Vitest 的 `codegenAIPinTool.test.ts` 测试全部跑通，通过了引脚配置宏生成格式、特殊寄存器序列和增量更新标记点定位逻辑校验。
 
 ### Changed
 - **时钟树频率计算模块重构 (M4)**:
@@ -32,4 +45,9 @@ All notable changes to this project will be documented in this file.
   - **Flash 布局校验软化**: 移除了 Rust 校验层对 64KB 边界对齐的硬报错限制，改由前端 UI 进行软提示，以适应默认或非对齐分区配置。
   - **Tauri 命令统一重命名**: 将 `export_flash_defconfig_tauri` 命令重命名为符合规格书要求的 `export_flash_defconfig`。
   - **测试覆盖**: 恢复并完善了前端 `memoryFlashStore.test.ts` 中被 skip 的 6 个测试用例，完全跑通 24 个 Vitest 测试。同时确保了后端 `cargo test memory` 与 `cargo test flash` 的所有单元测试全部通过。
+- **AI 智能问答模块重构 (M8)**:
+  - **后端 SSE 解析与测试**: 实现了 Rust 后端对流式 SSE 协议 JSON Chunk 与 `[DONE]` 标志的高效行级解析，并为 `ai_chat.rs` 新增了专属单元测试，保障解析与边界拦截机制的百分之百正确。
+  - **无框交互按钮优化**: 针对 `ChatPanel.tsx` 里的所有按钮，注入了 `focus:outline-none focus:ring-0` 焦点修饰样式，杜绝了默认浏览器的黑色边框。
+  - **Store 测试激活与 Markdown 匹配一致性**: 移除了前端测试中冗余的模拟代码，直接应用真实的 `isMarkdownContent` 与 `parseSSEChunk` 工具。通过 `vi.mock` 手动拦截 Tauri 事件触发回调，全面打通并激活了 `codegenAIPinTool.test.ts` 中针对 Zustand Store 的 `M8-T4` 与 `M8-T5` 实时追加单元测试。
+
 

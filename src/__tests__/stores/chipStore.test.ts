@@ -4,7 +4,40 @@
 // 本文件从 C++ 源码 (pinfunction.cpp, chipconfig.cpp) 提取的参考数据，
 // 用于验证重构后的 Rust/TS 实现与原始 C++ 行为一致。
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+import { useChipStore } from '../../stores/chipStore';
+import { getQfnLayout, getBgaPins } from '../../utils/pinLayout';
+
+vi.mock('@tauri-apps/api/core', () => {
+  return {
+    invoke: vi.fn(async (cmd, args?: any) => {
+      if (cmd === 'load_chip_spec') {
+        return {
+          chip_type: args.chipType,
+          package: args.chipType === 'cv1842hp' ? 'BGA' : 'QFN',
+          pin_count: args.chipType === 'cv1842hp' ? 221 : 88,
+          rows: args.chipType === 'cv1842hp' ? 'ABCDEFGHJKLMNPR' : undefined,
+          cols: args.chipType === 'cv1842hp' ? 15 : undefined,
+          description: 'mock spec',
+        };
+      }
+      if (cmd === 'load_pin_data') {
+        return [
+          {
+            pin_num: 'A2',
+            pin_name: 'PAD_MIPI_TXM4',
+            display_name: 'A2',
+            supported_functions: ['XGPIOC_18', 'UART0_TX'],
+            default_function: 'XGPIOC_18',
+            current_function: 'XGPIOC_18',
+            user_configured: false,
+          },
+        ];
+      }
+      return undefined;
+    }),
+  };
+});
 
 // ---- 参考数据 (直接从 C++ 源码提取) ----
 
@@ -274,26 +307,48 @@ describe('M2 - 芯片选型与引脚数据 (特征化测试)', () => {
     });
   });
 
-  // === M2-T8~T12: ChipStore 和布局测试 (待实现前端后启用) ===
   describe('M2-T8~T12: ChipStore 和布局 (待前端实现)', () => {
-    it.skip('ChipStore - selectChip 应正确更新 chipType/chipSpec/pins', () => {
-      // 待 Zustand store 实现后编写
+    it('ChipStore - selectChip 应正确更新 chipType/chipSpec/pins', async () => {
+      await useChipStore.getState().selectChip('cv1842hp');
+      const state = useChipStore.getState();
+      expect(state.chipType).toBe('cv1842hp');
+      expect(state.chipSpec?.package).toBe('BGA');
+      expect(state.pins.has('PAD_MIPI_TXM4')).toBe(true);
     });
 
-    it.skip('ChipStore - setPinFunction 应更新 pins Map', () => {
-      // 待 Zustand store 实现后编写
+    it('ChipStore - setPinFunction 应更新 pins Map', async () => {
+      await useChipStore.getState().selectChip('cv1842hp');
+      await useChipStore.getState().setPinFunction('PAD_MIPI_TXM4', 'UART0_TX');
+      const state = useChipStore.getState();
+      const pin = state.pins.get('PAD_MIPI_TXM4');
+      expect(pin?.current_function).toBe('UART0_TX');
+      expect(pin?.user_configured).toBe(true);
     });
 
-    it.skip('ChipStore - searchPin 应更新 highlightedPins Set', () => {
-      // 待 Zustand store 实现后编写
+    it('ChipStore - searchPin 应更新 highlightedPins Set', async () => {
+      await useChipStore.getState().selectChip('cv1842hp');
+      useChipStore.getState().searchPin('mipi');
+      const state = useChipStore.getState();
+      expect(state.highlightedPins.has('PAD_MIPI_TXM4')).toBe(true);
     });
 
-    it.skip('QFN 布局 - 88 引脚应按四边逆时针排列', () => {
-      // 待 PinLayout 工具函数实现后编写
+    it('QFN 布局 - 88 引脚应按四边逆时针排列', () => {
+      const layout = getQfnLayout(88);
+      expect(layout.left).toHaveLength(22);
+      expect(layout.bottom).toHaveLength(22);
+      expect(layout.right).toHaveLength(22);
+      expect(layout.top).toHaveLength(22);
+      expect(layout.left[0]).toBe('1');
+      expect(layout.bottom[0]).toBe('23');
     });
 
-    it.skip('BGA 布局 - 221 引脚网格四角缺失', () => {
-      // 待 PinLayout 工具函数实现后编写
+    it('BGA 布局 - 221 引脚网格四角缺失', () => {
+      const pins = getBgaPins('ABCDEFGHJKLMNPR', 15);
+      expect(pins).toHaveLength(221);
+      expect(pins).not.toContain('A1');
+      expect(pins).not.toContain('A15');
+      expect(pins).not.toContain('R1');
+      expect(pins).not.toContain('R15');
     });
   });
 });

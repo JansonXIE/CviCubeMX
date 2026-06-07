@@ -51,7 +51,7 @@ describe('IPC 通信验证 - greet 命令', () => {
       const mockInvoke = vi.fn().mockResolvedValue("Hello, test! You've been greeted from Rust!");
 
       // 这是 App.tsx TopBar 中使用的调用方式
-      const result = await mockInvoke<string>('greet', { name: 'test' });
+      const result = await mockInvoke('greet', { name: 'test' });
 
       expect(mockInvoke).toHaveBeenCalledWith('greet', { name: 'test' });
       expect(result).toBe("Hello, test! You've been greeted from Rust!");
@@ -60,7 +60,7 @@ describe('IPC 通信验证 - greet 命令', () => {
     it('invoke 应只传 command name 和 args 对象', async () => {
       const mockInvoke = vi.fn().mockResolvedValue("Hello, CviCubeMX! You've been greeted from Rust!");
 
-      await mockInvoke<string>('greet', { name: 'CviCubeMX' });
+      await mockInvoke('greet', { name: 'CviCubeMX' });
 
       // 验证: 第一个参数是命令名, 第二个参数是 args 对象
       expect(mockInvoke).toHaveBeenCalledTimes(1);
@@ -76,7 +76,7 @@ describe('IPC 通信验证 - greet 命令', () => {
 
       // 模拟 TopBar 中的 handleGreet 逻辑
       const handleGreet = async () => {
-        const result = await mockInvoke<string>('greet', { name: 'CviCubeMX' });
+        const result = await mockInvoke('greet', { name: 'CviCubeMX' });
         return result;
       };
 

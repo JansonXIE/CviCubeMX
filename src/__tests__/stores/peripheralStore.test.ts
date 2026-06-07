@@ -2,7 +2,53 @@
 // CviCubeMX 重构前功能验证测试 - M3 外设配置与 DTS 管理
 // ============================================================
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+import { usePeripheralStore } from '../../stores/peripheralStore';
+
+vi.mock('@tauri-apps/api/core', () => {
+  const mockInvoke = vi.fn(async (cmd: string, args?: any) => {
+    if (cmd === 'load_dts_peripherals') {
+      return [
+        {
+          name: 'i2c0',
+          status: 'disabled',
+          clock_name: '',
+          clock_freq: '',
+          clock_frequency: 100000,
+          pwm_cells: 0,
+          current_speed: 0,
+          sysdma_channels: [],
+          has_status: true,
+          has_clock: false,
+          has_clock_freq: true,
+          has_pwm_cells: false,
+          has_current_speed: false,
+          has_sysdma_channels: false,
+          line_number: 14,
+        },
+        {
+          name: 'uart0',
+          status: 'disabled',
+          clock_name: '',
+          clock_freq: '',
+          clock_frequency: 0,
+          pwm_cells: 0,
+          current_speed: 115200,
+          sysdma_channels: [],
+          has_status: true,
+          has_clock: false,
+          has_clock_freq: false,
+          has_pwm_cells: false,
+          has_current_speed: true,
+          has_sysdma_channels: false,
+          line_number: 21,
+        }
+      ];
+    }
+    return Promise.resolve();
+  });
+  return { invoke: mockInvoke };
+});
 
 // ---- 参考数据 (从 C++ 源码 dtsconfig.h 提取) ----
 
@@ -288,7 +334,27 @@ describe('M3 - 外设配置与 DTS 管理 (特征化测试)', () => {
 
   // === M3-T11/T12: PeripheralStore 和 ConfigDialog (待前端实现) ===
   describe('M3-T11/T12: PeripheralStore 和 ConfigDialog (待前端实现)', () => {
-    it.skip('PeripheralStore - 状态切换应同步 UI 和 store', () => {});
-    it.skip('ConfigDialog - 表单交互应触发正确的 Rust command', () => {});
+    it('PeripheralStore - 状态切换应同步 UI 和 store', async () => {
+      const store = usePeripheralStore.getState();
+      await store.loadPeripherals('/mock/path');
+      expect(usePeripheralStore.getState().peripherals.find(p => p.name === 'i2c0')?.status).toBe('disabled');
+      
+      await store.setPeripheralStatus('i2c0', 'okay');
+      expect(usePeripheralStore.getState().peripherals.find(p => p.name === 'i2c0')?.status).toBe('okay');
+    });
+
+    it('ConfigDialog - 表单交互应触发正确的 Rust command', async () => {
+      const { invoke } = await import('@tauri-apps/api/core');
+      const store = usePeripheralStore.getState();
+      await store.loadPeripherals('/mock/path');
+      
+      await store.setClockFrequency('i2c0', 400000);
+      expect(invoke).toHaveBeenCalledWith('set_peripheral_clock_frequency', { peripheral: 'i2c0', frequency: 400000 });
+      expect(usePeripheralStore.getState().peripherals.find(p => p.name === 'i2c0')?.clock_frequency).toBe(400000);
+
+      await store.setCurrentSpeed('uart0', 9600);
+      expect(invoke).toHaveBeenCalledWith('set_peripheral_current_speed', { peripheral: 'uart0', speed: 9600 });
+      expect(usePeripheralStore.getState().peripherals.find(p => p.name === 'uart0')?.current_speed).toBe(9600);
+    });
   });
 });

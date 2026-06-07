@@ -69,13 +69,13 @@ export default function ChatPanel() {
         <h2 className="text-lg font-semibold text-gray-800">AI 智能问答助手</h2>
         <div className="flex gap-2">
           <button
-            className="px-3 py-1 text-sm rounded-lg bg-blue-500 text-white hover:bg-blue-600"
+            className="px-3 py-1 text-sm rounded-lg bg-blue-500 text-white hover:bg-blue-600 focus:outline-none focus:ring-0"
             onClick={() => setShowConfig(!showConfig)}
           >
             配置
           </button>
           <button
-            className="px-3 py-1 text-sm rounded-lg bg-gray-400 text-white hover:bg-gray-500"
+            className="px-3 py-1 text-sm rounded-lg bg-gray-400 text-white hover:bg-gray-500 focus:outline-none focus:ring-0"
             onClick={clearMessages}
           >
             清空
@@ -115,13 +115,13 @@ export default function ChatPanel() {
           </div>
           <div className="flex gap-2 mt-3">
             <button
-              className="px-4 py-1 text-sm rounded-lg bg-green-500 text-white hover:bg-green-600"
+              className="px-4 py-1 text-sm rounded-lg bg-green-500 text-white hover:bg-green-600 focus:outline-none focus:ring-0"
               onClick={handleSaveConfig}
             >
               保存
             </button>
             <button
-              className="px-4 py-1 text-sm rounded-lg bg-gray-300 text-gray-700 hover:bg-gray-400"
+              className="px-4 py-1 text-sm rounded-lg bg-gray-300 text-gray-700 hover:bg-gray-400 focus:outline-none focus:ring-0"
               onClick={() => setShowConfig(false)}
             >
               取消
@@ -135,7 +135,7 @@ export default function ChatPanel() {
         <div className="px-4 py-2 bg-red-100 text-red-700 text-sm flex items-center justify-between">
           <span>{error}</span>
           <button
-            className="text-red-500 hover:text-red-700 font-bold"
+            className="text-red-500 hover:text-red-700 font-bold focus:outline-none focus:ring-0"
             onClick={clearError}
           >
             ×
@@ -195,7 +195,7 @@ export default function ChatPanel() {
           style={{ minHeight: '40px', maxHeight: '120px' }}
         />
         <button
-          className="px-6 py-2 rounded-lg font-semibold text-white disabled:bg-gray-300 bg-blue-500 hover:bg-blue-600"
+          className="px-6 py-2 rounded-lg font-semibold text-white disabled:bg-gray-300 bg-blue-500 hover:bg-blue-600 focus:outline-none focus:ring-0"
           disabled={!inputValue.trim() || isStreaming}
           onClick={handleSend}
         >

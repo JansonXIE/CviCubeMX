@@ -2,7 +2,19 @@
 // CviCubeMX 重构前功能验证测试 - M7 代码生成 + M8 AI + M9 引脚工具
 // ============================================================
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+import { invoke } from '@tauri-apps/api/core';
+import { listen } from '@tauri-apps/api/event';
+import { useChatStore } from '../../stores/chatStore';
+import { isMarkdownContent, parseSSEChunk } from '../../utils/markdownDetect';
+
+vi.mock('@tauri-apps/api/core', () => ({
+  invoke: vi.fn(),
+}));
+
+vi.mock('@tauri-apps/api/event', () => ({
+  listen: vi.fn(),
+}));
 
 // ---- M7 参考数据 (从 codegenerator.cpp/h 提取) ----
 
@@ -141,7 +153,21 @@ int board_init(void) {
   });
 
   describe('M7-T7: CodeGenPreview (待前端实现)', () => {
-    it.skip('生成后展示正确的 C 代码', () => {});
+    it('生成后展示正确的 C 代码', async () => {
+      const mockInvoke = vi.mocked(invoke);
+      mockInvoke.mockResolvedValueOnce(`
+#include <linux/init.h>
+void __init cvi_board_init(void) {
+    PINMUX(PAD_MIPI_TXM4, XGPIOC_18);
+}
+      `);
+
+      const result = await invoke<string>('generate_code', { chipType: 'cv1842hp' });
+      expect(result).toContain('#include <linux/init.h>');
+      expect(result).toContain('cvi_board_init');
+      expect(result).toContain('PINMUX(PAD_MIPI_TXM4, XGPIOC_18)');
+      expect(mockInvoke).toHaveBeenCalledWith('generate_code', { chipType: 'cv1842hp' });
+    });
   });
 });
 
@@ -152,28 +178,7 @@ const AI_API_CONFIG = {
   model: 'gpt-4',
 };
 
-// SSE chunk 解析
-function parseSSEChunk(line: string): { content: string } | null {
-  if (!line.startsWith('data: ')) return null;
-  const data = line.slice(6).trim();
-  if (data === '[DONE]') return null;
-  try {
-    const parsed = JSON.parse(data);
-    const content = parsed.choices?.[0]?.delta?.content ?? '';
-    return { content };
-  } catch {
-    return null;
-  }
-}
-
-// Markdown 检测 (模拟 C++ isMarkdownContent)
-function isMarkdownContent(content: string): boolean {
-  return /^#/.test(content) ||
-    /^\-\s/.test(content) ||
-    /```/.test(content) ||
-    /\*\*[^*]+\*\*/.test(content) ||
-    /^\d+\.\s/.test(content);
-}
+// 使用导入的 parseSSEChunk 和 isMarkdownContent
 
 // ---- M8 测试套件 ----
 
@@ -242,11 +247,68 @@ describe('M8 - AI 对话助手 (特征化测试)', () => {
   });
 
   describe('M8-T4: ChatStore - API 配置 (待前端实现)', () => {
-    it.skip('baseUrl/model 保存后可读取', () => {});
+    it('baseUrl/model 保存后可读取', async () => {
+      const newConfig = {
+        api_key: 'test_key',
+        base_url: 'https://test.api.com',
+        model: 'deepseek-chat',
+      };
+      
+      const mockInvoke = vi.mocked(invoke);
+      mockInvoke.mockResolvedValueOnce(undefined);
+      
+      await useChatStore.getState().saveConfig(newConfig);
+      
+      expect(useChatStore.getState().aiConfig).toEqual(newConfig);
+      expect(mockInvoke).toHaveBeenCalledWith('save_ai_config', { config: newConfig });
+    });
   });
 
   describe('M8-T5: ChatStore - 消息流式追加 (待前端实现)', () => {
-    it.skip('收到 AI chunk 后消息内容实时追加', () => {});
+    it('收到 AI chunk 后消息内容实时追加', async () => {
+      const mockListen = vi.mocked(listen);
+      let eventCallback: any = null;
+      
+      mockListen.mockImplementationOnce(async (event, callback) => {
+        eventCallback = callback;
+        return (() => {}) as any;
+      });
+
+      await useChatStore.getState().initListener();
+      expect(eventCallback).not.toBeNull();
+
+      useChatStore.setState({
+        messages: [
+          { id: '1', role: 'assistant', content: 'Thinking...', timestamp: Date.now(), isMarkdown: false }
+        ],
+        currentAIResponse: 'Thinking...'
+      });
+
+      eventCallback({
+        payload: {
+          content: 'Hello',
+          done: false
+        }
+      });
+      expect(useChatStore.getState().messages[0].content).toBe('Thinking...Hello');
+
+      eventCallback({
+        payload: {
+          content: ' World',
+          done: false
+        }
+      });
+      expect(useChatStore.getState().messages[0].content).toBe('Thinking...Hello World');
+
+      eventCallback({
+        payload: {
+          content: '',
+          done: true
+        }
+      });
+      expect(useChatStore.getState().isStreaming).toBe(false);
+      expect(useChatStore.getState().messages[0].content).toBe('Thinking...Hello World');
+    });
   });
 });
 

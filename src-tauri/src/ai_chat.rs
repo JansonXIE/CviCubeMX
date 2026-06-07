@@ -199,3 +199,32 @@ pub fn load_ai_config(app_handle: AppHandle) -> Result<AiApiConfig, String> {
         .map_err(|e| format!("解析配置文件失败: {}", e))?;
     Ok(config)
 }
+
+// ==================== Unit Tests ====================
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_sse_line_content() {
+        let line = "data: {\"choices\":[{\"delta\":{\"content\":\"Hello\"}}]}";
+        let chunk = parse_sse_line(line);
+        assert!(chunk.is_some());
+        assert_eq!(chunk.unwrap().content, "Hello");
+    }
+
+    #[test]
+    fn test_parse_sse_line_done() {
+        let line = "data: [DONE]";
+        let chunk = parse_sse_line(line);
+        assert!(chunk.is_none());
+    }
+
+    #[test]
+    fn test_parse_sse_line_invalid() {
+        let line = "event: ping";
+        let chunk = parse_sse_line(line);
+        assert!(chunk.is_none());
+    }
+}

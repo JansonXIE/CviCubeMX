@@ -2,7 +2,43 @@
 // CviCubeMX 重构前功能验证测试 - M5 内存配置 + M6 Flash 分区
 // ============================================================
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+import { useMemoryStore } from '../../stores/memoryStore';
+import { useFlashStore } from '../../stores/flashStore';
+
+vi.mock('@tauri-apps/api/core', () => {
+  const mockInvoke = vi.fn(async (cmd: string, args?: any) => {
+    if (cmd === 'load_memory_regions') {
+      return [
+        {
+          name: 'KERNEL_MEMORY',
+          start_address: 0x80000000,
+          end_address: 0x90000000,
+          size: 0x10000000,
+          size_string: '256M',
+          is_editable: true,
+          description: 'Kernel'
+        }
+      ];
+    }
+    if (cmd === 'load_partitions') {
+      return [
+        {
+          partition_number: 1,
+          label: 'boot',
+          size: 1024,
+          size_string: '1M',
+          file: '',
+          mountpoint: '/boot',
+          type_field: 'ext4',
+          enabled: true
+        }
+      ];
+    }
+    return Promise.resolve();
+  });
+  return { invoke: mockInvoke };
+});
 
 // ---- M5 参考数据 (从 memoryconfig.h 提取) ----
 
@@ -146,16 +182,24 @@ describe('M5 - 内存配置 (特征化测试)', () => {
   });
 
   describe('M5-T8: MemoryStore (待前端实现)', () => {
-    it('添加/删除区域后 store 同步', () => {
-      const regions = [
-        { name: 'A', startAddress: 0x80000000, endAddress: 0x80010000, size: 65536 }
-      ];
-      // add
-      regions.push({ name: 'B', startAddress: 0x80010000, endAddress: 0x80020000, size: 65536 });
-      expect(regions.length).toBe(2);
-      // remove
-      regions.pop();
-      expect(regions.length).toBe(1);
+    it('添加/删除区域后 store 同步', async () => {
+      const store = useMemoryStore.getState();
+      await store.loadMemoryRegions();
+      expect(useMemoryStore.getState().regions).toHaveLength(1);
+
+      store.addRegion({
+        name: 'TEST_REGION',
+        start_address: 0x90000000,
+        end_address: 0x95000000,
+        size: 0x5000000,
+        size_string: '80M',
+        is_editable: true,
+        description: 'Test'
+      });
+      expect(useMemoryStore.getState().regions).toHaveLength(2);
+
+      store.removeRegion('TEST_REGION');
+      expect(useMemoryStore.getState().regions).toHaveLength(1);
     });
   });
 });
@@ -271,17 +315,25 @@ describe('M6 - Flash 分区管理 (特征化测试)', () => {
   });
 
   describe('M6-T5: FlashStore (待前端实现)', () => {
-    it('添加/删除分区后 store 同步', () => {
-      const partitions = [
-        { partitionNumber: 2, label: 'BOOT', size: 8192, enabled: true }
-      ];
-      // add
-      partitions.push({ partitionNumber: 3, label: 'MISC', size: 512, enabled: true });
-      expect(partitions.length).toBe(2);
-      // remove
-      partitions.splice(0, 1);
-      expect(partitions.length).toBe(1);
-      expect(partitions[0].label).toBe('MISC');
+    it('添加/删除分区后 store 同步', async () => {
+      const store = useFlashStore.getState();
+      await store.loadPartitions();
+      expect(useFlashStore.getState().partitions).toHaveLength(1);
+
+      store.addPartition({
+        partition_number: 2,
+        label: 'rootfs',
+        size: 30720,
+        size_string: '30M',
+        file: '',
+        mountpoint: '/',
+        type_field: 'ext4',
+        enabled: true
+      });
+      expect(useFlashStore.getState().partitions).toHaveLength(2);
+
+      store.removePartition(2);
+      expect(useFlashStore.getState().partitions).toHaveLength(1);
     });
   });
 });

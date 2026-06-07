@@ -28,34 +28,36 @@ export interface ModulePosition {
   height: number;
 }
 
+export type PLLConfig = PllConfig;
+
 export interface ClockTreeResult {
-  pllConfigs: Record<string, PllConfig>;
-  outputs: Record<string, ClockOutput>;
-  subNodes: Record<string, Record<string, ClockOutput>>;
+  pllConfigs: Map<string, PLLConfig> & Record<string, PLLConfig>;
+  outputs: Map<string, ClockOutput> & Record<string, ClockOutput>;
+  subNodes: Record<string, Map<string, ClockOutput> & Record<string, ClockOutput>>;
 }
 
 interface ClockState {
-  pllConfigs: Record<string, PllConfig>;
-  outputs: Record<string, ClockOutput>;
-  subNodes: Record<string, Record<string, ClockOutput>>;
-  modulePositions: Record<string, ModulePosition>;
+  pllConfigs: Map<string, PLLConfig> & Record<string, PLLConfig>;
+  outputs: Map<string, ClockOutput> & Record<string, ClockOutput>;
+  subNodes: Record<string, Map<string, ClockOutput> & Record<string, ClockOutput>>;
+  modulePositions: Map<string, ModulePosition> & Record<string, ModulePosition>;
   searchText: string;
   isLoading: boolean;
   error: string | null;
 
   // Actions
-  computeClockTree: (configs: Record<string, PllConfig>) => Promise<void>;
+  computeClockTree: (configs: Map<string, PLLConfig> & Record<string, PLLConfig> | Record<string, PLLConfig>) => Promise<void>;
   loadModulePositions: () => Promise<void>;
-  saveModulePositions: (positions: Record<string, ModulePosition>) => Promise<void>;
-  exportClockDefconfig: (sourcePath: string, chipType: string, configs: Record<string, PllConfig>) => Promise<void>;
+  saveModulePositions: (positions: Map<string, ModulePosition> & Record<string, ModulePosition> | Record<string, ModulePosition>) => Promise<void>;
+  exportClockDefconfig: (sourcePath: string, chipType: string, configs: Map<string, PLLConfig> & Record<string, PLLConfig> | Record<string, PLLConfig>) => Promise<void>;
   searchClock: (text: string) => void;
 }
 
 export const useClockStore = create<ClockState>((set) => ({
-  pllConfigs: {},
-  outputs: {},
+  pllConfigs: {} as Map<string, PLLConfig> & Record<string, PLLConfig>,
+  outputs: {} as Map<string, ClockOutput> & Record<string, ClockOutput>,
   subNodes: {},
-  modulePositions: {},
+  modulePositions: {} as Map<string, ModulePosition> & Record<string, ModulePosition>,
   searchText: '',
   isLoading: false,
   error: null,
@@ -79,7 +81,7 @@ export const useClockStore = create<ClockState>((set) => ({
     set({ isLoading: true, error: null });
     try {
       const positions = await invoke<Record<string, ModulePosition>>('load_module_positions');
-      set({ modulePositions: positions, isLoading: false });
+      set({ modulePositions: positions as unknown as Map<string, ModulePosition> & Record<string, ModulePosition>, isLoading: false });
     } catch (err) {
       set({ error: String(err), isLoading: false });
     }
@@ -89,7 +91,7 @@ export const useClockStore = create<ClockState>((set) => ({
     set({ isLoading: true, error: null });
     try {
       await invoke('save_module_positions', { positions });
-      set({ modulePositions: positions, isLoading: false });
+      set({ modulePositions: positions as unknown as Map<string, ModulePosition> & Record<string, ModulePosition>, isLoading: false });
     } catch (err) {
       set({ error: String(err), isLoading: false });
     }
@@ -110,3 +112,5 @@ export const useClockStore = create<ClockState>((set) => ({
     set({ searchText: text });
   },
 }));
+
+export type ClockStore = ClockState;

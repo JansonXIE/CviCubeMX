@@ -53,6 +53,9 @@ pub fn run() {
             flash::validate_partitions,
             flash::export_flash_json,
             flash::export_flash_defconfig,
+            // M7: Codegen commands
+            codegen_commands::generate_code,
+            codegen_commands::update_existing_code,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
