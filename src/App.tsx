@@ -129,7 +129,7 @@ function TopBar() {
  */
 function ContentArea() {
   return (
-    <div className="bg-slate-800/30 rounded-2xl border border-slate-700/50 p-6 h-full shadow-2xl backdrop-blur-sm overflow-auto">
+    <div className="bg-slate-800/30 rounded-2xl border border-slate-700/50 p-6 h-full shadow-2xl backdrop-blur-sm overflow-hidden flex flex-col">
       <Routes>
         <Route path="/" element={<PinoutPage />} />
         <Route path="/peripherals" element={<PeripheralPage />} />
@@ -201,7 +201,7 @@ export default function App() {
           <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-cyan-500/10 blur-[120px] pointer-events-none" />
           
           <Sidebar />
-          <main className="flex-1 p-6 relative z-10">
+          <main className="flex-1 p-6 relative z-10 overflow-hidden flex flex-col">
             <ContentArea />
           </main>
         </div>

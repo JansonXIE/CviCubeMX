@@ -26,6 +26,71 @@ use std::path::Path;
 #[tauri::command]
 pub fn compute_clock_tree(configs: HashMap<String, PllConfig>) -> Result<ClockTreeResult, String> {
     let mut pll_configs = configs.clone();
+
+    // 填充默认主 PLL 参数（配合 C++ 源码默认设定）
+    let default_plls = [
+        ("clk_fpll", 40, 1.0, "OSC"),
+        ("clk_mipimpll", 36, 1.0, "OSC"),
+        ("clk_mpll", 48, 1.0, "OSC"),
+        ("clk_tpll", 60, 1.0, "OSC"),
+        ("clk_appll", 40, 1.0, "OSC"),
+        ("clk_rvpll", 48, 1.0, "OSC"),
+    ];
+
+    for &(name, mult, div, src) in default_plls.iter() {
+        if !pll_configs.contains_key(name) {
+            pll_configs.insert(
+                name.to_string(),
+                PllConfig {
+                    name: name.to_string(),
+                    enabled: true,
+                    input_freq: OSC_FREQUENCY_MHZ,
+                    output_freq: OSC_FREQUENCY_MHZ * mult as f64 / div,
+                    divider: div,
+                    multiplier: mult,
+                    source: src.to_string(),
+                },
+            );
+        }
+    }
+
+    // 从 mipimpll 读取作为子 PLL 的输入频率（默认 900.0 MHz）
+    let mipimpll_output = pll_configs
+        .get("clk_mipimpll")
+        .map(|c| c.output_freq)
+        .unwrap_or(OSC_FREQUENCY_MHZ * 36.0);
+
+    // 填充默认子 PLL 参数
+    let default_sub_plls = [
+        ("clk_a24k", 1, 1.0),
+        ("clk_vivo_mipimpll", 1, 1.0),
+        ("clk_cyc_dsi_syn", 1, 1.0),
+        ("clk_disppll", 12, 9.09090909),
+        ("clk_a0pll", 4, 7.32421875),
+    ];
+
+    for &(name, mult, div) in default_sub_plls.iter() {
+        if !pll_configs.contains_key(name) {
+            let out_freq = if name == "clk_a24k" {
+                0.0
+            } else {
+                mipimpll_output * mult as f64 / div
+            };
+            pll_configs.insert(
+                name.to_string(),
+                PllConfig {
+                    name: name.to_string(),
+                    enabled: true,
+                    input_freq: mipimpll_output,
+                    output_freq: out_freq,
+                    divider: div,
+                    multiplier: mult,
+                    source: "clk_mipimpll".to_string(),
+                },
+            );
+        }
+    }
+
     let mut outputs = HashMap::new();
     let mut sub_nodes_map: HashMap<String, HashMap<String, ClockOutput>> = HashMap::new();
 
