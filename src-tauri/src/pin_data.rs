@@ -182,7 +182,7 @@ mod tests {
     #[test]
     fn test_load_raw_pin_data() {
         let data = load_raw_pin_data().unwrap();
-        assert_eq!(data.len(), 110); // 从 pinfunction.cpp 提取的唯一引脚
+        assert_eq!(data.len(), 175); // 从 pinfunction.cpp 提取的唯一引脚
     }
 
     #[test]

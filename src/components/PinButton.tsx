@@ -25,6 +25,32 @@ export default function PinButton({ pin, isHighlighted, onSelectFunction }: PinB
   const menuRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
+  // 动态调整菜单位置以防超出视口
+  React.useLayoutEffect(() => {
+    if (menuOpen && menuRef.current) {
+      const rect = menuRef.current.getBoundingClientRect();
+      const viewportHeight = window.innerHeight;
+      const viewportWidth = window.innerWidth;
+
+      let adjustedY = menuPos.y;
+      let adjustedX = menuPos.x;
+
+      // 如果菜单超出屏幕底部，向上调整位置
+      if (menuPos.y + rect.height > viewportHeight) {
+        adjustedY = Math.max(10, viewportHeight - rect.height - 10);
+      }
+
+      // 如果菜单超出屏幕右侧，向左调整位置
+      if (menuPos.x + rect.width > viewportWidth) {
+        adjustedX = Math.max(10, viewportWidth - rect.width - 10);
+      }
+
+      if (adjustedY !== menuPos.y || adjustedX !== menuPos.x) {
+        setMenuPos({ x: adjustedX, y: adjustedY });
+      }
+    }
+  }, [menuOpen, menuPos.x, menuPos.y]);
+
   // 左键点击事件处理器
   const handleClick = (e: React.MouseEvent) => {
     e.preventDefault();

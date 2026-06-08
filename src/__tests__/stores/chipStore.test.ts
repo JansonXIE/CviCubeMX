@@ -332,6 +332,13 @@ describe('M2 - 芯片选型与引脚数据 (特征化测试)', () => {
       expect(state.highlightedPins.has('PAD_MIPI_TXM4')).toBe(true);
     });
 
+    it('ChipStore - searchPin 应能搜索 supported_functions 里的备选功能', async () => {
+      await useChipStore.getState().selectChip('cv1842hp');
+      useChipStore.getState().searchPin('uart0');
+      const state = useChipStore.getState();
+      expect(state.highlightedPins.has('PAD_MIPI_TXM4')).toBe(true); // A2
+    });
+
     it('QFN 布局 - 88 引脚应按四边逆时针排列', () => {
       const layout = getQfnLayout(88);
       expect(layout.left).toHaveLength(22);

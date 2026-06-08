@@ -106,7 +106,8 @@ export const useChipStore = create<ChipState>((set, get) => ({
         if (
           info.pin_name.toLowerCase().includes(trimmed) ||
           info.pin_num.toLowerCase().includes(trimmed) ||
-          info.current_function.toLowerCase().includes(trimmed)
+          info.current_function.toLowerCase().includes(trimmed) ||
+          info.supported_functions.some((fn) => fn.toLowerCase().includes(trimmed))
         ) {
           highlighted.add(info.pin_name);
         }

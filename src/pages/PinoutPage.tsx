@@ -112,7 +112,7 @@ export default function PinoutPage() {
       )}
 
       {/* 主面板布局：引脚画布满宽 */}
-      <div className="flex-1 w-full h-full overflow-hidden">
+      <div className="flex-1 w-full min-h-0 overflow-hidden">
         <ChipCanvas />
       </div>
     </div>

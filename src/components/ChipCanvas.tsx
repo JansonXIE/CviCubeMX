@@ -51,8 +51,8 @@ export default function ChipCanvas() {
     ];
 
     return (
-      <div className="overflow-auto max-w-full p-4 flex justify-center">
-        <div className="grid gap-1.5" style={gridStyle}>
+      <div className="overflow-auto max-w-full p-4 flex justify-center flex-1 min-h-0">
+        <div className="grid gap-1.5 h-fit" style={gridStyle}>
           {/* 左上角空白 */}
           <div className="w-10 h-10 flex items-center justify-center font-bold text-slate-500 text-xs"></div>
           {/* 顶栏数字 */}
@@ -210,8 +210,8 @@ export default function ChipCanvas() {
     }
 
     return (
-      <div className="overflow-auto max-w-full p-4 flex justify-center">
-        <div className="grid gap-1.5" style={gridStyle}>
+      <div className="overflow-auto max-w-full p-4 flex justify-center flex-1 min-h-0">
+        <div className="grid gap-1.5 h-fit" style={gridStyle}>
           {gridItems}
         </div>
       </div>
@@ -248,7 +248,7 @@ export default function ChipCanvas() {
   };
 
   return (
-    <div className="bg-slate-900/60 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6 shadow-2xl flex flex-col items-center justify-center relative overflow-hidden group">
+    <div className="w-full h-full bg-slate-900/60 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6 shadow-2xl flex flex-col items-center relative overflow-hidden group">
       {/* 渐变微光 */}
       <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-cyan-500/5 pointer-events-none" />
       
@@ -257,7 +257,7 @@ export default function ChipCanvas() {
         <p className="text-xs text-slate-500 mt-1">点击或右键引脚以配置对应复用功能</p>
       </div>
 
-      <div className="relative w-full max-w-4xl bg-slate-950/40 border border-slate-800/80 rounded-xl p-4 shadow-inner">
+      <div className="relative w-full max-w-4xl bg-slate-950/40 border border-slate-800/80 rounded-xl p-4 shadow-inner flex-1 min-h-0 flex flex-col overflow-hidden">
         {isBga ? renderBgaLayout() : renderQfnLayout()}
       </div>
 
