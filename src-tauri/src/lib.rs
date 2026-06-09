@@ -39,6 +39,7 @@ pub fn run() {
             clock_commands::load_module_positions,
             clock_commands::export_clock_defconfig,
             peripheral::load_dts_peripherals,
+            peripheral::get_dts_content,
             peripheral::set_peripheral_status,
             peripheral::set_peripheral_clock_frequency,
             peripheral::set_peripheral_pwm_cells,

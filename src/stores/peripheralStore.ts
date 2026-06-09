@@ -23,9 +23,11 @@ interface PeripheralState {
   peripherals: PeripheralInfo[];
   isLoading: boolean;
   error: string | null;
+  dtsContent: string;
 
   // Actions
   loadPeripherals: (path: string) => Promise<void>;
+  fetchDtsContent: () => Promise<void>;
   setPeripheralStatus: (name: string, status: string) => Promise<void>;
   setClockFrequency: (name: string, frequency: number) => Promise<void>;
   setPwmCells: (name: string, cells: number) => Promise<void>;
@@ -37,14 +39,25 @@ export const usePeripheralStore = create<PeripheralState>((set, get) => ({
   peripherals: [],
   isLoading: false,
   error: null,
+  dtsContent: '',
 
   loadPeripherals: async (path: string) => {
     set({ isLoading: true, error: null });
     try {
       const list = await invoke<PeripheralInfo[]>('load_dts_peripherals', { filePath: path });
       set({ peripherals: list, isLoading: false });
+      await get().fetchDtsContent();
     } catch (err) {
       set({ error: String(err), isLoading: false });
+    }
+  },
+
+  fetchDtsContent: async () => {
+    try {
+      const content = await invoke<string>('get_dts_content');
+      set({ dtsContent: content });
+    } catch (err) {
+      console.error('Failed to fetch DTS content:', err);
     }
   },
 
@@ -55,6 +68,7 @@ export const usePeripheralStore = create<PeripheralState>((set, get) => ({
         p.name === name ? { ...p, status } : p
       );
       set({ peripherals: updated });
+      await get().fetchDtsContent();
     } catch (err) {
       set({ error: String(err) });
     }
@@ -67,6 +81,7 @@ export const usePeripheralStore = create<PeripheralState>((set, get) => ({
         p.name === name ? { ...p, clock_frequency: frequency } : p
       );
       set({ peripherals: updated });
+      await get().fetchDtsContent();
     } catch (err) {
       set({ error: String(err) });
     }
@@ -79,6 +94,7 @@ export const usePeripheralStore = create<PeripheralState>((set, get) => ({
         p.name === name ? { ...p, pwm_cells: cells } : p
       );
       set({ peripherals: updated });
+      await get().fetchDtsContent();
     } catch (err) {
       set({ error: String(err) });
     }
@@ -91,6 +107,7 @@ export const usePeripheralStore = create<PeripheralState>((set, get) => ({
         p.name === name ? { ...p, current_speed: speed } : p
       );
       set({ peripherals: updated });
+      await get().fetchDtsContent();
     } catch (err) {
       set({ error: String(err) });
     }
@@ -103,6 +120,7 @@ export const usePeripheralStore = create<PeripheralState>((set, get) => ({
         p.name === name ? { ...p, sysdma_channels: channels } : p
       );
       set({ peripherals: updated });
+      await get().fetchDtsContent();
     } catch (err) {
       set({ error: String(err) });
     }

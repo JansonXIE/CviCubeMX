@@ -1,5 +1,15 @@
 # 更新日志 (CHANGELOG)
 
+## [未发布] - 2026-06-09
+
+### 变更
+
+- **设备树实时预览功能增强**：
+  - 在 peripherals（外设）页面中，将“DTS 配置文件实时预览”的数据源从静态占位文本 `SAMPLE_DTS_CONTENT` 替换为 SDK 源码路径下的实际 `build/boards/default/dts/cv184x/cv184x_base.dtsi` 设备树配置文件。
+  - 在 Rust 后端新增 `get_dts_content` 的 Tauri Command 接口，用于返回 `DtsParser` 中加载的设备树文件最新文本。
+  - 在前端 `peripheralStore.ts` 中维护了 `dtsContent` 状态字段，并在外设加载（`loadPeripherals`）及每次属性更新操作（包括修改外设启用状态、修改时钟频率、PWM cells、波特率、SYSDMA 映射等）成功后，自动触发重新拉取，确保界面预览区域实时联动更新。
+  - 修复了标题中由于 `uppercase` 类样式引起的 DTS 路径大写显示问题，将括号路径用 `normal-case` 包裹以保持原装的小写路径显示。
+
 ## [未发布] - 2026-06-08
 
 ### 变更

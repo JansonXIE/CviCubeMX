@@ -280,6 +280,15 @@ pub fn load_dts_peripherals(
     Ok(peripherals)
 }
 
+/// Get the current DTS file content.
+#[tauri::command]
+pub fn get_dts_content(
+    state: tauri::State<'_, DtsState>,
+) -> Result<String, String> {
+    let parser = state.parser.lock().map_err(|e| e.to_string())?;
+    Ok(parser.get_file_content().to_string())
+}
+
 /// Set a peripheral's status ("okay" ↔ "disabled").
 #[tauri::command]
 pub fn set_peripheral_status(

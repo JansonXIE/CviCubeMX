@@ -606,14 +606,12 @@ export default function ClockPage() {
           <div className="flex flex-col gap-1.5 p-3.5 bg-slate-950/40 rounded-xl border border-slate-800">
             <div className="flex justify-between items-center">
               <span className="font-mono font-bold text-slate-200">32768Hz</span>
-              <span className="font-mono text-emerald-400 font-bold">0.033 MHz</span>
             </div>
             <span className="text-[10px] text-slate-500">RTC 实时低速时钟源</span>
           </div>
           <div className="flex flex-col gap-1.5 p-3.5 bg-slate-950/40 rounded-xl border border-slate-800">
             <div className="flex justify-between items-center">
               <span className="font-mono font-bold text-slate-200">25MHz</span>
-              <span className="font-mono text-emerald-400 font-bold">25.000 MHz</span>
             </div>
             <span className="text-[10px] text-slate-500">OSC 外部高速晶振</span>
           </div>

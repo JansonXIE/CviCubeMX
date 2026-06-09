@@ -1,37 +1,11 @@
 import React from "react";
 import PeripheralTree from "../components/PeripheralTree";
 import { FileCode, Settings } from "lucide-react";
-
-const SAMPLE_DTS_CONTENT = `
-&i2c0 {
-    status = "okay";
-    clock-frequency = <100000>;
-    #address-cells = <1>;
-    #size-cells = <0>;
-};
-
-&uart0 {
-    status = "disabled";
-    current-speed = <115200>;
-};
-
-&pwm0 {
-    status = "okay";
-    #pwm-cells = <3>;
-};
-
-&spi0 {
-    status = "okay";
-    clock-frequency = <50000000>;
-};
-
-&sysdma {
-    status = "okay";
-    ch-remap = <0 5 12 13 42 42 4 7>;
-};
-`;
+import { usePeripheralStore } from "../stores/peripheralStore";
 
 export default function PeripheralPage() {
+  const { dtsContent } = usePeripheralStore();
+
   return (
     <div className="flex flex-col h-full space-y-5">
       {/* 头部配置栏 */}
@@ -59,10 +33,10 @@ export default function PeripheralPage() {
         <div className="lg:col-span-2 bg-slate-900/60 border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col h-full overflow-hidden">
           <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
             <FileCode size={14} className="text-indigo-400" />
-            DTS 配置文件实时预览
+            DTS 配置文件实时预览 <span className="normal-case text-slate-500 font-normal">({`build/boards/default/dts/cv184x/cv184x_base.dtsi`})</span>
           </h3>
           <div className="flex-1 bg-slate-950/80 border border-slate-800/80 rounded-xl p-4 overflow-auto custom-scrollbar font-mono text-xs text-slate-300 leading-relaxed shadow-inner">
-            <pre className="whitespace-pre-wrap">{SAMPLE_DTS_CONTENT.trim()}</pre>
+            <pre className="whitespace-pre-wrap">{dtsContent ? dtsContent.trim() : "正在加载设备树配置文件..."}</pre>
           </div>
         </div>
       </div>
