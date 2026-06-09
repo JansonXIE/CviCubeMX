@@ -4,6 +4,18 @@
 
 ### 变更
 
+- **物理内存配置页 (MemoryPage) UI 重构与大小编辑功能**：
+  - 将页面由原先的“上下垂直堆叠”重构为**“左右双栏自适应布局”**（左侧 65% 表格，右侧 35% 分布图），极大提高了宽屏显示器下的空间利用率。
+  - **支持核心与自定义内存大小修改**：在左侧映射表操作列中，为所有可编辑区域引进了“编辑”按钮。用户可通过弹窗修改其大小（Size）和起始物理地址（支持 0x 十六进制及十进制输入），解决内置区域尺寸固定的限制。
+  - **实现物理地址级联联动计算**：将 [memoryconfig.cpp](file:///c:/Users/jansonxie/Desktop/github_code/CviCubeMX/src/memoryconfig.cpp) 中高科技的内存映射联动重算机制移植到了前端 [memoryStore.ts](file:///c:/Users/jansonxie/Desktop/github_code/CviCubeMX/src/stores/memoryStore.ts) 中。当修改 `ION` 或 `RTOS_ION` 的大小时，会自动根据 256MB 边界及各自的大小占比重算起始物理地址和结束物理地址；并且会同步联动改写与 `ION` 绑定起始物理地址的 `H26X_BITSTREAM`、`H26X_ENC_BUFF`、`ISP_MEM_BASE` 的起止地址，避免空间重叠。
+  - **只读输入安全性体验**：在编辑弹窗中，当编辑 `ION` 及其绑定的三个关联段时，其“起始物理地址”输入框将自动进入灰色只读模式并提示“只读/级联绑定”，确保用户在交互上不会产生混淆。
+  - **安全性限制**：引入 `BUILTIN_REGIONS` 识别内置块，对系统核心内置段隐藏了“删除”按钮，仅保留“编辑”，避免误删导致配置崩溃。
+  - **同步写入 build/.config**：完善了 Rust 后端导出命令 `export_memory_defconfig`。点击“保存并导出”时，不仅更新 `defconfig` 文件，还会**同步在运行环境 `build/.config` 配置文件中更新 `CONFIG_RTOS_ION_SIZE`, `CONFIG_ION_SIZE`, `CONFIG_RTOS_LOGO_SIZE` 等三个参数值**，支持完整的 RTOS_LOGO_SIZE 大小导出，实现与 SDK 编译系统无缝接轨。
+  - 在右侧设计并引入了具有科技感和发光效果的**“垂直物理内存堆栈模型 (Vertical Concept Layout)”**，代表基地址 0x80000000 到 0x90000000 的 256MB DDR 物理空间。
+  - 自动提取并填补了物理内存中未被分配的碎片化间隙，将其渲染为“[FREE] 未分配空间”，并配备了低调细致的**灰色斜条纹理背景**，使内存占比一目了然。
+  - 使用了**“受限比例高度算法 (Clamp Proportional Height)”**（高度范围限缩在 34px 至 120px 之间），解决了原来超窄内存块（如 1K 大小）在 256MB DDR 总空间里被挤压为 0 像素而导致无法看见或交互的问题。
+  - 实现了左侧表格与右侧分布图的**“左右双向交互高亮联动”**（Hover 左侧行，右侧块闪烁呼吸灯发光；Hover 右侧块，左侧行自动上色），显著增强了工具软件的交互质感。
+  - 优化了 [MemoryTable](file:///c:/Users/jansonxie/Desktop/github_code/CviCubeMX/src/components/MemoryTable.tsx) 内部的布局高度逻辑，使用 `flex-grow` 和 `min-h-0` 替换写死的百分比，确保表格数据很多时依然可以在内部触发独立且平滑的滚动条，两边卡片在视觉上实现完美的像素级齐平。
 - **设备树实时预览功能增强**：
   - 在 peripherals（外设）页面中，将“DTS 配置文件实时预览”的数据源从静态占位文本 `SAMPLE_DTS_CONTENT` 替换为 SDK 源码路径下的实际 `build/boards/default/dts/cv184x/cv184x_base.dtsi` 设备树配置文件。
   - 在 Rust 后端新增 `get_dts_content` 的 Tauri Command 接口，用于返回 `DtsParser` 中加载的设备树文件最新文本。

@@ -404,13 +404,16 @@ pub fn export_memory_defconfig(
 
     let ion_size = region_map.get("ION").map(|r| r.size).unwrap_or(0);
     let rtos_ion_size = region_map.get("RTOS_ION").map(|r| r.size).unwrap_or(0);
+    let rtos_logo_size = region_map.get("RTOS_LOGO").map(|r| r.size).unwrap_or(0);
 
     let ion_size_hex = format!("{:x}", ion_size);
     let rtos_ion_size_hex = format!("{:x}", rtos_ion_size);
+    let rtos_logo_size_hex = format!("{:x}", rtos_logo_size);
 
-    // 更新配置行
+    // 1. 更新 defconfig 配置行
     let mut found_ion_size = false;
     let mut found_rtos_ion_size = false;
+    let mut found_rtos_logo_size = false;
 
     for line in lines.iter_mut() {
         if line.starts_with("CONFIG_ION_SIZE=") {
@@ -419,6 +422,9 @@ pub fn export_memory_defconfig(
         } else if line.starts_with("CONFIG_RTOS_ION_SIZE=") {
             *line = format!("CONFIG_RTOS_ION_SIZE=0x{}", rtos_ion_size_hex);
             found_rtos_ion_size = true;
+        } else if line.starts_with("CONFIG_RTOS_LOGO_SIZE=") {
+            *line = format!("CONFIG_RTOS_LOGO_SIZE=0x{}", rtos_logo_size_hex);
+            found_rtos_logo_size = true;
         }
     }
 
@@ -429,10 +435,51 @@ pub fn export_memory_defconfig(
     if !found_rtos_ion_size {
         lines.push(format!("CONFIG_RTOS_ION_SIZE=0x{}", rtos_ion_size_hex));
     }
+    if !found_rtos_logo_size {
+        lines.push(format!("CONFIG_RTOS_LOGO_SIZE=0x{}", rtos_logo_size_hex));
+    }
 
-    // 写回文件
+    // 写回 defconfig 文件
     let output = lines.join("\n");
     fs::write(path, output).map_err(|e| format!("无法写入defconfig文件: {}", e))?;
+
+    // 2. 同步写入 build/.config 配置文件
+    let dot_config_path = format!("{}/build/.config", source_path);
+    let dot_config_path_obj = Path::new(&dot_config_path);
+    if dot_config_path_obj.exists() {
+        if let Ok(config_content) = fs::read_to_string(dot_config_path_obj) {
+            let mut config_lines: Vec<String> = config_content.lines().map(|s| s.to_string()).collect();
+            let mut found_dot_ion = false;
+            let mut found_dot_rtos_ion = false;
+            let mut found_dot_rtos_logo = false;
+
+            for line in config_lines.iter_mut() {
+                if line.starts_with("CONFIG_ION_SIZE=") {
+                    *line = format!("CONFIG_ION_SIZE=0x{}", ion_size_hex);
+                    found_dot_ion = true;
+                } else if line.starts_with("CONFIG_RTOS_ION_SIZE=") {
+                    *line = format!("CONFIG_RTOS_ION_SIZE=0x{}", rtos_ion_size_hex);
+                    found_dot_rtos_ion = true;
+                } else if line.starts_with("CONFIG_RTOS_LOGO_SIZE=") {
+                    *line = format!("CONFIG_RTOS_LOGO_SIZE=0x{}", rtos_logo_size_hex);
+                    found_dot_rtos_logo = true;
+                }
+            }
+
+            if !found_dot_ion {
+                config_lines.push(format!("CONFIG_ION_SIZE=0x{}", ion_size_hex));
+            }
+            if !found_dot_rtos_ion {
+                config_lines.push(format!("CONFIG_RTOS_ION_SIZE=0x{}", rtos_ion_size_hex));
+            }
+            if !found_dot_rtos_logo {
+                config_lines.push(format!("CONFIG_RTOS_LOGO_SIZE=0x{}", rtos_logo_size_hex));
+            }
+
+            let output_config = config_lines.join("\n");
+            let _ = fs::write(dot_config_path_obj, output_config);
+        }
+    }
 
     Ok(())
 }

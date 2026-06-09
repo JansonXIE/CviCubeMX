@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useMemoryStore, MemoryRegion } from "../stores/memoryStore";
-import { Plus, Trash2, ShieldAlert, CheckCircle, RefreshCw, Save } from "lucide-react";
+import { Plus, Trash2, ShieldAlert, CheckCircle, RefreshCw, Save, Edit2 } from "lucide-react";
 import { useSdkStore } from "../stores/sdkStore";
 
 // 十六进制格式化
@@ -20,7 +20,22 @@ function formatSizeReadable(sizeInBytes: number): string {
   return `${sizeInBytes}B`;
 }
 
-export default function MemoryTable() {
+const BUILTIN_REGIONS = [
+  "MONITOR", "KERNEL_MEMORY", "FSBL_C906L_START", "OPENSBI_FDT", "RTOS_LOG",
+  "SHARE_MEM", "SHARE_PARAM", "PQBIN", "RTOS_LOGO", "CVI_UPDATE_HEADER",
+  "FSBL_UNZIP", "UIMAG", "RTOS_COMPRESS_BIN", "H26X_BITSTREAM", "H26X_ENC_BUFF",
+  "ION", "ISP_MEM_BASE", "BOOTLOGO", "RTOS_ION"
+];
+
+interface MemoryTableProps {
+  hoveredRegion?: string | null;
+  onHoverRegion?: (name: string | null) => void;
+}
+
+export default function MemoryTable({
+  hoveredRegion = null,
+  onHoverRegion = () => {},
+}: MemoryTableProps) {
   const { sdkPath, chipType } = useSdkStore();
   const {
     regions,
@@ -29,6 +44,7 @@ export default function MemoryTable() {
     loadMemoryRegions,
     addRegion,
     removeRegion,
+    updateRegion,
     validateMemory,
     exportDefconfig,
   } = useMemoryStore();
@@ -78,6 +94,52 @@ export default function MemoryTable() {
     setNewStart("");
     setNewSize("");
     setNewDesc("");
+  };
+
+  const [showEditForm, setShowEditForm] = useState(false);
+  const [editTarget, setEditTarget] = useState<MemoryRegion | null>(null);
+  const [editStart, setEditStart] = useState("");
+  const [editSize, setEditSize] = useState("");
+  const [editDesc, setEditDesc] = useState("");
+
+  const handleEditClick = (r: MemoryRegion) => {
+    setEditTarget(r);
+    setEditStart(formatHex(r.start_address));
+    setEditSize(formatHex(r.size));
+    setEditDesc(r.description || "");
+    setShowEditForm(true);
+  };
+
+  const handleEditSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editTarget) return;
+
+    const start = editStart.toLowerCase().startsWith("0x")
+      ? parseInt(editStart, 16)
+      : parseInt(editStart, 10);
+
+    const size = editSize.toLowerCase().startsWith("0x")
+      ? parseInt(editSize, 16)
+      : parseInt(editSize, 10);
+
+    if (isNaN(start) || isNaN(size) || size < 0) {
+      alert("请输入有效的物理地址与大小数值 (支持十六进制前缀 0x)");
+      return;
+    }
+
+    const end = start + size;
+    const sizeStr = formatSizeReadable(size);
+
+    updateRegion(editTarget.name, {
+      start_address: start,
+      end_address: end,
+      size,
+      size_string: sizeStr,
+      description: editDesc.trim(),
+    });
+
+    setShowEditForm(false);
+    setEditTarget(null);
   };
 
   const handleValidate = async () => {
@@ -238,9 +300,92 @@ export default function MemoryTable() {
           </div>
         </div>
       )}
+      {/* 编辑区域悬浮表单 */}
+      {showEditForm && editTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 backdrop-blur-sm animate-fade-in">
+          <div className="bg-slate-900/95 border border-slate-700/50 rounded-2xl w-full max-w-md p-6 shadow-2xl relative">
+            <h4 className="font-bold text-slate-100 text-sm mb-4">
+              编辑内存分配区域: <span className="text-indigo-400 font-mono">{editTarget.name}</span>
+            </h4>
+            <form onSubmit={handleEditSubmit} className="space-y-3">
+              <div>
+                <label className="block text-[10px] uppercase font-bold text-slate-500 tracking-wider">区域名称 (不可修改)</label>
+                <input
+                  type="text"
+                  disabled
+                  value={editTarget.name}
+                  className="bg-slate-950/50 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-500 w-full cursor-not-allowed font-mono"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[10px] uppercase font-bold text-slate-500 tracking-wider">
+                    起始地址 (Hex)
+                    {["ION", "H26X_BITSTREAM", "H26X_ENC_BUFF", "ISP_MEM_BASE"].includes(editTarget.name) && (
+                      <span className="text-indigo-400 font-semibold lowercase normal-case"> (只读/级联绑定)</span>
+                    )}
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    disabled={["ION", "H26X_BITSTREAM", "H26X_ENC_BUFF", "ISP_MEM_BASE"].includes(editTarget.name)}
+                    value={editStart}
+                    onChange={(e) => setEditStart(e.target.value)}
+                    placeholder="如: 0x82000000"
+                    className={`bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs w-full focus:outline-none focus:border-indigo-500 focus:ring-0 font-mono ${
+                      ["ION", "H26X_BITSTREAM", "H26X_ENC_BUFF", "ISP_MEM_BASE"].includes(editTarget.name)
+                        ? "cursor-not-allowed opacity-50 text-slate-500 bg-slate-950/40"
+                        : "text-slate-200"
+                    }`}
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] uppercase font-bold text-slate-500 tracking-wider">大小 (Hex / Dec)</label>
+                  <input
+                    type="text"
+                    required
+                    value={editSize}
+                    onChange={(e) => setEditSize(e.target.value)}
+                    placeholder="如: 0x1000000 (16M)"
+                    className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 w-full focus:outline-none focus:border-indigo-500 focus:ring-0 font-mono"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-[10px] uppercase font-bold text-slate-500 tracking-wider">说明描述</label>
+                <input
+                  type="text"
+                  value={editDesc}
+                  onChange={(e) => setEditDesc(e.target.value)}
+                  placeholder="选填说明"
+                  className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 w-full focus:outline-none focus:border-indigo-500 focus:ring-0"
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-800 mt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowEditForm(false);
+                    setEditTarget(null);
+                  }}
+                  className="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-xl text-xs font-semibold focus:outline-none focus:ring-0 active:scale-95 transition"
+                >
+                  取消
+                </button>
+                <button
+                  type="submit"
+                  className="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2 rounded-xl text-xs font-bold shadow-lg shadow-indigo-500/20 focus:outline-none focus:ring-0 active:scale-95 transition"
+                >
+                  确认修改
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* 数据表格区域 */}
-      <div className="flex-1 overflow-auto bg-slate-950/20 border border-slate-850 rounded-2xl shadow-inner max-h-[60vh] custom-scrollbar">
+      <div className="flex-1 overflow-auto bg-slate-950/20 border border-slate-850 rounded-2xl shadow-inner custom-scrollbar min-h-0">
         <table className="w-full text-left border-collapse text-xs">
           <thead>
             <tr className="bg-slate-900/40 text-slate-400 font-bold uppercase tracking-wider border-b border-slate-800">
@@ -268,38 +413,62 @@ export default function MemoryTable() {
                 </td>
               </tr>
             ) : (
-              regions.map((r) => (
-                <tr key={r.name} className="hover:bg-slate-900/10 text-slate-300 transition-colors">
-                  <td className="px-5 py-3 font-mono font-bold text-slate-200">{r.name}</td>
-                  <td className="px-5 py-3 font-mono text-slate-400">{formatHex(r.start_address)}</td>
-                  <td className="px-5 py-3 font-mono text-slate-400">{formatHex(r.end_address)}</td>
-                  <td className="px-5 py-3 font-mono text-slate-200">{r.size_string}</td>
-                  <td className="px-5 py-3 text-slate-400">{r.description || "—"}</td>
-                  <td className="px-5 py-3 text-center">
-                    <span
-                      className={`inline-block px-2 py-0.5 rounded-full text-[9px] font-bold ${
-                        r.is_editable ? "bg-indigo-500/10 text-indigo-400" : "bg-slate-800 text-slate-500"
-                      }`}
-                    >
-                      {r.is_editable ? "自定义" : "系统内置"}
-                    </span>
-                  </td>
-                  <td className="px-5 py-3 text-right">
-                    {r.is_editable ? (
-                      <button
-                        type="button"
-                        onClick={() => removeRegion(r.name)}
-                        className="text-rose-400 hover:text-rose-300 p-1.5 rounded-lg hover:bg-slate-800 transition focus:outline-none focus:ring-0"
-                        title="删除此内存区域"
+              regions.map((r) => {
+                const isHovered = hoveredRegion === r.name;
+                return (
+                  <tr
+                    key={r.name}
+                    className={`transition-colors duration-150 cursor-pointer ${
+                      isHovered ? "bg-indigo-500/10 text-slate-100" : "hover:bg-slate-900/10 text-slate-300"
+                    }`}
+                    onMouseEnter={() => onHoverRegion(r.name)}
+                    onMouseLeave={() => onHoverRegion(null)}
+                  >
+                    <td className="px-5 py-3 font-mono font-bold text-slate-200">{r.name}</td>
+                    <td className="px-5 py-3 font-mono text-slate-400">{formatHex(r.start_address)}</td>
+                    <td className="px-5 py-3 font-mono text-slate-400">{formatHex(r.end_address)}</td>
+                    <td className="px-5 py-3 font-mono text-slate-200">{r.size_string}</td>
+                    <td className="px-5 py-3 text-slate-400">{r.description || "—"}</td>
+                    <td className="px-5 py-3 text-center">
+                      <span
+                        className={`inline-block px-2 py-0.5 rounded-full text-[9px] font-bold ${
+                          r.is_editable ? "bg-indigo-500/10 text-indigo-400" : "bg-slate-800 text-slate-500"
+                        }`}
                       >
-                        <Trash2 size={14} />
-                      </button>
-                    ) : (
-                      <span className="text-slate-600 select-none text-[10px]">不可更改</span>
-                    )}
-                  </td>
-                </tr>
-              ))
+                        {r.is_editable ? "自定义" : "系统内置"}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3 text-right">
+                      <div className="flex justify-end items-center gap-1">
+                        {r.is_editable && (
+                          <button
+                            type="button"
+                            onClick={() => handleEditClick(r)}
+                            className="text-indigo-400 hover:text-indigo-300 p-1.5 rounded-lg hover:bg-slate-800 transition focus:outline-none focus:ring-0 active:scale-95"
+                            title="编辑此内存区域大小/起始物理地址"
+                          >
+                            <Edit2 size={14} />
+                          </button>
+                        )}
+                        {r.is_editable && !BUILTIN_REGIONS.includes(r.name) ? (
+                          <button
+                            type="button"
+                            onClick={() => removeRegion(r.name)}
+                            className="text-rose-400 hover:text-rose-300 p-1.5 rounded-lg hover:bg-slate-800 transition focus:outline-none focus:ring-0 active:scale-95"
+                            title="删除此内存区域"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        ) : r.is_editable ? (
+                          <span className="text-[10px] text-slate-500 select-none mr-2 font-medium">内置核心</span>
+                        ) : (
+                          <span className="text-slate-600 select-none text-[10px]">不可更改</span>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>
