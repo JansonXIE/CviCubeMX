@@ -517,12 +517,13 @@ export default function ClockPage() {
 
           const positionsToSave: Record<string, ModulePosition> = {};
           Object.entries(newPositions).forEach(([name, p]) => {
+            const pos = p as { x: number; y: number; width: number; height: number };
             positionsToSave[name] = {
               moduleName: name,
-              x: Math.round(p.x),
-              y: Math.round(p.y),
-              width: Math.round(p.width),
-              height: Math.round(p.height),
+              x: Math.round(pos.x),
+              y: Math.round(pos.y),
+              width: Math.round(pos.width),
+              height: Math.round(pos.height),
             };
           });
 
