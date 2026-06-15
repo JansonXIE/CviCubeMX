@@ -246,7 +246,7 @@ const CONNECTIONS = [
   { fromNode: "锁相环", fromItem: "clk_mipimpll", toNode: "子锁相环", toItem: "", color: "#fd0404ff" },
 
   // OSC -> OSC输出
-  { fromNode: "输入源", fromItem: "OSC", toNode: "OSC输出", toItem: "", color: "#28a745" },
+  { fromNode: "输入源", fromItem: "OSC", toNode: "OSC输出", toItem: "", color: "#ff0000ff" },
 
   // clk_1M -> clk_1M子节点
   { fromNode: "clk_xtal_misc子节点", fromItem: "clk_1M", toNode: "clk_1M子节点", toItem: "", color: "#6610f2" },

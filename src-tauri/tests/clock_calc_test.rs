@@ -88,3 +88,12 @@ fn test_export_clock_defconfig_integration() {
 
     fs::remove_dir_all(&temp_dir).ok();
 }
+
+#[test]
+fn test_default_subnode_dividers() {
+    let result = compute_clock_tree(HashMap::new()).unwrap();
+    let fpll_subnodes = result.sub_nodes.get("clk_fpll").expect("No clk_fpll subnodes");
+    let xtal_misc = fpll_subnodes.get("clk_xtal_misc").expect("No clk_xtal_misc");
+    assert_eq!(xtal_misc.divider, 40);
+}
+
