@@ -1,5 +1,18 @@
 # 更新日志 (CHANGELOG)
 
+## [未发布] - 2026-06-15
+
+### 变更
+
+- **时钟关系流程图宽度与保存逻辑修复**：
+  - 修复了修改时钟节点卡片默认宽度（例如将子节点的 `width` 改为 200）后在界面上不生效的 Bug。
+  - **分析原因**：位置合并逻辑使用 `{ ...DEFAULT_MODULE_POSITIONS, ...modulePositions }`，导致从后端缓存文件 `module_positions.json` 中读取出来的历史宽度（例如 180）直接覆盖了前端代码设定的新默认宽度。
+  - **解决方案**：重构了 `ClockPage.tsx` 中的位置合并逻辑，确保卡片的 `width` 和 `height` 始终强制采用代码中定义的默认尺寸（`DEFAULT_MODULE_POSITIONS`），仅合并保存的 `x` 和 `y` 坐标。同时，在用户拖拽卡片触发自动存盘时，用最新的默认宽度和高度更新后端 JSON 文件。
+- **时钟连线修复**：
+  - 修复了 `clk_mpll子节点` 卡片中的 `clk_spi` 项到 `clk_spi子节点` 卡片之间没有引线的 Bug。原因是 `CONNECTIONS` 配置中 `fromNode` 错误指定为了非存存的 `"clk_mpll"` 节点名，已将其更正为真正的 `"clk_mpll子节点"`。
+- **时钟默认节点坐标同步**：
+  - 获取并读取了本地缓存数据库 `module_positions.json` 中保存的各时钟节点的拖拽自定义排版坐标，并同步修正了 `ClockPage.tsx` 中 `DEFAULT_MODULE_POSITIONS` 定义的默认 `x` 和 `y` 坐标值（涉及 `锁相环`、`clk_fpll子节点`、`clk_xtal_misc子节点`、`clk_i2c子节点`、`子锁相环`、`clk_fab_100m子节点`、`clk_apb_vcsys子节点`、`clk_1M子节点`），使系统默认布局更加整洁合规。
+
 ## [未发布] - 2026-06-09
 
 ### 变更

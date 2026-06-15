@@ -5,37 +5,37 @@ import { useSdkStore } from "../stores/sdkStore";
 
 // 31 个节点卡片的默认位置 (参考 clockconfig.cpp 中的 initializeModulePositions)
 const DEFAULT_MODULE_POSITIONS: Record<string, { x: number; y: number; width: number; height: number }> = {
-  "输入源": { x: 30, y: 50, width: 150, height: 400 },
-  "锁相环": { x: 250, y: 50, width: 200, height: 700 },
-  "clk_fpll子节点": { x: 520, y: 50, width: 180, height: 800 },
-  "clk_xtal_misc子节点": { x: 770, y: 50, width: 180, height: 900 },
-  "clk_i2c子节点": { x: 1020, y: 50, width: 180, height: 130 },
-  "clk_appll子节点": { x: 520, y: 900, width: 180, height: 130 },
-  "clk_tpu子节点": { x: 520, y: 1070, width: 180, height: 220 },
-  "clk_rvpll子节点": { x: 520, y: 1320, width: 180, height: 130 },
-  "子锁相环": { x: 1270, y: 530, width: 200, height: 780 },
-  "clk_a0pll子节点": { x: 1530, y: 910, width: 180, height: 480 },
-  "clk_cam0pll子节点": { x: 2350, y: 2075, width: 180, height: 130 },
-  "clk_cam1pll子节点": { x: 2350, y: 1610, width: 180, height: 450 },
-  "clk_disppll子节点": { x: 1530, y: 470, width: 180, height: 290 },
-  "clk_raw_axi子节点": { x: 2590, y: 1860, width: 200, height: 450 },
-  "clk_sys_disp子节点": { x: 1770, y: 620, width: 200, height: 130 },
-  "clk_mpll子节点": { x: 520, y: 1500, width: 200, height: 1900 },
-  "clk_rtc_sys子节点": { x: 790, y: 2630, width: 200, height: 1200 },
-  "clk_hspi子节点": { x: 1330, y: 2470, width: 200, height: 1700 },
-  "clk_vip_sys_0子节点": { x: 1060, y: 2960, width: 200, height: 500 },
-  "clk_vip_sys_1子节点": { x: 1060, y: 2440, width: 200, height: 500 },
-  "clk_vip_sys_3子节点": { x: 790, y: 2360, width: 200, height: 220 },
-  "clk_fab100m子节点": { x: 770, y: 980, width: 200, height: 300 },
-  "clk_apb_i2c子节点": { x: 1270, y: 50, width: 200, height: 470 },
-  "clk_apb_vcsys子节点": { x: 1040, y: 950, width: 200, height: 220 },
-  "clk_x2p子节点": { x: 1040, y: 1180, width: 200, height: 420 },
-  "clk_vip_sys_2子节点": { x: 2580, y: 1610, width: 200, height: 220 },
-  "clk_keyscan_xclk子节点": { x: 2350, y: 1150, width: 200, height: 130 },
-  "clk_wgn_xclk子节点": { x: 2350, y: 1370, width: 200, height: 130 },
-  "OSC输出": { x: 2060, y: 9, width: 220, height: 2100 },
-  "clk_1M子节点": { x: 1020, y: 230, width: 180, height: 380 },
-  "clk_spi子节点": { x: 790, y: 1920, width: 180, height: 400 },
+  "输入源": { x: 30, y: 50, width: 150, height: 250 },
+  "锁相环": { x: 258, y: 50, width: 200, height: 670 },
+  "clk_fpll子节点": { x: 532, y: 54, width: 200, height: 510 },
+  "clk_xtal_misc子节点": { x: 812, y: 126, width: 200, height: 650 },
+  "clk_i2c子节点": { x: 1020, y: 38, width: 200, height: 100 },
+  "clk_appll子节点": { x: 520, y: 900, width: 200, height: 100 },
+  "clk_tpu子节点": { x: 520, y: 1070, width: 200, height: 150 },
+  "clk_rvpll子节点": { x: 520, y: 1320, width: 200, height: 100 },
+  "子锁相环": { x: 1279, y: 542, width: 200, height: 600 },
+  "clk_a0pll子节点": { x: 1530, y: 910, width: 200, height: 320 },
+  "clk_cam0pll子节点": { x: 2350, y: 2075, width: 200, height: 100 },
+  "clk_cam1pll子节点": { x: 2350, y: 1610, width: 200, height: 350 },
+  "clk_disppll子节点": { x: 1530, y: 470, width: 200, height: 230 },
+  "clk_raw_axi子节点": { x: 2590, y: 1860, width: 200, height: 320 },
+  "clk_sys_disp子节点": { x: 1770, y: 620, width: 200, height: 100 },
+  "clk_mpll子节点": { x: 520, y: 1500, width: 200, height: 1200 },
+  "clk_rtc_sys子节点": { x: 790, y: 2630, width: 250, height: 770 },
+  "clk_hspi子节点": { x: 1330, y: 2470, width: 200, height: 1100 },
+  "clk_vip_sys_0子节点": { x: 1060, y: 2960, width: 250, height: 320 },
+  "clk_vip_sys_1子节点": { x: 1060, y: 2440, width: 200, height: 350 },
+  "clk_vip_sys_3子节点": { x: 790, y: 2360, width: 220, height: 150 },
+  "clk_fab_100m子节点": { x: 770, y: 980, width: 200, height: 520 },
+  "clk_apb_i2c子节点": { x: 1270, y: 50, width: 200, height: 300 },
+  "clk_apb_vcsys子节点": { x: 1040, y: 950, width: 200, height: 170 },
+  "clk_x2p子节点": { x: 1040, y: 1180, width: 200, height: 320 },
+  "clk_vip_sys_2子节点": { x: 2580, y: 1610, width: 200, height: 170 },
+  "clk_keyscan_xclk子节点": { x: 2350, y: 1150, width: 200, height: 100 },
+  "clk_wgn_xclk子节点": { x: 2350, y: 1370, width: 200, height: 100 },
+  "OSC输出": { x: 2060, y: 9, width: 200, height: 1100 },
+  "clk_1M子节点": { x: 1060, y: 342, width: 200, height: 250 },
+  "clk_spi子节点": { x: 790, y: 1920, width: 200, height: 250 },
 };
 
 // 31 个节点卡片的中文标题映射
@@ -62,7 +62,7 @@ const NODE_TITLES: Record<string, string> = {
   "clk_vip_sys_0子节点": "clk_vip_sys_0 子节点",
   "clk_vip_sys_1子节点": "clk_vip_sys_1 子节点",
   "clk_vip_sys_3子节点": "clk_vip_sys_3 子节点",
-  "clk_fab100m子节点": "clk_fab_100M 子节点",
+  "clk_fab_100m子节点": "clk_fab_100M 子节点",
   "clk_apb_i2c子节点": "clk_apb_i2c 子节点",
   "clk_apb_vcsys子节点": "clk_apb_vcsys 子节点",
   "clk_x2p子节点": "clk_x2p 子节点",
@@ -85,7 +85,7 @@ const NODE_COLORS: Record<string, { border: string; bg: string; text: string; ti
   "clk_xtal_misc子节点": { border: "border-rose-500/20 hover:border-rose-500/35", bg: "bg-slate-900/60", text: "text-rose-400", titleBg: "bg-rose-500/5" },
   "clk_i2c子节点": { border: "border-rose-500/20 hover:border-rose-500/35", bg: "bg-slate-900/60", text: "text-rose-400", titleBg: "bg-rose-500/5" },
   "clk_apb_i2c子节点": { border: "border-rose-500/20 hover:border-rose-500/35", bg: "bg-slate-900/60", text: "text-rose-400", titleBg: "bg-rose-500/5" },
-  "clk_fab100m子节点": { border: "border-rose-500/20 hover:border-rose-500/35", bg: "bg-slate-900/60", text: "text-rose-400", titleBg: "bg-rose-500/5" },
+  "clk_fab_100m子节点": { border: "border-rose-500/20 hover:border-rose-500/35", bg: "bg-slate-900/60", text: "text-rose-400", titleBg: "bg-rose-500/5" },
   "clk_apb_vcsys子节点": { border: "border-rose-500/20 hover:border-rose-500/35", bg: "bg-slate-900/60", text: "text-rose-400", titleBg: "bg-rose-500/5" },
   "clk_x2p子节点": { border: "border-rose-500/20 hover:border-rose-500/35", bg: "bg-slate-900/60", text: "text-rose-400", titleBg: "bg-rose-500/5" },
   "clk_1M子节点": { border: "border-rose-500/20 hover:border-rose-500/35", bg: "bg-slate-900/60", text: "text-rose-400", titleBg: "bg-rose-500/5" },
@@ -127,7 +127,7 @@ const NODE_NAME_TO_PARENT_CLOCK: Record<string, string> = {
   "clk_xtal_misc子节点": "clk_xtal_misc",
   "clk_i2c子节点": "clk_i2c",
   "clk_apb_i2c子节点": "clk_apb_i2c",
-  "clk_fab100m子节点": "clk_fab_100M",
+  "clk_fab_100m子节点": "clk_fab_100M",
   "clk_apb_vcsys子节点": "clk_apb_vcsys",
   "clk_x2p子节点": "clk_x2p",
   "clk_1M子节点": "clk_1M",
@@ -243,7 +243,7 @@ const CONNECTIONS = [
   { fromNode: "输入源", fromItem: "OSC", toNode: "锁相环", toItem: "clk_rvpll", color: "#ff6600" },
 
   // MIPIMPLL -> 子锁相环
-  { fromNode: "锁相环", fromItem: "clk_mipimpll", toNode: "子锁相环", toItem: "", color: "#ffa500" },
+  { fromNode: "锁相环", fromItem: "clk_mipimpll", toNode: "子锁相环", toItem: "", color: "#fd0404ff" },
 
   // OSC -> OSC输出
   { fromNode: "输入源", fromItem: "OSC", toNode: "OSC输出", toItem: "", color: "#28a745" },
@@ -258,7 +258,7 @@ const CONNECTIONS = [
   { fromNode: "clk_cam1pll子节点", fromItem: "clk_raw_axi", toNode: "clk_raw_axi子节点", toItem: "", color: "#228b22" },
 
   // clk_cam0pll -> clk_cam0pll子节点
-  { fromNode: "OSC输出", fromItem: "clk_cam0pll", toNode: "clk_cam0pll子节点", toItem: "", color: "#191970" },
+  { fromNode: "OSC输出", fromItem: "clk_cam0pll", toNode: "clk_cam0pll子节点", toItem: "", color: "#00ff11ff" },
 
   // clk_disppll -> clk_disppll子节点
   { fromNode: "子锁相环", fromItem: "clk_disppll", toNode: "clk_disppll子节点", toItem: "", color: "#4b0082" },
@@ -284,11 +284,11 @@ const CONNECTIONS = [
   // clk_mpll -> clk_mpll子节点
   { fromNode: "锁相环", fromItem: "clk_mpll", toNode: "clk_mpll子节点", toItem: "", color: "#008000" },
 
-  // clk_fab_100M -> clk_fab100m子节点
-  { fromNode: "clk_fpll子节点", fromItem: "clk_fab_100M", toNode: "clk_fab100m子节点", toItem: "", color: "#ff1493" },
+  // clk_fab_100M -> clk_fab_100m子节点
+  { fromNode: "clk_fpll子节点", fromItem: "clk_fab_100M", toNode: "clk_fab_100m子节点", toItem: "", color: "#ff1493" },
 
   // clk_xtal_misc -> clk_xtal_misc子节点
-  { fromNode: "clk_fpll子节点", fromItem: "clk_xtal_misc", toNode: "clk_xtal_misc子节点", toItem: "", color: "#ff8c00" },
+  { fromNode: "clk_fpll子节点", fromItem: "clk_xtal_misc", toNode: "clk_xtal_misc子节点", toItem: "", color: "#ff0000ff" },
 
   // clk_i2c -> clk_i2c子节点
   { fromNode: "clk_fpll子节点", fromItem: "clk_i2c", toNode: "clk_i2c子节点", toItem: "", color: "#ff8c00" },
@@ -297,10 +297,10 @@ const CONNECTIONS = [
   { fromNode: "clk_i2c子节点", fromItem: "clk_apb_i2c", toNode: "clk_apb_i2c子节点", toItem: "", color: "#007bff" },
 
   // clk_apb_vcsys -> clk_apb_vcsys子节点
-  { fromNode: "clk_fab100m子节点", fromItem: "clk_apb_vcsys", toNode: "clk_apb_vcsys子节点", toItem: "", color: "#007bff" },
+  { fromNode: "clk_fab_100m子节点", fromItem: "clk_apb_vcsys", toNode: "clk_apb_vcsys子节点", toItem: "", color: "#007bff" },
 
   // clk_x2p -> clk_x2p子节点
-  { fromNode: "clk_fab100m子节点", fromItem: "clk_x2p", toNode: "clk_x2p子节点", toItem: "", color: "#007bff" },
+  { fromNode: "clk_fab_100m子节点", fromItem: "clk_x2p", toNode: "clk_x2p子节点", toItem: "", color: "#007bff" },
 
   // clk_hsperi -> clk_hspi子节点
   { fromNode: "clk_mpll子节点", fromItem: "clk_hsperi", toNode: "clk_hspi子节点", toItem: "", color: "#006400" },
@@ -309,19 +309,19 @@ const CONNECTIONS = [
   { fromNode: "clk_mpll子节点", fromItem: "clk_rtc_sys", toNode: "clk_rtc_sys子节点", toItem: "", color: "#ff8c00" },
 
   // clk_vip_sys_0 -> clk_vip_sys_0子节点
-  { fromNode: "clk_mpll子节点", fromItem: "clk_vip_sys_0", toNode: "clk_vip_sys_0子节点", toItem: "", color: "#ff8c00" },
+  { fromNode: "clk_mpll子节点", fromItem: "clk_vip_sys_0", toNode: "clk_vip_sys_0子节点", toItem: "", color: "#ff0000ff" },
 
   // clk_vip_sys_1 -> clk_vip_sys_1子节点
-  { fromNode: "clk_mpll子节点", fromItem: "clk_vip_sys_1", toNode: "clk_vip_sys_1子节点", toItem: "", color: "#ff8c00" },
+  { fromNode: "clk_mpll子节点", fromItem: "clk_vip_sys_1", toNode: "clk_vip_sys_1子节点", toItem: "", color: "#80ff00ff" },
 
   // clk_vip_sys_2 -> clk_vip_sys_2子节点
-  { fromNode: "clk_cam1pll子节点", fromItem: "clk_vip_sys_2", toNode: "clk_vip_sys_2子节点", toItem: "", color: "#33cc33" },
+  { fromNode: "clk_cam1pll子节点", fromItem: "clk_vip_sys_2", toNode: "clk_vip_sys_2子节点", toItem: "", color: "#0008ffff" },
 
   // clk_vip_sys_3 -> clk_vip_sys_3子节点
-  { fromNode: "clk_mpll子节点", fromItem: "clk_vip_sys_3", toNode: "clk_vip_sys_3子节点", toItem: "", color: "#ff8c00" },
+  { fromNode: "clk_mpll子节点", fromItem: "clk_vip_sys_3", toNode: "clk_vip_sys_3子节点", toItem: "", color: "#00f7ffff" },
 
   // clk_spi -> clk_spi子节点
-  { fromNode: "clk_mpll", fromItem: "clk_spi", toNode: "clk_spi子节点", toItem: "", color: "#ff8c00" },
+  { fromNode: "clk_mpll子节点", fromItem: "clk_spi", toNode: "clk_spi子节点", toItem: "", color: "#8000ffff" },
 
   // clk_keyscan_xclk -> clk_keyscan_xclk子节点
   { fromNode: "OSC输出", fromItem: "clk_keyscan_xclk", toNode: "clk_keyscan_xclk子节点", toItem: "", color: "#cc0000" },
@@ -448,8 +448,18 @@ export default function ClockPage() {
     return items.some(name => name.toLowerCase().includes(t));
   };
 
-  // 合并后台加载的坐标与默认坐标
-  const mergedPositions = { ...DEFAULT_MODULE_POSITIONS, ...modulePositions };
+  // 合并后台加载的坐标与默认坐标（x, y 使用保存的值，width, height 始终使用代码中定义的默认值，以保证前端调整 width 生效）
+  const mergedPositions = Object.keys(DEFAULT_MODULE_POSITIONS).reduce((acc, key) => {
+    const defaultPos = DEFAULT_MODULE_POSITIONS[key];
+    const savedPos = modulePositions[key];
+    acc[key] = {
+      x: savedPos ? savedPos.x : defaultPos.x,
+      y: savedPos ? savedPos.y : defaultPos.y,
+      width: defaultPos.width,
+      height: defaultPos.height,
+    };
+    return acc;
+  }, {} as Record<string, { x: number; y: number; width: number; height: number }>);
 
   // 鼠标按在标题栏，初始化拖拽
   const handleMouseDown = (e: React.MouseEvent, nodeName: string) => {
@@ -517,12 +527,13 @@ export default function ClockPage() {
 
           const positionsToSave: Record<string, ModulePosition> = {};
           Object.entries(newPositions).forEach(([name, p]) => {
+            const defPos = DEFAULT_MODULE_POSITIONS[name] || p;
             positionsToSave[name] = {
               moduleName: name,
               x: Math.round(p.x),
               y: Math.round(p.y),
-              width: Math.round(p.width),
-              height: Math.round(p.height),
+              width: Math.round(defPos.width),
+              height: Math.round(defPos.height),
             };
           });
 
@@ -607,13 +618,13 @@ export default function ClockPage() {
             <div className="flex justify-between items-center">
               <span className="font-mono font-bold text-slate-200">32768Hz</span>
             </div>
-            <span className="text-[10px] text-slate-500">RTC 实时低速时钟源</span>
+            <span className="text-[10px] text-slate-500">RTC时钟源</span>
           </div>
           <div className="flex flex-col gap-1.5 p-3.5 bg-slate-950/40 rounded-xl border border-slate-800">
             <div className="flex justify-between items-center">
               <span className="font-mono font-bold text-slate-200">25MHz</span>
             </div>
-            <span className="text-[10px] text-slate-500">OSC 外部高速晶振</span>
+            <span className="text-[10px] text-slate-500">OSC</span>
           </div>
         </div>
       );
@@ -629,7 +640,7 @@ export default function ClockPage() {
             return (
               <div key={pllName} className="p-3 bg-slate-950/40 rounded-xl border border-slate-800 space-y-2 relative group hover:border-amber-500/20 transition-all">
                 <div className="flex justify-between items-center">
-                  <span className="font-bold text-slate-200 text-xs">{pll.name}</span>
+                  <span className="font-bold text-slate-200 text-[14px]">{pll.name}</span>
                   <span className="font-bold text-amber-400">{(pll.outputFreq || 0).toFixed(3)} MHz</span>
                 </div>
                 <div className="flex items-center justify-between gap-2 text-[10px] text-slate-400">
@@ -663,7 +674,7 @@ export default function ClockPage() {
             return (
               <div key={pllName} className="p-3 bg-slate-950/40 rounded-xl border border-slate-800 space-y-2 hover:border-cyan-500/20 transition-all">
                 <div className="flex justify-between items-center">
-                  <span className="font-bold text-slate-200 text-xs">{pll.name}</span>
+                  <span className="font-bold text-slate-200 text-[14px]">{pll.name}</span>
                   <span className="font-bold text-cyan-400">{(pll.outputFreq || 0).toFixed(3)} MHz</span>
                 </div>
                 <div className="flex items-center justify-between gap-2 text-[10px] text-slate-400">
@@ -696,7 +707,7 @@ export default function ClockPage() {
             return (
               <div key={name} className="flex justify-between items-center p-1.5 bg-slate-950/30 rounded-lg border border-slate-850 hover:border-rose-500/10 transition-all">
                 <div className="flex flex-col">
-                  <span className="font-bold text-slate-300 text-[10px]">{name}</span>
+                  <span className="font-bold text-slate-300 text-[12px]">{name}</span>
                   <span className="text-[9px] text-slate-600 leading-none">源: {out.source} / 分频: {out.divider}</span>
                 </div>
                 <span className="font-bold text-rose-400 font-mono text-[10.5px]">{(out.frequency || 0).toFixed(3)}M</span>
@@ -724,7 +735,7 @@ export default function ClockPage() {
           return (
             <div key={name} className="flex justify-between items-center p-1.5 bg-slate-950/30 rounded-lg border border-slate-850 hover:border-indigo-500/10 transition-all">
               <div className="flex flex-col">
-                <span className="font-bold text-slate-300 text-[10px]">{name}</span>
+                <span className="font-bold text-slate-300 text-[14px]">{name}</span>
                 <span className="text-[9px] text-slate-600 leading-none">源: {source} / 分频: {div}</span>
               </div>
               <span className="font-bold text-indigo-400 font-mono text-[10.5px]">{displayFreq.toFixed(3)}M</span>
