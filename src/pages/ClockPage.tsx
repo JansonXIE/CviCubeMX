@@ -415,6 +415,63 @@ export default function ClockPage() {
     }
   };
 
+  const handleResetND = async () => {
+    // 默认主 PLL 配置及子 PLL 默认值
+    const defaultPlls: Record<string, { multiplier: number; divider: number }> = {
+      "clk_fpll": { multiplier: 40, divider: 1 },
+      "clk_mipimpll": { multiplier: 36, divider: 1 },
+      "clk_mpll": { multiplier: 48, divider: 1 },
+      "clk_tpll": { multiplier: 60, divider: 1 },
+      "clk_appll": { multiplier: 40, divider: 1 },
+      "clk_rvpll": { multiplier: 48, divider: 1 },
+      "clk_a24k": { multiplier: 1, divider: 1 },
+      "clk_vivo_mipimpll": { multiplier: 1, divider: 1 },
+      "clk_cyc_dsi_syn": { multiplier: 1, divider: 1 },
+      "clk_disppll": { multiplier: 12, divider: 9.09090909 },
+      "clk_a0pll": { multiplier: 4, divider: 7.32421875 },
+    };
+
+    const updated = JSON.parse(JSON.stringify(localPlls)) as Record<string, PllConfig>;
+    Object.keys(defaultPlls).forEach((pllName) => {
+      if (updated[pllName]) {
+        updated[pllName].multiplier = defaultPlls[pllName].multiplier;
+        updated[pllName].divider = defaultPlls[pllName].divider;
+      }
+    });
+
+    setLocalPlls(updated);
+    // 触发联动重算并同步到主时钟树状态
+    await computeClockTree(updated);
+    setExportMsg("默认 ND 配置已成功应用！可点击右上角保存以同步到物理文件。");
+    setTimeout(() => setExportMsg(null), 4000);
+  };
+
+  const handleOverclock = async () => {
+    const updated = JSON.parse(JSON.stringify(localPlls)) as Record<string, PllConfig>;
+    if (updated["clk_appll"]) {
+      updated["clk_appll"].multiplier = 44;
+    }
+    if (updated["clk_rvpll"]) {
+      updated["clk_rvpll"].multiplier = 64;
+    }
+
+    setLocalPlls(updated);
+    // 触发联动重算并同步到主时钟树状态
+    await computeClockTree(updated);
+
+    if (sdkPath && chipType) {
+      try {
+        await exportClockDefconfig(sdkPath, chipType, updated);
+        setExportMsg(`OD超频配置已成功应用并同步到: build/boards/cv184x/${chipType}/${chipType}_defconfig`);
+      } catch (e) {
+        setExportMsg(`OD超频配置已应用到界面，但同步导出失败: ${e}`);
+      }
+    } else {
+      setExportMsg("OD超频配置已应用到界面！请在顶部配置 SDK 源码路径和芯片型号以保存到文件。");
+    }
+    setTimeout(() => setExportMsg(null), 5000);
+  };
+
   // 过滤显示卡片高亮匹配
   const filterNodes = (name: string) => {
     if (!searchText) return true;
@@ -779,8 +836,24 @@ export default function ClockPage() {
 
           <button
             type="button"
+            onClick={handleResetND}
+            className="bg-slate-700 hover:bg-slate-600 active:scale-95 text-slate-200 px-4 py-2 rounded-xl text-xs font-bold shadow-lg shadow-slate-700/20 flex items-center gap-1.5 transition-all focus:outline-none focus:ring-0 border-transparent outline-none cursor-pointer"
+          >
+            重置为默认ND
+          </button>
+
+          <button
+            type="button"
+            onClick={handleOverclock}
+            className="bg-amber-600 hover:bg-amber-500 active:scale-95 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-lg shadow-amber-600/20 flex items-center gap-1.5 transition-all focus:outline-none focus:ring-0 border-transparent outline-none cursor-pointer"
+          >
+            OD超频配置
+          </button>
+
+          <button
+            type="button"
             onClick={handleExport}
-            className="bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white px-5 py-2 rounded-xl text-xs font-bold shadow-lg shadow-indigo-500/20 flex items-center gap-1.5 transition-all focus:outline-none focus:ring-0 border-transparent outline-none cursor-pointer"
+            className="bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-lg shadow-indigo-500/20 flex items-center gap-1.5 transition-all focus:outline-none focus:ring-0 border-transparent outline-none cursor-pointer"
           >
             保存时钟树
           </button>

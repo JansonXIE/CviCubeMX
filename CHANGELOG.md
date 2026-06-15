@@ -12,6 +12,10 @@
   - 修复了 `clk_mpll子节点` 卡片中的 `clk_spi` 项到 `clk_spi子节点` 卡片之间没有引线的 Bug。原因是 `CONNECTIONS` 配置中 `fromNode` 错误指定为了非存存的 `"clk_mpll"` 节点名，已将其更正为真正的 `"clk_mpll子节点"`。
 - **时钟默认节点坐标同步**：
   - 获取并读取了本地缓存数据库 `module_positions.json` 中保存的各时钟节点的拖拽自定义排版坐标，并同步修正了 `ClockPage.tsx` 中 `DEFAULT_MODULE_POSITIONS` 定义的默认 `x` 和 `y` 坐标值（涉及 `锁相环`、`clk_fpll子节点`、`clk_xtal_misc子节点`、`clk_i2c子节点`、`子锁相环`、`clk_fab_100m子节点`、`clk_apb_vcsys子节点`、`clk_1M子节点`），使系统默认布局更加整洁合规。
+- **支持默认ND重置与OD超频配置**：
+  - 移植了原 C++ 模块中的时钟配置重置和超频功能，在前端 `ClockPage.tsx` 顶部操作栏中新增了“重置为默认ND”和“OD超频配置”操作按钮。
+  - **重置为默认ND**：将所有锁相环及子锁相环的倍频、分频系数重置为出厂默认参数，并自动更新重算整个时钟级联频率。
+  - **OD超频配置**：实现一键应用超频参数（将 `clk_appll` 倍频设为 44，`clk_rvpll` 倍频设为 64），重算级联树，并在配置了 SDK 源码路径和芯片类型时自动向后端的板级 `defconfig` 导出超频标志 `CONFIG_OD_CLK_SEL=y`。
 
 ## [未发布] - 2026-06-09
 
