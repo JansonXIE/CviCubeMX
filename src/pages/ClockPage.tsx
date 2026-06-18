@@ -13,7 +13,7 @@ const DEFAULT_MODULE_POSITIONS: Record<string, { x: number; y: number; width: nu
   "clk_appll子节点": { x: 520, y: 900, width: 200, height: 100 },
   "clk_tpu子节点": { x: 520, y: 1070, width: 200, height: 150 },
   "clk_rvpll子节点": { x: 520, y: 1320, width: 200, height: 100 },
-  "子锁相环": { x: 1279, y: 542, width: 200, height: 600 },
+  "子锁相环": { x: 1279, y: 542, width: 220, height: 720 },
   "clk_a0pll子节点": { x: 1530, y: 910, width: 200, height: 320 },
   "clk_cam0pll子节点": { x: 2350, y: 2075, width: 200, height: 100 },
   "clk_cam1pll子节点": { x: 2350, y: 1610, width: 200, height: 350 },
@@ -33,9 +33,12 @@ const DEFAULT_MODULE_POSITIONS: Record<string, { x: number; y: number; width: nu
   "clk_vip_sys_2子节点": { x: 2580, y: 1610, width: 200, height: 170 },
   "clk_keyscan_xclk子节点": { x: 2350, y: 1150, width: 200, height: 100 },
   "clk_wgn_xclk子节点": { x: 2350, y: 1370, width: 200, height: 100 },
-  "OSC输出": { x: 2060, y: 9, width: 200, height: 1100 },
+  "OSC输出": { x: 2060, y: 9, width: 200, height: 1200 },
   "clk_1M子节点": { x: 1060, y: 342, width: 200, height: 250 },
   "clk_spi子节点": { x: 790, y: 1920, width: 200, height: 250 },
+  "clk_wgn子节点": { x: 2590, y: 1370, width: 200, height: 200 },
+  "clk_eth_pll子节点": { x: 30, y: 500, width: 200, height: 160 },
+  "rtc_32k子节点": { x: 30, y: 330, width: 200, height: 160 },
 };
 
 // 31 个节点卡片的中文标题映射
@@ -57,7 +60,7 @@ const NODE_TITLES: Record<string, string> = {
   "clk_raw_axi子节点": "clk_raw_axi 子节点",
   "clk_sys_disp子节点": "clk_sys_disp 子节点",
   "clk_mpll子节点": "clk_mpll 子节点",
-  "clk_rtc_sys子节点": "clk_rtc_sys 子节点",
+  "clk_rtc_sys子节点": "clk_rtc_sys 子节点 (OSC 25MHz)",
   "clk_hspi子节点": "clk_hspi 子节点",
   "clk_vip_sys_0子节点": "clk_vip_sys_0 子节点",
   "clk_vip_sys_1子节点": "clk_vip_sys_1 子节点",
@@ -71,6 +74,9 @@ const NODE_TITLES: Record<string, string> = {
   "clk_wgn_xclk子节点": "clk_wgn_xclk 子节点",
   "clk_1M子节点": "clk_1M 子节点",
   "clk_spi子节点": "clk_spi 子节点",
+  "clk_wgn子节点": "clk_wgn 子节点",
+  "clk_eth_pll子节点": "clk_eth_pll 子节点 (ETH)",
+  "rtc_32k子节点": "rtc_32k 子节点 (32kHz)",
 };
 
 // 31 个节点卡片的配色体系
@@ -119,6 +125,13 @@ const NODE_COLORS: Record<string, { border: string; bg: string; text: string; ti
   "clk_vip_sys_2子节点": { border: "border-indigo-500/20 hover:border-indigo-500/35", bg: "bg-slate-900/60", text: "text-indigo-400", titleBg: "bg-indigo-500/5" },
   "clk_keyscan_xclk子节点": { border: "border-indigo-500/20 hover:border-indigo-500/35", bg: "bg-slate-900/60", text: "text-indigo-400", titleBg: "bg-indigo-500/5" },
   "clk_wgn_xclk子节点": { border: "border-indigo-500/20 hover:border-indigo-500/35", bg: "bg-slate-900/60", text: "text-indigo-400", titleBg: "bg-indigo-500/5" },
+  "clk_wgn子节点": { border: "border-indigo-500/20 hover:border-indigo-500/35", bg: "bg-slate-900/60", text: "text-indigo-400", titleBg: "bg-indigo-500/5" },
+
+  // ETH 分支 (派生自 clk_eth_pll)
+  "clk_eth_pll子节点": { border: "border-rose-500/20 hover:border-rose-500/35", bg: "bg-slate-900/60", text: "text-rose-400", titleBg: "bg-rose-500/5" },
+
+  // RTC 32kHz 域
+  "rtc_32k子节点": { border: "border-emerald-500/20 hover:border-emerald-500/35", bg: "bg-slate-900/60", text: "text-emerald-400", titleBg: "bg-emerald-500/5" },
 };
 
 // 子节点卡片名字到父时钟名称的映射
@@ -149,6 +162,9 @@ const NODE_NAME_TO_PARENT_CLOCK: Record<string, string> = {
   "clk_vip_sys_2子节点": "clk_vip_sys_2",
   "clk_keyscan_xclk子节点": "clk_keyscan_xclk",
   "clk_wgn_xclk子节点": "clk_wgn_xclk",
+  "clk_wgn子节点": "clk_wgn",
+  "clk_eth_pll子节点": "clk_eth_pll",
+  "rtc_32k子节点": "rtc_32k",
   "clk_a0pll子节点": "clk_a0pll",
 };
 
@@ -169,7 +185,8 @@ const CLK_MPLL_SUB_NODES = [
   "clk_usb20_ref", "clk_usb20_bus_early", "clk_rtc_spi_nor", "clk_cyc_scan_300M", "clk_vip_sys_4", "clk_vip_sys_3",
   "clk_vip_sys_1", "clk_vip_sys_0", "clk_vc_src0", "clk_tpu_sys", "clk_gic", "clk_bus", "clk_rtc_sys", "clk_hsperi"
 ];
-const CLK_FAB_100M_SUB_NODES = ["clk_apb_gpio", "clk_apb_wdt", "clk_apb_vcsys", "clk_apb_jpeg", "clk_apb_ve", "clk_fab6_100M_free", "clk_efuse_pclk", "clk_x2p"];
+// 注意：clk_apb_jpeg / clk_apb_ve 在板端是 clk_apb_vcsys 的子节点，不是 clk_fab_100M 的直接子节点
+const CLK_FAB_100M_SUB_NODES = ["clk_apb_gpio", "clk_apb_wdt", "clk_apb_vcsys", "clk_fab6_100M_free", "clk_efuse_pclk", "clk_x2p"];
 const CLK_XTAL_MISC_SUB_NODES = ["clk_timer7", "clk_timer6", "clk_timer5", "clk_timer4", "clk_timer3", "clk_timer2", "clk_timer1", "clk_timer0", "clk_1M", "clk_usb20_suspend"];
 const CLK_I2C_SUB_NODES = ["clk_apb_i2c"];
 const CLK_APB_I2C_SUB_NODES = ["clk_apb_i2c4", "clk_apb_i2c3", "clk_apb_i2c2", "clk_apb_i2c1", "clk_apb_i2c0"];
@@ -193,6 +210,9 @@ const CLK_VIP_SYS_3_SUB_NODES = ["clk_csi_be_vip", "clk_csi_mac0_vip"];
 const CLK_SPI_SUB_NODES = ["clk_apb_spi3", "clk_apb_spi2", "clk_apb_spi1", "clk_apb_spi0"];
 const CLK_KEYSCAN_XCLK_SUB_NODES = ["clk_keyscan"];
 const CLK_WGN_XCLK_SUB_NODES = ["clk_wgn"];
+const CLK_WGN_SUB_NODES = ["clk_wgn2", "clk_wgn1", "clk_wgn0"];
+const CLK_ETH_PLL_SUB_NODES = ["eth_csrclk", "eth_ptpclk"];
+const CLK_RTC_32K_SUB_NODES = ["clk_rtc_sys_wdt", "clk_rtc_sys_gpio_db"];
 
 const SUB_NODE_LISTS: Record<string, string[]> = {
   "clk_1M": CLK_1M_SUB_NODES,
@@ -222,6 +242,9 @@ const SUB_NODE_LISTS: Record<string, string[]> = {
   "clk_spi": CLK_SPI_SUB_NODES,
   "clk_keyscan_xclk": CLK_KEYSCAN_XCLK_SUB_NODES,
   "clk_wgn_xclk": CLK_WGN_XCLK_SUB_NODES,
+  "clk_wgn": CLK_WGN_SUB_NODES,
+  "clk_eth_pll": CLK_ETH_PLL_SUB_NODES,
+  "rtc_32k": CLK_RTC_32K_SUB_NODES,
 };
 
 // OSC 直接输出名字
@@ -229,7 +252,7 @@ const OUTPUT_NAMES = [
   "clk_rtc_sys_saradc1", "clk_rtc_sys_irrx", "clk_rtc_sys_saradc", "clk_rtc_sys_i2c", "clk_rtc_sys_uart",
   "clk_rtc_sys_timer1", "clk_rtc_sys_timer0", "clk_rtc_sys_rtc_spinor", "clk_rtc_sys_spinor1", "clk_pm",
   "clk_saradc", "clk_tempsen", "clk_ahb_sf1", "clk_dbgsys", "clk_efuse_clk", "clk_keyscan_xclk", "clk_wgn_xclk",
-  "clk_wdt_pclk", "clk_mipimpll_d3", "clk_cam1pll", "clk_cam0pll"
+  "clk_wdt_pclk", "clk_usb20_coreclkin", "clk_sc", "clk_dbg", "clk_mipimpll_d3", "clk_cam1pll"
 ];
 
 // 时钟节点级联连线定义
@@ -257,8 +280,8 @@ const CONNECTIONS = [
   // clk_raw_axi -> clk_raw_axi子节点
   { fromNode: "clk_cam1pll子节点", fromItem: "clk_raw_axi", toNode: "clk_raw_axi子节点", toItem: "", color: "#228b22" },
 
-  // clk_cam0pll -> clk_cam0pll子节点
-  { fromNode: "OSC输出", fromItem: "clk_cam0pll", toNode: "clk_cam0pll子节点", toItem: "", color: "#00ff11ff" },
+  // clk_cam0pll (clk_mipimpll 的子 PLL) -> clk_cam0pll子节点
+  { fromNode: "子锁相环", fromItem: "clk_cam0pll", toNode: "clk_cam0pll子节点", toItem: "", color: "#00ff11ff" },
 
   // clk_disppll -> clk_disppll子节点
   { fromNode: "子锁相环", fromItem: "clk_disppll", toNode: "clk_disppll子节点", toItem: "", color: "#4b0082" },
@@ -305,8 +328,8 @@ const CONNECTIONS = [
   // clk_hsperi -> clk_hspi子节点
   { fromNode: "clk_mpll子节点", fromItem: "clk_hsperi", toNode: "clk_hspi子节点", toItem: "", color: "#006400" },
 
-  // clk_rtc_sys -> clk_rtc_sys子节点
-  { fromNode: "clk_mpll子节点", fromItem: "clk_rtc_sys", toNode: "clk_rtc_sys子节点", toItem: "", color: "#ff8c00" },
+  // clk_rtc_sys 子节点 (apb 门控时钟实为 osc 25MHz 域，非 clk_rtc_sys 300M)
+  { fromNode: "输入源", fromItem: "OSC", toNode: "clk_rtc_sys子节点", toItem: "", color: "#ff8c00" },
 
   // clk_vip_sys_0 -> clk_vip_sys_0子节点
   { fromNode: "clk_mpll子节点", fromItem: "clk_vip_sys_0", toNode: "clk_vip_sys_0子节点", toItem: "", color: "#ff0000ff" },
@@ -328,6 +351,15 @@ const CONNECTIONS = [
 
   // clk_wgn_xclk -> clk_wgn_xclk子节点
   { fromNode: "OSC输出", fromItem: "clk_wgn_xclk", toNode: "clk_wgn_xclk子节点", toItem: "", color: "#0066cc" },
+
+  // clk_wgn -> clk_wgn子节点 (wgn2/1/0)
+  { fromNode: "clk_wgn_xclk子节点", fromItem: "clk_wgn", toNode: "clk_wgn子节点", toItem: "", color: "#0066cc" },
+
+  // clk_eth_pll -> clk_eth_pll子节点 (eth_csrclk / eth_ptpclk)
+  { fromNode: "clk_fpll子节点", fromItem: "clk_eth_pll", toNode: "clk_eth_pll子节点", toItem: "", color: "#ff1493" },
+
+  // rtc_32k -> rtc_32k子节点 (clk_rtc_sys_wdt / clk_rtc_sys_gpio_db)
+  { fromNode: "输入源", fromItem: "RTC", toNode: "rtc_32k子节点", toItem: "", color: "#10b981" },
 ];
 
 export default function ClockPage() {
@@ -398,23 +430,6 @@ export default function ClockPage() {
     searchClock(val);
   };
 
-  const handleExport = async () => {
-    if (!sdkPath || !chipType) {
-      setExportMsg("请先在顶部配置全局 SDK 源码路径和芯片型号！");
-      setTimeout(() => setExportMsg(null), 4000);
-      return;
-    }
-    setExportMsg(null);
-    try {
-      await exportClockDefconfig(sdkPath, chipType, localPlls);
-      setExportMsg(`时钟配置已成功保存并同步到: build/boards/cv184x/${chipType}/${chipType}_defconfig`);
-      setTimeout(() => setExportMsg(null), 4000);
-    } catch (e) {
-      setExportMsg(`时钟配置导出失败: ${e}`);
-      setTimeout(() => setExportMsg(null), 5000);
-    }
-  };
-
   const handleResetND = async () => {
     // 默认主 PLL 配置及子 PLL 默认值
     const defaultPlls: Record<string, { multiplier: number; divider: number }> = {
@@ -427,6 +442,7 @@ export default function ClockPage() {
       "clk_a24k": { multiplier: 1, divider: 1 },
       "clk_vivo_mipimpll": { multiplier: 1, divider: 1 },
       "clk_cyc_dsi_syn": { multiplier: 1, divider: 1 },
+      "clk_cam0pll": { multiplier: 6, divider: 5 },
       "clk_disppll": { multiplier: 12, divider: 9.09090909 },
       "clk_a0pll": { multiplier: 4, divider: 7.32421875 },
     };
@@ -492,7 +508,7 @@ export default function ClockPage() {
       return ["clk_fpll", "clk_mipimpll", "clk_mpll", "clk_tpll", "clk_appll", "clk_rvpll"].some(name => name.toLowerCase().includes(t));
     }
     if (nodeName === "子锁相环") {
-      return ["clk_a24k", "clk_vivo_mipimpll", "clk_cyc_dsi_syn", "clk_disppll", "clk_a0pll"].some(name => name.toLowerCase().includes(t));
+      return ["clk_a24k", "clk_vivo_mipimpll", "clk_cyc_dsi_syn", "clk_cam0pll", "clk_disppll", "clk_a0pll"].some(name => name.toLowerCase().includes(t));
     }
     if (nodeName === "OSC输出") {
       return OUTPUT_NAMES.some(name => name.toLowerCase().includes(t));
@@ -625,7 +641,10 @@ export default function ClockPage() {
     const startX = pos.x + pos.width;
 
     if (nodeName === "输入源") {
-      // OSC 是下半部分输入源
+      // 输入源卡片上半为 32768Hz(RTC)，下半为 25MHz(OSC)
+      if (itemName === "RTC") {
+        return { x: startX, y: pos.y + pos.height * 0.28 };
+      }
       return { x: startX, y: pos.y + pos.height * 0.72 };
     }
 
@@ -638,17 +657,17 @@ export default function ClockPage() {
     }
 
     if (nodeName === "子锁相环") {
-      const subPllList = ["clk_a24k", "clk_vivo_mipimpll", "clk_cyc_dsi_syn", "clk_disppll", "clk_a0pll"];
+      const subPllList = ["clk_a24k", "clk_vivo_mipimpll", "clk_cyc_dsi_syn", "clk_cam0pll", "clk_disppll", "clk_a0pll"];
       const i = subPllList.indexOf(itemName);
       if (i !== -1) {
-        return { x: startX, y: pos.y + 40 + (i + 0.5) * (pos.height - 40) / 5 };
+        return { x: startX, y: pos.y + 40 + (i + 0.5) * (pos.height - 40) / subPllList.length };
       }
     }
 
     if (nodeName === "OSC输出") {
       const i = OUTPUT_NAMES.indexOf(itemName);
       if (i !== -1) {
-        return { x: startX, y: pos.y + 40 + (i + 0.5) * (pos.height - 40) / 21 };
+        return { x: startX, y: pos.y + 40 + (i + 0.5) * (pos.height - 40) / OUTPUT_NAMES.length };
       }
     }
 
@@ -721,7 +740,7 @@ export default function ClockPage() {
     }
 
     if (nodeName === "子锁相环") {
-      const subPllList = ["clk_a24k", "clk_vivo_mipimpll", "clk_cyc_dsi_syn", "clk_disppll", "clk_a0pll"];
+      const subPllList = ["clk_a24k", "clk_vivo_mipimpll", "clk_cyc_dsi_syn", "clk_cam0pll", "clk_disppll", "clk_a0pll"];
       const mipimpllOutputFreq = localPlls["clk_mipimpll"]?.outputFreq || 25.0;
       return (
         <div className="p-3 space-y-3 font-mono text-xs flex flex-col justify-around h-[calc(100%-40px)]">
@@ -848,14 +867,6 @@ export default function ClockPage() {
             className="bg-amber-600 hover:bg-amber-500 active:scale-95 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-lg shadow-amber-600/20 flex items-center gap-1.5 transition-all focus:outline-none focus:ring-0 border-transparent outline-none cursor-pointer"
           >
             OD超频配置
-          </button>
-
-          <button
-            type="button"
-            onClick={handleExport}
-            className="bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-lg shadow-indigo-500/20 flex items-center gap-1.5 transition-all focus:outline-none focus:ring-0 border-transparent outline-none cursor-pointer"
-          >
-            保存时钟树
           </button>
         </div>
       </div>

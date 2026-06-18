@@ -5,7 +5,7 @@
 use crate::clock_calc::{
     compute_output_frequency, compute_pll_frequency, compute_subnode_frequency,
     compute_subpll_frequency, ClockOutput, ClockTreeResult, ModulePosition, PllConfig,
-    OSC_FREQUENCY_MHZ, PLL_NAMES, SUB_NODE_GROUPS, SUB_PLL_NAMES,
+    OSC_FREQUENCY_MHZ, PLL_NAMES, RTC_FREQUENCY_MHZ, SUB_NODE_GROUPS, SUB_PLL_NAMES,
 };
 use std::collections::HashMap;
 use std::fs;
@@ -64,6 +64,7 @@ pub fn compute_clock_tree(configs: HashMap<String, PllConfig>) -> Result<ClockTr
         ("clk_a24k", 1, 1.0),
         ("clk_vivo_mipimpll", 1, 1.0),
         ("clk_cyc_dsi_syn", 1, 1.0),
+        ("clk_cam0pll", 6, 5.0), // 900 * 6 / 5 = 1080 MHz (clk_mipimpll 的子 PLL)
         ("clk_disppll", 12, 9.09090909),
         ("clk_a0pll", 4, 7.32421875),
     ];
@@ -126,42 +127,22 @@ pub fn compute_clock_tree(configs: HashMap<String, PllConfig>) -> Result<ClockTr
     }
 
     // Step 3: Compute OSC direct output frequencies
-    // Special multiplier nodes: clk_mipimpll_d3, clk_cam1pll, clk_cam0pll
-    let special_multiplier_nodes = ["clk_mipimpll_d3", "clk_cam1pll", "clk_cam0pll"];
-
-    // Create default outputs for OSC branch nodes
+    // 派生节点（与板端 clk_summary 对齐）：
+    //   - clk_mipimpll_d3 = clk_mipimpll / 3（源自 mipimpll，非 OSC×3）
+    //   - clk_cam1pll     = OSC × multiplier（默认 ×1，倍频值不在本次结构修正范围）
+    //   - clk_cam0pll 已改为 clk_mipimpll 的子 PLL（见 SUB_PLL_NAMES），不再是 OSC 直出节点
     for output_name in crate::clock_calc::OUTPUT_NAMES.iter() {
-        let multiplier = if special_multiplier_nodes.contains(output_name) {
-            // These use multiplier instead of divider: freq = OSC * multiplier
-            // Default multiplier values
-            match *output_name {
-                "clk_mipimpll_d3" => 3,
-                "clk_cam1pll" => 1,
-                "clk_cam0pll" => 1,
-                _ => 1,
-            }
-        } else {
-            1
-        };
-
-        let divider = if special_multiplier_nodes.contains(&output_name) {
-            1
-        } else {
-            // Default divider values vary per node - start with 1
-            1
-        };
-
-        let frequency = if special_multiplier_nodes.contains(&output_name) {
-            OSC_FREQUENCY_MHZ * multiplier as f64
-        } else {
-            compute_output_frequency(OSC_FREQUENCY_MHZ, divider, multiplier)
+        let (source, divider, multiplier, frequency): (&str, i32, i32, f64) = match *output_name {
+            "clk_mipimpll_d3" => ("clk_mipimpll", 3, 1, mipimpll_output / 3.0),
+            "clk_cam1pll" => ("OSC", 1, 1, OSC_FREQUENCY_MHZ),
+            _ => ("OSC", 1, 1, compute_output_frequency(OSC_FREQUENCY_MHZ, 1, 1)),
         };
 
         outputs.insert(
             output_name.to_string(),
             ClockOutput {
                 name: output_name.to_string(),
-                source: "OSC".to_string(),
+                source: source.to_string(),
                 divider,
                 multiplier,
                 frequency,
@@ -175,6 +156,14 @@ pub fn compute_clock_tree(configs: HashMap<String, PllConfig>) -> Result<ClockTr
         // Get parent frequency from the appropriate source
         let parent_freq = get_parent_frequency(parent_name, &pll_configs, &outputs);
 
+        // 显示用的源标签：clk_rtc_sys_* 门控时钟在板端实为 osc 子节点（25MHz），
+        // 故其源标记为 "osc" 而非 clk_rtc_sys（clk_rtc_sys 本身是 clk_mpll/4=300M 的叶子）。
+        let source_label: &str = if *parent_name == "clk_rtc_sys" {
+            "osc"
+        } else {
+            parent_name
+        };
+
         let mut sub_nodes = HashMap::new();
         for node_name in sub_node_list.iter() {
             let divider = get_default_subnode_divider(node_name);
@@ -184,7 +173,7 @@ pub fn compute_clock_tree(configs: HashMap<String, PllConfig>) -> Result<ClockTr
                 node_name.to_string(),
                 ClockOutput {
                     name: node_name.to_string(),
-                    source: parent_name.to_string(),
+                    source: source_label.to_string(),
                     divider,
                     multiplier: 1,
                     frequency: freq,
@@ -252,10 +241,10 @@ fn get_parent_frequency(
             .get("clk_disppll")
             .map(|c| c.output_freq)
             .unwrap_or(500.0),
-        "clk_cam0pll" => outputs
+        "clk_cam0pll" => pll_configs
             .get("clk_cam0pll")
-            .map(|o| o.frequency)
-            .unwrap_or(25.0),
+            .map(|c| c.output_freq)
+            .unwrap_or(1080.0),
         "clk_sys_disp" => {
             let disppll_freq = get_parent_frequency("clk_disppll", pll_configs, outputs);
             disppll_freq / 8.0
@@ -281,10 +270,9 @@ fn get_parent_frequency(
         "clk_x2p" => {
             get_parent_frequency("clk_fab_100M", pll_configs, outputs)
         }
-        "clk_rtc_sys" => {
-            let mpll_freq = get_parent_frequency("clk_mpll", pll_configs, outputs);
-            mpll_freq / 4.0
-        }
+        // clk_rtc_sys_* 门控时钟在板端是 osc 的直接子节点（25MHz），
+        // 而非 clk_rtc_sys(=clk_mpll/4=300M) 的子节点。
+        "clk_rtc_sys" => OSC_FREQUENCY_MHZ,
         "clk_hsperi" => {
             let mpll_freq = get_parent_frequency("clk_mpll", pll_configs, outputs);
             mpll_freq / 4.0
@@ -311,6 +299,15 @@ fn get_parent_frequency(
         }
         "clk_keyscan_xclk" => OSC_FREQUENCY_MHZ,
         "clk_wgn_xclk" => OSC_FREQUENCY_MHZ,
+        // clk_wgn (=osc 25M) -> clk_wgn2/1/0 (25M)
+        "clk_wgn" => OSC_FREQUENCY_MHZ,
+        // clk_eth_pll = clk_fpll / 2 = 500M -> eth_csrclk(÷2=250M), eth_ptpclk(÷10=50M)
+        "clk_eth_pll" => {
+            let fpll_freq = get_parent_frequency("clk_fpll", pll_configs, outputs);
+            fpll_freq / 2.0
+        }
+        // rtc_32k 域 (32.768kHz) -> clk_rtc_sys_wdt / clk_rtc_sys_gpio_db
+        "rtc_32k" => RTC_FREQUENCY_MHZ,
         "clk_raw_axi" => {
             get_parent_frequency("clk_cam1pll", pll_configs, outputs)
         }
@@ -361,7 +358,11 @@ fn get_default_subnode_divider(name: &str) -> i32 {
         // XtalMisc sub-nodes
         "clk_1M" => 250,
         "clk_usb20_suspend" => 125,
-        
+
+        // EthPLL sub-nodes (clk_eth_pll=500M)
+        "eth_csrclk" => 2, // 500 / 2 = 250 MHz
+        "eth_ptpclk" => 10, // 500 / 10 = 50 MHz
+
         // Default divider is 1
         _ => 1,
     }

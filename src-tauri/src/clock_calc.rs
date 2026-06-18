@@ -258,6 +258,7 @@ pub const SUB_PLL_NAMES: &[&str] = &[
     "clk_a24k",
     "clk_vivo_mipimpll",
     "clk_cyc_dsi_syn",
+    "clk_cam0pll",
     "clk_disppll",
     "clk_a0pll",
 ];
@@ -283,10 +284,13 @@ pub const OUTPUT_NAMES: &[&str] = &[
     "clk_keyscan_xclk",
     "clk_wgn_xclk",
     "clk_wdt_pclk",
-    // special multiplier nodes
+    // osc direct branch (extra peripheral roots from clk_summary)
+    "clk_usb20_coreclkin",
+    "clk_sc",
+    "clk_dbg",
+    // special / derived nodes
     "clk_mipimpll_d3",
     "clk_cam1pll",
-    "clk_cam0pll",
 ];
 
 /// clk_1M sub-nodes
@@ -378,12 +382,12 @@ pub const CLK_MPLL_SUB_NODES: &[&str] = &[
 ];
 
 /// clk_fab_100M sub-nodes
+/// 注意：clk_apb_jpeg / clk_apb_ve 在板端是 clk_apb_vcsys 的子节点，
+/// 不是 clk_fab_100M 的直接子节点，故不在此列出。
 pub const CLK_FAB_100M_SUB_NODES: &[&str] = &[
     "clk_apb_gpio",
     "clk_apb_wdt",
     "clk_apb_vcsys",
-    "clk_apb_jpeg",
-    "clk_apb_ve",
     "clk_fab6_100M_free",
     "clk_efuse_pclk",
     "clk_x2p",
@@ -507,6 +511,15 @@ pub const CLK_KEYSCAN_XCLK_SUB_NODES: &[&str] = &["clk_keyscan"];
 /// clk_wgn_xclk sub-nodes
 pub const CLK_WGN_XCLK_SUB_NODES: &[&str] = &["clk_wgn"];
 
+/// clk_wgn sub-nodes (clk_wgn_xclk -> clk_wgn -> wgn2/1/0, all 25MHz)
+pub const CLK_WGN_SUB_NODES: &[&str] = &["clk_wgn2", "clk_wgn1", "clk_wgn0"];
+
+/// clk_eth_pll sub-nodes (eth_csrclk=250MHz, eth_ptpclk=50MHz; sourced from clk_eth_pll=fpll/2)
+pub const CLK_ETH_PLL_SUB_NODES: &[&str] = &["eth_csrclk", "eth_ptpclk"];
+
+/// rtc_32k sub-nodes (32kHz domain)
+pub const CLK_RTC_32K_SUB_NODES: &[&str] = &["clk_rtc_sys_wdt", "clk_rtc_sys_gpio_db"];
+
 /// All sub-node group names (mapping from parent node to its sub-node list)
 pub const SUB_NODE_GROUPS: &[(&str, &[&str])] = &[
     ("clk_1M", CLK_1M_SUB_NODES),
@@ -536,6 +549,9 @@ pub const SUB_NODE_GROUPS: &[(&str, &[&str])] = &[
     ("clk_spi", CLK_SPI_SUB_NODES),
     ("clk_keyscan_xclk", CLK_KEYSCAN_XCLK_SUB_NODES),
     ("clk_wgn_xclk", CLK_WGN_XCLK_SUB_NODES),
+    ("clk_wgn", CLK_WGN_SUB_NODES),
+    ("clk_eth_pll", CLK_ETH_PLL_SUB_NODES),
+    ("rtc_32k", CLK_RTC_32K_SUB_NODES),
 ];
 
 // ============================================================
