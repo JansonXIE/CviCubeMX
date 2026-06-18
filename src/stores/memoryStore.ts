@@ -15,13 +15,14 @@ interface MemoryState {
   regions: MemoryRegion[];
   isLoading: boolean;
   error: string | null;
+  warnings: string[];
 
   // Actions
   loadMemoryRegions: () => Promise<void>;
   addRegion: (region: MemoryRegion) => void;
   removeRegion: (name: string) => void;
   updateRegion: (name: string, updated: Partial<MemoryRegion>) => void;
-  validateMemory: () => Promise<void>;
+  validateMemory: () => Promise<string[]>;
   exportDefconfig: (sourcePath: string, chipType: string) => Promise<void>;
   exportMemoryJson: (path: string) => Promise<void>;
 }
@@ -30,9 +31,10 @@ export const useMemoryStore = create<MemoryState>((set, get) => ({
   regions: [],
   isLoading: false,
   error: null,
+  warnings: [],
 
   loadMemoryRegions: async () => {
-    set({ isLoading: true, error: null });
+    set({ isLoading: true, error: null, warnings: [] });
     try {
       const list = await invoke<MemoryRegion[]>('load_memory_regions');
       set({ regions: list, isLoading: false });
@@ -145,10 +147,12 @@ export const useMemoryStore = create<MemoryState>((set, get) => ({
   },
 
   validateMemory: async () => {
-    set({ isLoading: true, error: null });
+    set({ isLoading: true, error: null, warnings: [] });
     try {
-      await invoke('validate_memory', { regions: get().regions });
-      set({ isLoading: false });
+      // 后端返回重叠警告列表（信息性，不代表失败）；硬错误会以异常形式抛出
+      const warnings = await invoke<string[]>('validate_memory', { regions: get().regions });
+      set({ isLoading: false, warnings });
+      return warnings;
     } catch (err) {
       set({ error: String(err), isLoading: false });
       throw err;

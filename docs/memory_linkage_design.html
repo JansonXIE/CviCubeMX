@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Memory 页面联动 SDK 与内存校验 · 设计方案</title>
+<style>
+  :root{
+    --sidebar-w: 300px;
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2330; --border:#30363d;
+    --text:#c9d1d9; --muted:#8b949e; --accent:#58a6ff; --accent2:#3fb950;
+    --warn:#d29922; --danger:#f85149; --code-bg:#0b1020; --purple:#d2a8ff;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",Helvetica,Arial,sans-serif;
+    background:var(--bg);color:var(--text);line-height:1.65;font-size:15px;}
+  /* sidebar */
+  .sidebar{position:fixed;top:0;left:0;bottom:0;width:var(--sidebar-w);background:var(--panel);
+    border-right:1px solid var(--border);overflow-y:auto;padding:22px 0 40px;}
+  .sidebar h1{font-size:14.5px;margin:0 20px 4px;color:#fff;letter-spacing:.3px;}
+  .sidebar .sub{font-size:11.5px;color:var(--muted);margin:0 20px 16px;font-family:monospace;}
+  .sidebar .meta{margin:0 20px 18px;font-size:11px;color:var(--muted);border-top:1px solid var(--border);padding-top:12px;}
+  .sidebar nav a{display:block;color:var(--muted);text-decoration:none;padding:7px 20px 7px 22px;
+    font-size:13px;border-left:3px solid transparent;transition:all .15s;}
+  .sidebar nav a:hover{color:var(--text);background:var(--panel2);}
+  .sidebar nav a.active{color:var(--accent);border-left-color:var(--accent);background:var(--panel2);}
+  .sidebar nav a.lvl2{padding-left:38px;font-size:12px;}
+  .sidebar .tag{display:inline-block;font-size:9px;padding:1px 6px;border-radius:8px;
+    background:#21262d;color:var(--muted);margin-left:6px;vertical-align:middle;}
+  /* content */
+  main{margin-left:var(--sidebar-w);max-width:1000px;padding:44px 56px 120px;}
+  section{margin-bottom:54px;scroll-margin-top:24px;}
+  h2{font-size:24px;color:#fff;margin:0 0 6px;padding-bottom:10px;border-bottom:1px solid var(--border);}
+  h2 .num{color:var(--accent);font-family:monospace;margin-right:10px;font-size:20px;}
+  h3{font-size:18px;color:#fff;margin:30px 0 8px;}
+  h4{font-size:15px;color:var(--accent);margin:22px 0 6px;}
+  p{margin:10px 0;}
+  code{font-family:"SFMono-Regular",Consolas,"Courier New",monospace;background:#21262d;color:#e6edf3;
+    padding:2px 6px;border-radius:5px;font-size:13px;}
+  pre{background:var(--code-bg);border:1px solid var(--border);border-radius:10px;padding:16px 18px;
+    overflow-x:auto;font-size:13px;line-height:1.55;}
+  pre code{background:none;padding:0;color:#c9d1d9;}
+  .c-key{color:#ff7b72;} .c-fn{color:#d2a8ff;} .c-str{color:#a5d6ff;}
+  .c-num{color:#79c0ff;} .c-cmt{color:#8b949e;font-style:italic;} .c-var{color:#ffa657;}
+  .lead{font-size:16px;color:var(--text);background:var(--panel);border-left:3px solid var(--accent);
+    padding:14px 18px;border-radius:0 8px 8px 0;margin:0 0 24px;}
+  .note,.warn,.tip,.danger{border-radius:8px;padding:13px 16px;margin:18px 0;font-size:14px;border:1px solid var(--border);}
+  .note{background:rgba(88,166,255,.08);border-color:rgba(88,166,255,.4);}
+  .warn{background:rgba(210,153,34,.08);border-color:rgba(210,153,34,.45);}
+  .tip{background:rgba(63,185,80,.08);border-color:rgba(63,185,80,.45);}
+  .danger{background:rgba(248,81,73,.08);border-color:rgba(248,81,73,.45);}
+  .note b,.warn b,.tip b,.danger b{color:#fff;}
+  table{width:100%;border-collapse:collapse;margin:18px 0;font-size:13.5px;background:var(--panel);border-radius:8px;overflow:hidden;}
+  th,td{padding:10px 13px;text-align:left;border-bottom:1px solid var(--border);vertical-align:top;}
+  th{background:var(--panel2);color:#fff;font-weight:600;}
+  td code{font-size:12.5px;}
+  tr:last-child td{border-bottom:none;}
+  .mono{font-family:"SFMono-Regular",Consolas,monospace;}
+  .ok{color:var(--accent2);font-weight:600;} .gap{color:var(--warn);font-weight:600;} .no{color:var(--danger);font-weight:600;}
+  .badge{display:inline-block;font-size:11px;font-family:monospace;padding:1px 7px;border-radius:6px;margin-right:6px;}
+  .badge.ts{background:#2b4a6f;color:#cfe3ff;} .badge.rs{background:#6e3b2a;color:#ffd6c2;}
+  .badge.mk{background:#5a4a1e;color:#ffe9b0;} .badge.py{background:#2b5b84;color:#cfe8ff;}
+  .badge.file{background:#3a2d52;color:#e3d0ff;}
+  /* flow / pipeline */
+  .flow{display:flex;flex-direction:column;gap:0;margin:24px 0;}
+  .flow .step{background:var(--panel);border:1px solid var(--border);border-radius:9px;padding:13px 18px;position:relative;}
+  .flow .step .t{font-weight:600;color:#fff;font-size:14.5px;}
+  .flow .step .d{font-size:12.5px;color:var(--muted);margin-top:3px;}
+  .flow .step .f{font-family:monospace;font-size:11.5px;color:var(--accent);margin-top:2px;}
+  .flow .arrow{text-align:center;color:var(--muted);font-size:18px;line-height:1;margin:5px 0;}
+  /* two-col cards */
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:18px 0;}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px 18px;}
+  .card h4{margin-top:0;}
+  .card.green{border-color:rgba(63,185,80,.4);}
+  .card.amber{border-color:rgba(210,153,34,.4);}
+  ul.clean{margin:10px 0;padding-left:22px;} ul.clean li{margin:5px 0;}
+  ul.checks{list-style:none;padding-left:4px;margin:12px 0;}
+  ul.checks li{margin:8px 0;padding-left:26px;position:relative;}
+  ul.checks li::before{content:"";position:absolute;left:0;top:6px;width:14px;height:14px;border-radius:4px;}
+  ul.checks li.y::before{background:var(--accent2);}
+  ul.checks li.g::before{background:var(--warn);}
+  ul.checks li.n::before{background:var(--danger);}
+  a.inline{color:var(--accent);text-decoration:none;} a.inline:hover{text-decoration:underline;}
+  footer{margin-left:var(--sidebar-w);padding:24px 56px;color:var(--muted);font-size:12.5px;border-top:1px solid var(--border);}
+  /* sequence diagram blocks */
+  .seq{display:flex;flex-direction:column;gap:8px;margin:18px 0;font-size:13px;}
+  .seq .row{display:flex;align-items:flex-start;gap:12px;}
+  .seq .actor{flex:0 0 130px;font-family:monospace;font-size:11.5px;color:var(--accent);text-align:right;padding-top:9px;}
+  .seq .msg{flex:1;background:var(--panel);border:1px solid var(--border);border-left:3px solid var(--accent);
+    border-radius:0 8px 8px 0;padding:8px 12px;}
+  .seq .msg b{color:#fff;}
+  .pill{display:inline-block;font-size:10px;padding:1px 8px;border-radius:10px;background:#21262d;color:var(--muted);margin-left:6px;}
+  @media (max-width:980px){.sidebar{transform:translateX(-100%);}main,footer{margin-left:0;padding-left:24px;padding-right:24px;}.grid2{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <h1>Memory 联动 + 内存校验</h1>
+  <div class="sub">设计方案 · Design Spec</div>
+  <nav id="nav">
+    <a href="#goal">需求与目标</a>
+    <a href="#current">① 现状盘点</a>
+    <a href="#arch">② 总体架构</a>
+    <a href="#linkage">③ 联动写入设计</a>
+    <a href="#what-writes" class="lvl2">写哪些文件</a>
+    <a href="#cascade" class="lvl2">前端级联联动</a>
+    <a href="#tobuild" class="lvl2">如何抵达 .h</a>
+    <a href="#validate">④ 校验设计（防互踩）</a>
+    <a href="#overlap" class="lvl2">重叠检测</a>
+    <a href="#constraints" class="lvl2">约束检测</a>
+    <a href="#sequence">⑤ 交互时序</a>
+    <a href="#ui">⑥ UI 与状态反馈</a>
+    <a href="#risk">⑦ 风险与增强建议</a>
+    <a href="#tasks">⑧ 实施清单</a>
+    <a href="#files">附录：涉及文件</a>
+  </nav>
+  <div class="meta">
+    关联文档：<a class="inline" href="cvi_board_memmap_analysis.html">cvi_board_memmap.h 生成逻辑分析</a><br>
+    适用：CV184x · cv1841/42/43
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main>
+
+<!-- GOAL -->
+<section id="goal">
+  <h2><span class="num">§</span>需求与目标</h2>
+  <p class="lead">
+    在 <b>Memory 页面</b>修改物理内存映射配置时，应<b>联动写回 SDK <code>build</code> 目录</b>下的相关配置；
+    同时，<b>“校验内存”</b>的职责是<b>防止改动造成内存区段互相踩踏（overlap / 互踩）</b>，在写入前堵住非法布局。
+  </p>
+  <div class="grid2">
+    <div class="card green">
+      <h4>目标 A · 配置联动</h4>
+      <p style="margin:0;font-size:13.5px;">页面上对 <code>ION</code> / <code>RTOS_ION</code> / <code>RTOS_LOGO</code> 等区段大小的修改，
+      一键同步进 <code>build/boards/cv184x/&lt;chip&gt;/&lt;chip&gt;_defconfig</code> 与 <code>build/.config</code>，
+      最终经构建链路反映到 <code>cvi_board_memmap.h</code>。</p>
+    </div>
+    <div class="card amber">
+      <h4>目标 B · 防互踩校验</h4>
+      <p style="margin:0;font-size:13.5px;">导出前先做两层校验：① 区段<b>地址重叠</b>检测；② 引导阶段的<b>布局约束</b>检测。
+      任一不过即<b>阻断导出</b>，避免把会导致多核内存互踩的配置写进 SDK。</p>
+    </div>
+  </div>
+  <div class="tip">
+    <b>一句话设计：</b><code>编辑 → 级联重算 → 校验（防互踩）→ 通过才写 SDK → 构建时再生成 .h</code>。
+    校验是写入的<b>前置闸门</b>，联动是校验通过后的<b>落盘动作</b>。
+  </div>
+</section>
+
+<!-- CURRENT -->
+<section id="current">
+  <h2><span class="num">①</span>现状盘点（已具备 vs. 待补强）</h2>
+  <p>本需求<b>并非从零开始</b>——代码里已有大部分骨架。下表标注哪些已实现、哪些是缺口：</p>
+  <table>
+    <thead><tr><th>能力</th><th>载体</th><th>状态</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td>内存区段加载</td><td class="mono">load_memory_regions <span class="badge rs">rs</span></td><td class="ok">✓ 已实现</td><td>返回 19 个默认区段</td></tr>
+      <tr><td>编辑 + 级联联动</td><td class="mono">memoryStore.updateRegion <span class="badge ts">ts</span></td><td class="ok">✓ 已实现</td><td>ION / RTOS_ION 改动级联子区段</td></tr>
+      <tr><td>重叠校验</td><td class="mono">validate_memory_layout <span class="badge rs">rs</span></td><td class="ok">✓ 已实现</td><td>重叠为硬错误 + 基址下界检查</td></tr>
+      <tr><td>约束校验</td><td class="mono">validate_memory_constraints <span class="badge rs">rs</span></td><td class="ok">✓ 已实现</td><td>3 条引导阶段约束</td></tr>
+      <tr><td>写回 defconfig + .config</td><td class="mono">export_memory_defconfig <span class="badge rs">rs</span></td><td class="ok">✓ 已实现</td><td>写 3 个 CONFIG_*_SIZE</td></tr>
+      <tr><td>导出 JSON 快照</td><td class="mono">export_memory_json <span class="badge rs">rs</span></td><td class="ok">✓ 已实现</td><td>留档/调试用</td></tr>
+      <tr><td><b>校验作为导出前置闸门</b></td><td class="mono">handleExport <span class="badge ts">ts</span></td><td class="gap">△ 待补强</td><td>当前“保存并导出”<u>未强制先校验</u></td></tr>
+      <tr><td><b>写前备份 / 原子写</b></td><td class="mono">export_memory_defconfig</td><td class="no">✗ 缺失</td><td>直接覆写，无 <code>.bak</code> / 无失败回滚</td></tr>
+      <tr><td><b>DRAM_SIZE 随芯片联动</b></td><td>前端 256M 写死</td><td class="no">✗ 缺失</td><td>128/512MB 边界未处理（见 §④/§⑦）</td></tr>
+      <tr><td><b>触发重生成 .h</b></td><td>需 <code>make memory-map</code></td><td class="gap">△ 解耦</td><td>导出只改 config，<code>.h</code> 由构建时再生成</td></tr>
+    </tbody>
+  </table>
+  <div class="note">
+    <b>设计取向：</b>本方案把已有实现<b>收拢成一条闭环</b>，并补上三个关键缺口：
+    <b>① 校验闸门、② 写前备份、③ 多芯片 DRAM_SIZE 适配</b>。
+  </div>
+</section>
+
+<!-- ARCH -->
+<section id="arch">
+  <h2><span class="num">②</span>总体架构</h2>
+  <p>三层结构：<b>React 视图 → Zustand 状态 → Tauri/Rust 命令 → SDK 文件系统</b>。
+     再往后由 SDK 自身的构建链路（见 <a class="inline" href="cvi_board_memmap_analysis.html">关联文档</a>）落到 <code>.h</code>。</p>
+  <div class="flow">
+    <div class="step">
+      <div class="t"><span class="badge ts">视图层</span>MemoryPage.tsx / MemoryTable.tsx</div>
+      <div class="d">表格编辑、新增、删除；右侧物理分布概念图；“校验内存 / 保存并导出”按钮。</div>
+      <div class="f">src/pages/MemoryPage.tsx · src/components/MemoryTable.tsx</div>
+    </div>
+    <div class="arrow">▼ 调用 action</div>
+    <div class="step">
+      <div class="t"><span class="badge ts">状态层</span>memoryStore.ts (Zustand)</div>
+      <div class="d">持有 <code>regions[]</code>；<code>updateRegion</code> 做<b>级联重算</b>；<code>validateMemory / exportDefconfig</code> 经 <code>invoke</code> 进 Rust。</div>
+      <div class="f">src/stores/memoryStore.ts · src/stores/sdkStore.ts(提供 sdkPath/chipType)</div>
+    </div>
+    <div class="arrow">▼ invoke (IPC)</div>
+    <div class="step">
+      <div class="t"><span class="badge rs">命令层</span>memory.rs (Tauri commands)</div>
+      <div class="d"><code>validate_memory</code>（防互踩）· <code>export_memory_defconfig</code>（联动写盘）· <code>export_memory_json</code>。</div>
+      <div class="f">src-tauri/src/memory.rs · 注册于 lib.rs:49-52</div>
+    </div>
+    <div class="arrow">▼ fs::write</div>
+    <div class="step">
+      <div class="t"><span class="badge file">SDK 文件</span>build/boards/cv184x/&lt;chip&gt;/&lt;chip&gt;_defconfig &nbsp;+&nbsp; build/.config</div>
+      <div class="d">写入 <code>CONFIG_ION_SIZE</code> / <code>CONFIG_RTOS_ION_SIZE</code> / <code>CONFIG_RTOS_LOGO_SIZE</code>。</div>
+      <div class="f">来自 sdkPath + chipType 拼接路径</div>
+    </div>
+    <div class="arrow">▼ make memory-map（SDK 构建时）</div>
+    <div class="step">
+      <div class="t"><span class="badge py">构建链</span>memmap.py 读 .config → mmap_conv.py → cvi_board_memmap.h</div>
+      <div class="d">详见关联文档：同一脚本按 <code>.config</code> 算出地址表并生成 <code>.h / .conf / .ld</code>。</div>
+      <div class="f">build/boards/default/memmap/memmap.py</div>
+    </div>
+  </div>
+</section>
+
+<!-- LINKAGE -->
+<section id="linkage">
+  <h2><span class="num">③</span>联动写入设计</h2>
+
+  <h3 id="what-writes">写哪些文件、哪些字段</h3>
+  <p><code>export_memory_defconfig(regions, sourcePath, chipType)</code> 当前写两处文件、三个字段（取自对应区段的 <code>size</code>）：</p>
+  <table>
+    <thead><tr><th>目标文件</th><th>写入字段</th><th>取值来源</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">build/boards/cv184x/&lt;chip&gt;/&lt;chip&gt;_defconfig</td>
+          <td class="mono">CONFIG_ION_SIZE<br>CONFIG_RTOS_ION_SIZE<br>CONFIG_RTOS_LOGO_SIZE</td>
+          <td>region <code>ION.size</code><br>region <code>RTOS_ION.size</code><br>region <code>RTOS_LOGO.size</code></td></tr>
+      <tr><td class="mono">build/.config</td>
+          <td class="mono">同上三项</td>
+          <td>与 defconfig 保持一致（命中则改、未命中则追加）</td></tr>
+    </tbody>
+  </table>
+<pre><code><span class="c-cmt">// memory.rs —— 命中即改，未命中追加（幂等写入）</span>
+<span class="c-key">for</span> line <span class="c-key">in</span> lines.iter_mut() {
+    <span class="c-key">if</span> line.starts_with(<span class="c-str">"CONFIG_ION_SIZE="</span>)       { *line = format!(<span class="c-str">"CONFIG_ION_SIZE=0x{}"</span>, ion_size_hex); found_ion = true; }
+    <span class="c-key">else if</span> line.starts_with(<span class="c-str">"CONFIG_RTOS_ION_SIZE="</span>) { *line = format!(<span class="c-str">"CONFIG_RTOS_ION_SIZE=0x{}"</span>, rtos_ion_size_hex); ... }
+    <span class="c-key">else if</span> line.starts_with(<span class="c-str">"CONFIG_RTOS_LOGO_SIZE="</span>){ ... }
+}
+<span class="c-key">if</span> !found_ion { lines.push(format!(<span class="c-str">"CONFIG_ION_SIZE=0x{}"</span>, ion_size_hex)); }   <span class="c-cmt">// 追加兜底</span></code></pre>
+  <div class="note"><b>设计要点：</b>只写“尺寸（SIZE）”而不写“地址（ADDR）”。因为各区段地址在 SDK 侧由
+    <code>memmap.py</code> <b>按尺寸+DRAM_SIZE 自动推算</b>（地址是派生量）。前端改地址只为预览，落盘只需尺寸——
+    这与关联文档里“高地址区段钉在 DDR 末尾回推”的算法天然契合。</div>
+
+  <h3 id="cascade">前端级联联动（写盘前的本地重算）</h3>
+  <p><code>memoryStore.updateRegion</code> 复刻了 <code>memmap.py</code> 的依赖关系：改一个区段会自动重算关联区段，
+     保证页面所见即将要落盘的逻辑：</p>
+  <table>
+    <thead><tr><th>改动区段</th><th>联动效果</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">RTOS_ION</td><td><code>end</code> 钉死在 256M 边界 → <code>start = 边界 - size</code>；并推动 <code>ION</code> 及其子区段下移</td></tr>
+      <tr><td class="mono">ION</td><td><code>end = RTOS_ION.start</code> → <code>start = end - size</code>；同步带动 <code>H26X_BITSTREAM / H26X_ENC_BUFF / ISP_MEM_BASE</code> 共享起始地址</td></tr>
+      <tr><td class="mono">普通区段</td><td>仅 <code>end = start + size</code> 重算</td></tr>
+    </tbody>
+  </table>
+  <div class="warn"><b>注意（缺口）：</b>级联里 <code>256M 边界 = 0x90000000</code> 是<b>写死</b>的。
+    对 <span class="mono">cv1841(128MB)</span> / <span class="mono">cv1843(512MB)</span> 边界应为 <code>0x88000000</code> / <code>0xA0000000</code>。
+    本方案建议把边界改为 <code>baseAddr + DRAM_SIZE(chipType)</code>，与关联文档结论对齐。</div>
+
+  <h3 id="tobuild">改动如何最终抵达 cvi_board_memmap.h</h3>
+  <p>导出命令<b>只负责改 config</b>，<code>.h</code> 不在此刻重写。真正的再生成发生在 SDK 构建时：</p>
+<pre><code><span class="c-cmt"># 用户在 SDK 中执行（或由本工具后续封装一键触发）</span>
+$ defconfig cv1842hp_wevb_0014a_emmc   <span class="c-cmt"># 已被我们改过的 defconfig → 生成 .config</span>
+$ make memory-map                       <span class="c-cmt"># memmap.py 读 .config → 重算地址 → 写 cvi_board_memmap.h</span></code></pre>
+  <div class="tip"><b>解耦的好处：</b>本工具不复制 SDK 的地址算法，只喂“尺寸输入”，把“地址推算 + 断言”交还给
+    SDK 权威脚本 <code>memmap.py</code>，避免两套算法漂移。<b>增强建议</b>见 §⑦：可选地封装一键 <code>make memory-map</code>。</div>
+</section>
+
+<!-- VALIDATE -->
+<section id="validate">
+  <h2><span class="num">④</span>校验设计：防止内存互踩</h2>
+  <p>“校验内存”=<code>validate_memory</code>，由两步串联组成，<b>任一失败即返回 Err</b>，前端据此阻断：</p>
+<pre><code><span class="c-attr">#[tauri::command]</span>
+<span class="c-key">pub fn</span> <span class="c-fn">validate_memory</span>(regions: Vec&lt;MemoryRegion&gt;) -&gt; Result&lt;(), String&gt; {
+    <span class="c-fn">validate_memory_layout</span>(&amp;regions)?;       <span class="c-cmt">// ① 重叠 + 基址（防互踩主力）</span>
+    <span class="c-fn">validate_memory_constraints</span>(&amp;regions)?;  <span class="c-cmt">// ② 引导阶段布局约束</span>
+    <span class="c-key">Ok</span>(())
+}</code></pre>
+
+  <h3 id="overlap">① 重叠检测（互踩核心）</h3>
+  <ul class="clean">
+    <li>过滤掉 <code>size==0</code> 的占位区段（不参与，与 C++ 源逻辑一致）。</li>
+    <li>按 <code>start_address</code> 升序排列，逐对检查相邻区段。</li>
+    <li>重叠判据：<code>cur.end &gt; next.start &amp;&amp; next.end &gt; cur.start</code> → <b>硬错误</b>，报出互踩的两个区段名。</li>
+    <li>附加：所有非零区段 <code>start &gt;= 0x80000000</code>（不得低于 DRAM 基址）。</li>
+  </ul>
+<pre><code><span class="c-key">if</span> <span class="c-fn">check_memory_overlap</span>(current, next) {
+    <span class="c-key">return</span> <span class="c-key">Err</span>(format!(<span class="c-str">"内存重叠检测：区域 {} 与 {} 存在重叠"</span>, current.name, next.name));
+}</code></pre>
+  <div class="danger"><b>这就是“防互踩”的落点：</b>两个区段地址范围相交 = 运行时多核会写到同一段物理内存 →
+    画面花屏 / RTOS 崩溃 / 内核 oops。校验在<b>写盘前</b>拦下这种配置。</div>
+
+  <h3 id="constraints">② 约束检测（引导阶段不越界）</h3>
+  <p>除了两两不重叠，还需满足启动各阶段的相对位置关系（默认 <code>ENABLE_ALIOS</code>）：</p>
+  <table>
+    <thead><tr><th>#</th><th>约束</th><th>含义</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td class="mono">RTOS_ION ≥ FSBL_C906L_START + RTOS_SYS_SIZE</td><td>RTOS 多媒体区不得压到 RTOS 系统区</td></tr>
+      <tr><td>2</td><td class="mono">RTOS_COMPRESS_BIN ≥ UIMAG + UIMAG_SIZE</td><td>压缩镜像区不得压到内核装载缓冲</td></tr>
+      <tr><td>3</td><td class="mono">(256M边界 − RTOS_ION_SIZE − ION_SIZE) ≥ FSBL_C906L_START + RTOS_SYS_SIZE</td><td>ION+RTOS_ION 合计不得吃穿 RTOS 系统区</td></tr>
+    </tbody>
+  </table>
+  <p>约束 3 失败时返回<b>详细的计算过程</b>提示（边界、各步减法、建议“减小 ION_SIZE / RTOS_ION_SIZE”），便于用户自助修正。</p>
+  <div class="warn"><b>缺口提示：</b>约束 3 里的 <code>256M 边界</code>同样写死。对 128/512MB 芯片需替换为对应 DRAM 边界，
+    否则校验会用错误基准误判——这是与 <a class="inline" href="cvi_board_memmap_analysis.html#findings">关联文档第 ④/⑦ 节</a>呼应的关键修正点。</div>
+</section>
+
+<!-- SEQUENCE -->
+<section id="sequence">
+  <h2><span class="num">⑤</span>交互时序（建议闭环）</h2>
+  <p>下图是“编辑 → 校验闸门 → 联动落盘”的目标时序。<span class="pill">★ = 本方案建议补强处</span></p>
+  <div class="seq">
+    <div class="row"><div class="actor">用户</div><div class="msg">在表格中编辑 <b>ION.size = 80M</b>，确认修改</div></div>
+    <div class="row"><div class="actor">memoryStore</div><div class="msg"><b>updateRegion</b> 级联重算 ION/H26X/ISP/（必要时 RTOS_ION）地址，刷新 <code>regions[]</code> 与右侧分布图</div></div>
+    <div class="row"><div class="actor">用户</div><div class="msg">点击 <b>“校验内存”</b></div></div>
+    <div class="row"><div class="actor">memory.rs</div><div class="msg"><b>validate_memory</b> → 重叠检测 + 约束检测；返回 <span class="ok">Ok</span> 或 <span class="no">Err(原因)</span></div></div>
+    <div class="row"><div class="actor">用户</div><div class="msg">点击 <b>“保存并导出”</b></div></div>
+    <div class="row"><div class="actor">memoryStore ★</div><div class="msg"><b>建议：先内部调用 validateMemory，未过则中止并提示</b>，不直接写盘</div></div>
+    <div class="row"><div class="actor">memory.rs ★</div><div class="msg"><b>建议：写前对 defconfig/.config 生成 <code>.bak</code></b>，再 <b>export_memory_defconfig</b> 写三字段</div></div>
+    <div class="row"><div class="actor">SDK 构建</div><div class="msg"><b>make memory-map</b>（可由工具封装触发）→ memmap.py 读新 .config → 重写 <code>cvi_board_memmap.h</code></div></div>
+    <div class="row"><div class="actor">UI</div><div class="msg">绿色 toast：「配置成功同步导出至 SDK defconfig」/ 失败则红色错误条 + 抖动动画</div></div>
+  </div>
+</section>
+
+<!-- UI -->
+<section id="ui">
+  <h2><span class="num">⑥</span>UI 与状态反馈</h2>
+  <p>沿用现有视觉语言（slate 暗色 + indigo 主色），关键控件集中在 <code>MemoryTable</code> 顶栏：</p>
+  <div class="grid2">
+    <div class="card">
+      <h4>顶栏动作区</h4>
+      <ul class="clean" style="font-size:13px;">
+        <li><span class="mono">重置</span> — 重新 <code>loadMemoryRegions()</code></li>
+        <li><span class="mono">校验内存</span>（绿）— <code>validateMemory</code>，成功 3s toast</li>
+        <li><span class="mono">保存并导出</span>（靛）— <code>exportDefconfig(sdkPath, chipType)</code></li>
+        <li><span class="mono">新增区域</span> — 弹窗表单</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>三态反馈</h4>
+      <ul class="checks" style="font-size:13px;">
+        <li class="n"><b>error</b>：红色条 + <code>animate-shake</code>，显示「布局校验错误: …」</li>
+        <li class="y"><b>validationSuccess</b>：绿色条「校验成功，无重叠」</li>
+        <li class="y"><b>exportSuccess</b>：靛色条「已同步导出至 defconfig」</li>
+      </ul>
+    </div>
+  </div>
+  <h4>编辑约束在 UI 上的体现</h4>
+  <ul class="clean">
+    <li><code>ION / H26X_BITSTREAM / H26X_ENC_BUFF / ISP_MEM_BASE</code> 的<b>起始地址只读</b>（级联绑定），编辑弹窗中置灰并标注「只读/级联绑定」。</li>
+    <li>系统内置区段不可删除；自定义区段可增删。</li>
+    <li>右侧<b>物理分布概念图</b>实时反映 <code>regions[]</code>，未分配空间自动补齐 — 让“互踩/空洞”肉眼可见。</li>
+  </ul>
+  <div class="note"><b>建议增强：</b>校验返回的重叠区段名，可在右侧分布图中<b>高亮标红</b>对应两段，把“互踩”可视化定位，而不仅是文字报错。</div>
+</section>
+
+<!-- RISK -->
+<section id="risk">
+  <h2><span class="num">⑦</span>风险与增强建议</h2>
+  <table>
+    <thead><tr><th>风险 / 缺口</th><th>影响</th><th>建议方案</th></tr></thead>
+    <tbody>
+      <tr><td>导出未强制先校验</td><td>可能把互踩配置写进 SDK</td><td><b>在 <code>exportDefconfig</code> 内部先 <code>await validateMemory()</code></b>，失败即中止</td></tr>
+      <tr><td>直接覆写无备份</td><td>写坏 defconfig 难恢复</td><td>写前生成 <code>&lt;chip&gt;_defconfig.bak</code> / <code>.config.bak</code>；写失败回滚</td></tr>
+      <tr><td>DRAM 边界写死 256M</td><td>cv1841/cv1843 级联与约束误判</td><td>引入 <code>chipDramSize(chipType)</code>，128/256/512MB 动态边界（呼应关联文档）</td></tr>
+      <tr><td>只写 SIZE 不触发再生成</td><td>用户忘了 <code>make memory-map</code>，<code>.h</code> 未更新</td><td>可选封装 Tauri 命令执行 <code>make memory-map</code> 并回读 <code>.h</code> 预览</td></tr>
+      <tr><td>defconfig 路径硬编码 cv184x</td><td>其他芯片架构不通用</td><td>路径中的 <code>cv184x</code> 由 chipType 推导 chip_arch（参考 <code>boards_scan.py</code>）</td></tr>
+      <tr><td>并发/路径非法</td><td>sdkPath 为空时报错体验差</td><td>已有前端兜底（提示先配置 SDK 路径），建议 Rust 侧再校验路径存在性</td></tr>
+    </tbody>
+  </table>
+  <div class="tip"><b>优先级：</b>① 校验闸门（正确性）&gt; ② 写前备份（安全）&gt; ③ 多芯片边界（覆盖面）&gt; ④ 一键再生成（体验）。</div>
+</section>
+
+<!-- TASKS -->
+<section id="tasks">
+  <h2><span class="num">⑧</span>实施清单</h2>
+  <ul class="checks">
+    <li class="g"><b>memoryStore.ts</b>：<code>exportDefconfig</code> 起始处串入 <code>validateMemory()</code>，未过抛错、不 invoke 写盘</li>
+    <li class="g"><b>memoryStore.ts</b>：把级联里的 <code>0x90000000</code> 改为 <code>baseAddr + dramSize(chipType)</code></li>
+    <li class="n"><b>memory.rs</b>：<code>export_memory_defconfig</code> 写前生成 <code>.bak</code>，<code>fs::write</code> 失败时回滚</li>
+    <li class="n"><b>memory.rs</b>：<code>validate_memory_constraints</code> 的 256M 边界参数化（按 chipType）</li>
+    <li class="g"><b>memory.rs</b>：defconfig 路径的 <code>cv184x</code> 段由 chip_arch 推导，去硬编码</li>
+    <li class="y"><b>UI</b>：校验失败时在右侧分布图高亮互踩区段</li>
+    <li class="y"><b>（可选）</b>新增 <code>run_make_memory_map</code> 命令，导出后一键重生成并回读 <code>.h</code> 预览</li>
+  </ul>
+  <p style="font-size:12.5px;color:var(--muted)">图例：<span class="ok">■</span> 体验增强 &nbsp; <span class="gap">■</span> 正确性补强 &nbsp; <span class="no">■</span> 安全/健壮性</p>
+</section>
+
+<!-- FILES -->
+<section id="files">
+  <h2><span class="num">附</span>涉及文件</h2>
+  <table>
+    <thead><tr><th>文件</th><th>角色</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">src/pages/MemoryPage.tsx</td><td>页面骨架 + 右侧物理分布概念图</td></tr>
+      <tr><td class="mono">src/components/MemoryTable.tsx</td><td>区段表格、增删改弹窗、校验/导出按钮与三态反馈</td></tr>
+      <tr><td class="mono">src/stores/memoryStore.ts</td><td>regions 状态、级联联动、validate/export action</td></tr>
+      <tr><td class="mono">src/stores/sdkStore.ts</td><td>提供 <code>sdkPath</code> / <code>chipType</code>（导出落盘的路径依据）</td></tr>
+      <tr><td class="mono">src-tauri/src/memory.rs</td><td>校验（防互踩）+ 联动写 defconfig/.config + JSON 导出</td></tr>
+      <tr><td class="mono">src-tauri/src/lib.rs</td><td>注册 4 个 memory 命令（49–52 行）</td></tr>
+      <tr><td class="mono">build/boards/cv184x/&lt;chip&gt;/&lt;chip&gt;_defconfig</td><td>联动写入目标（CONFIG_*_SIZE）</td></tr>
+      <tr><td class="mono">build/.config</td><td>联动同步目标；后续 memmap.py 的唯一数据源</td></tr>
+      <tr><td class="mono">build/boards/default/memmap/memmap.py</td><td>SDK 侧权威地址算法（见关联文档）</td></tr>
+    </tbody>
+  </table>
+</section>
+
+</main>
+
+<footer>
+  设计方案 · Memory 页面联动 SDK build 配置 + 内存防互踩校验 &nbsp;|&nbsp;
+  关联：<a class="inline" href="cvi_board_memmap_analysis.html">cvi_board_memmap.h 生成逻辑分析</a> &nbsp;|&nbsp;
+  现状已实现校验与导出骨架，本方案补强校验闸门 / 写前备份 / 多芯片 DRAM 边界。
+</footer>
+
+<script>
+  const links=[...document.querySelectorAll('#nav a')];
+  const map={};links.forEach(a=>{const id=a.getAttribute('href').slice(1);map[id]=a;});
+  const sections=[...document.querySelectorAll('main section')];
+  const obs=new IntersectionObserver((es)=>{es.forEach(e=>{if(e.isIntersecting){
+    links.forEach(l=>l.classList.remove('active'));const a=map[e.target.id];if(a)a.classList.add('active');}});
+  },{rootMargin:'-10% 0px -80% 0px',threshold:0});
+  sections.forEach(s=>obs.observe(s));
+</script>
+</body>
+</html>

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useMemoryStore, MemoryRegion } from "../stores/memoryStore";
-import { Plus, Trash2, ShieldAlert, CheckCircle, RefreshCw, Save, Edit2 } from "lucide-react";
+import { Plus, Trash2, ShieldAlert, CheckCircle, RefreshCw, Save, Edit2, AlertTriangle } from "lucide-react";
 import { useSdkStore } from "../stores/sdkStore";
 
 // 十六进制格式化
@@ -41,6 +41,7 @@ export default function MemoryTable({
     regions,
     isLoading,
     error,
+    warnings,
     loadMemoryRegions,
     addRegion,
     removeRegion,
@@ -145,9 +146,13 @@ export default function MemoryTable({
   const handleValidate = async () => {
     setValidationSuccess(false);
     try {
-      await validateMemory();
-      setValidationSuccess(true);
-      setTimeout(() => setValidationSuccess(false), 3000);
+      // 校验通过返回重叠警告列表；仅在“无重叠”时才显示绿色完全通过提示，
+      // 有重叠时由下方黄色提示条展示（重叠为信息性，不阻断）
+      const w = await validateMemory();
+      if (!w || w.length === 0) {
+        setValidationSuccess(true);
+        setTimeout(() => setValidationSuccess(false), 3000);
+      }
     } catch (err) {
       console.error(err);
     }
@@ -182,6 +187,24 @@ export default function MemoryTable({
         <div className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 p-4 rounded-xl text-xs font-semibold animate-fade-in">
           <CheckCircle size={16} />
           <span>内存布局校验成功，所有内存块分布合理且无重叠！</span>
+        </div>
+      )}
+
+      {warnings.length > 0 && (
+        <div className="bg-amber-500/10 border border-amber-500/30 text-amber-300 p-4 rounded-xl text-xs animate-fade-in">
+          <div className="flex items-center gap-2 font-semibold mb-1.5">
+            <AlertTriangle size={16} />
+            <span>校验通过，但检测到 {warnings.length} 处区域重叠（提示性，不阻止导出）</span>
+          </div>
+          <ul className="list-disc list-inside space-y-0.5 text-amber-400/90 font-mono text-[11px] pl-1">
+            {warnings.map((w, i) => (
+              <li key={i}>{w}</li>
+            ))}
+          </ul>
+          <p className="text-amber-400/70 mt-1.5 text-[10px] leading-relaxed">
+            说明：KERNEL_MEMORY 覆盖整块 DDR、FSBL_UNZIP 与 UIMAG 同址分时复用、ION 子缓冲等属正常设计内的重叠；
+            请确认上述并非真正的内存互踩后再导出。
+          </p>
         </div>
       )}
 

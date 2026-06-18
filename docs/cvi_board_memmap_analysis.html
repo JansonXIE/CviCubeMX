@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>cvi_board_memmap.h 生成逻辑分析</title>
+<style>
+  :root{
+    --sidebar-w: 290px;
+    --bg: #0d1117;
+    --panel: #161b22;
+    --panel2: #1c2330;
+    --border: #30363d;
+    --text: #c9d1d9;
+    --muted: #8b949e;
+    --accent: #58a6ff;
+    --accent2: #3fb950;
+    --warn: #d29922;
+    --danger: #f85149;
+    --code-bg: #0b1020;
+    --cv1841: #6e7bff;
+    --cv1842: #3fb950;
+    --cv1843: #d29922;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",Helvetica,Arial,sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    line-height:1.65;
+    font-size:15px;
+  }
+  /* ============ Sidebar ============ */
+  .sidebar{
+    position:fixed;
+    top:0;left:0;bottom:0;
+    width:var(--sidebar-w);
+    background:var(--panel);
+    border-right:1px solid var(--border);
+    overflow-y:auto;
+    padding:22px 0 40px;
+  }
+  .sidebar h1{
+    font-size:15px;
+    margin:0 20px 4px;
+    color:#fff;
+    letter-spacing:.3px;
+  }
+  .sidebar .sub{
+    font-size:12px;
+    color:var(--muted);
+    margin:0 20px 18px;
+    font-family:"SFMono-Regular",Consolas,monospace;
+  }
+  .sidebar nav a{
+    display:block;
+    color:var(--muted);
+    text-decoration:none;
+    padding:7px 20px 7px 22px;
+    font-size:13.5px;
+    border-left:3px solid transparent;
+    transition:all .15s;
+  }
+  .sidebar nav a:hover{color:var(--text);background:var(--panel2);}
+  .sidebar nav a.active{
+    color:var(--accent);
+    border-left-color:var(--accent);
+    background:var(--panel2);
+  }
+  .sidebar nav a.lvl2{padding-left:38px;font-size:12.5px;}
+  .sidebar .tag{
+    display:inline-block;font-size:10px;padding:1px 6px;border-radius:8px;
+    background:#21262d;color:var(--muted);margin-left:6px;vertical-align:middle;
+  }
+  /* ============ Content ============ */
+  main{
+    margin-left:var(--sidebar-w);
+    max-width:980px;
+    padding:44px 56px 120px;
+  }
+  section{margin-bottom:54px;scroll-margin-top:24px;}
+  h2{
+    font-size:24px;color:#fff;margin:0 0 6px;
+    padding-bottom:10px;border-bottom:1px solid var(--border);
+  }
+  h2 .num{color:var(--accent);font-family:monospace;margin-right:10px;font-size:20px;}
+  h3{font-size:18px;color:#fff;margin:30px 0 8px;}
+  h4{font-size:15px;color:var(--accent);margin:22px 0 6px;}
+  p{margin:10px 0;}
+  code{
+    font-family:"SFMono-Regular",Consolas,"Courier New",monospace;
+    background:#21262d;color:#e6edf3;
+    padding:2px 6px;border-radius:5px;font-size:13px;
+  }
+  pre{
+    background:var(--code-bg);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:16px 18px;
+    overflow-x:auto;
+    font-size:13px;
+    line-height:1.55;
+  }
+  pre code{background:none;padding:0;color:#c9d1d9;}
+  .c-key{color:#ff7b72;}      /* keyword */
+  .c-fn{color:#d2a8ff;}       /* function */
+  .c-str{color:#a5d6ff;}      /* string */
+  .c-num{color:#79c0ff;}      /* number */
+  .c-cmt{color:#8b949e;font-style:italic;} /* comment */
+  .c-var{color:#ffa657;}      /* var */
+  .lead{
+    font-size:16px;color:var(--text);
+    background:var(--panel);border-left:3px solid var(--accent);
+    padding:14px 18px;border-radius:0 8px 8px 0;margin:0 0 24px;
+  }
+  /* callouts */
+  .note,.warn,.tip{
+    border-radius:8px;padding:13px 16px;margin:18px 0;font-size:14px;
+    border:1px solid var(--border);
+  }
+  .note{background:rgba(88,166,255,.08);border-color:rgba(88,166,255,.4);}
+  .warn{background:rgba(210,153,34,.08);border-color:rgba(210,153,34,.45);}
+  .tip{background:rgba(63,185,80,.08);border-color:rgba(63,185,80,.45);}
+  .note b,.warn b,.tip b{color:#fff;}
+  /* tables */
+  table{
+    width:100%;border-collapse:collapse;margin:18px 0;font-size:13.5px;
+    background:var(--panel);border-radius:8px;overflow:hidden;
+  }
+  th,td{padding:10px 13px;text-align:left;border-bottom:1px solid var(--border);}
+  th{background:var(--panel2);color:#fff;font-weight:600;}
+  td code{font-size:12.5px;}
+  tr:last-child td{border-bottom:none;}
+  .mono{font-family:"SFMono-Regular",Consolas,monospace;}
+  .c41{color:var(--cv1841);font-weight:600;}
+  .c42{color:var(--cv1842);font-weight:600;}
+  .c43{color:var(--cv1843);font-weight:600;}
+  /* flow diagram */
+  .flow{
+    display:flex;flex-direction:column;gap:0;margin:24px 0;
+  }
+  .flow .step{
+    background:var(--panel);border:1px solid var(--border);border-radius:9px;
+    padding:13px 18px;position:relative;
+  }
+  .flow .step .t{font-weight:600;color:#fff;font-size:14.5px;}
+  .flow .step .d{font-size:12.5px;color:var(--muted);margin-top:3px;}
+  .flow .step .f{font-family:monospace;font-size:11.5px;color:var(--accent);}
+  .flow .arrow{text-align:center;color:var(--muted);font-size:18px;line-height:1;margin:5px 0;}
+  .badge{
+    display:inline-block;font-size:11px;font-family:monospace;
+    padding:1px 7px;border-radius:6px;margin-right:6px;
+  }
+  .badge.py{background:#2b5b84;color:#cfe8ff;}
+  .badge.mk{background:#5a4a1e;color:#ffe9b0;}
+  .badge.sh{background:#264d33;color:#bff5cf;}
+  .badge.cfg{background:#4a2d5a;color:#ecd0ff;}
+  /* memory bar visualization */
+  .membar-wrap{margin:14px 0 26px;}
+  .membar-label{font-family:monospace;font-size:12px;color:var(--muted);margin-bottom:4px;}
+  .membar{
+    display:flex;height:46px;border-radius:7px;overflow:hidden;
+    border:1px solid var(--border);font-size:10.5px;
+  }
+  .membar div{
+    display:flex;align-items:center;justify-content:center;
+    color:#0d1117;font-weight:600;text-align:center;padding:0 2px;
+    border-right:1px solid rgba(0,0,0,.25);overflow:hidden;white-space:nowrap;
+  }
+  .seg-mon{background:#79c0ff;}
+  .seg-rtos{background:#56d364;}
+  .seg-free{background:#e3b341;}
+  .seg-ion{background:#ff9b72;}
+  .seg-rion{background:#d2a8ff;}
+  footer{
+    margin-left:var(--sidebar-w);padding:24px 56px;color:var(--muted);
+    font-size:12.5px;border-top:1px solid var(--border);
+  }
+  a.inline{color:var(--accent);text-decoration:none;}
+  a.inline:hover{text-decoration:underline;}
+  ul.clean{margin:10px 0;padding-left:22px;}
+  ul.clean li{margin:5px 0;}
+  .kv{font-family:monospace;font-size:12.5px;}
+  @media (max-width:980px){
+    .sidebar{transform:translateX(-100%);}
+    main,footer{margin-left:0;padding-left:24px;padding-right:24px;}
+  }
+</style>
+</head>
+<body>
+
+<!-- ================= SIDEBAR ================= -->
+<aside class="sidebar">
+  <h1>cvi_board_memmap.h</h1>
+  <div class="sub">生成逻辑分析 · CV184x</div>
+  <nav id="nav">
+    <a href="#overview">概述</a>
+    <a href="#pipeline">① 整体生成流程</a>
+    <a href="#makefile" class="lvl2">mmap.mk 触发规则</a>
+    <a href="#convert">② mmap_conv.py 解析器</a>
+    <a href="#parse" class="lvl2">属性提取与排序</a>
+    <a href="#tohref" class="lvl2">生成 .h 的格式</a>
+    <a href="#memmap">③ memmap.py 布局算法</a>
+    <a href="#static" class="lvl2">静态默认布局</a>
+    <a href="#init" class="lvl2">__init__ 动态改写</a>
+    <a href="#chips">④ 三款芯片的差异根源</a>
+    <a href="#dramtable" class="lvl2">DRAM_SIZE 对照</a>
+    <a href="#defconfig" class="lvl2">defconfig → .config</a>
+    <a href="#layouts">⑤ 三芯片布局对比</a>
+    <a href="#verify" class="lvl2">与实际文件校验</a>
+    <a href="#artifacts">⑥ 其他衍生产物</a>
+    <a href="#findings">⑦ 关键发现与注意事项</a>
+    <a href="#files">附录：关键文件清单</a>
+  </nav>
+</aside>
+
+<!-- ================= MAIN ================= -->
+<main>
+
+<!-- OVERVIEW -->
+<section id="overview">
+  <h2><span class="num">§</span>概述</h2>
+  <p class="lead">
+    <code>cvi_board_memmap.h</code> 是一份 <b>内存映射（Memory Map）头文件</b>，定义了 DRAM 中各功能区段
+    （ATF/OpenSBI、RTOS、ION 多媒体缓冲、Bootlogo、u-boot 运行地址等）的<b>起始地址与大小</b>。
+    它被 u-boot、kernel、FSBL、RTOS 等多个组件共享引用。
+  </p>
+  <p>
+    其生成的本质是：<b>一个共用的 Python 布局脚本</b>
+    <code>build/boards/default/memmap/memmap.py</code>
+    <b>读取当前构建的 <code>.config</code></b>，按公式算出每个区段的地址，
+    再由转换器 <code>mmap_conv.py</code> 导出成 <code>.h</code> / <code>.conf</code> / <code>.ld</code> 三种格式。
+  </p>
+  <p>
+    对于 <span class="c41">cv1841（128MB）</span>、<span class="c42">cv1842（256MB）</span>、
+    <span class="c43">cv1843（512MB）</span> 三种型号，
+    <b>它们走的是完全相同的脚本和算法</b>，唯一的差别是各自 <code>defconfig</code> 里写死的一个值：
+    <code>CONFIG_DRAM_SIZE</code>。换句话说——
+  </p>
+  <div class="tip">
+    <b>核心结论：</b>芯片型号本身不直接参与 <code>cvi_board_memmap.h</code> 的生成。
+    真正的输入是 <code>CONFIG_DRAM_SIZE</code>（128/256/512 MB），它由所选 <code>board</code> 的
+    <code>defconfig</code> 决定。<code>memmap.py</code> 用同一套公式，把这个 DRAM 大小代入，得到各型号专属的地址表。
+  </div>
+</section>
+
+<!-- PIPELINE -->
+<section id="pipeline">
+  <h2><span class="num">①</span>整体生成流程</h2>
+  <p>从用户敲下 <code>defconfig cv1842hp_wevb_0014a_emmc</code> 到产出 <code>cvi_board_memmap.h</code>，链路如下：</p>
+
+  <div class="flow">
+    <div class="step">
+      <div class="t"><span class="badge sh">shell</span>defconfig &lt;board&gt;</div>
+      <div class="d">用户选择目标板。<code>defconfig()</code> 函数（common_functions.sh）按板名定位 defconfig 文件。</div>
+      <div class="f">build/common_functions.sh:424</div>
+    </div>
+    <div class="arrow">▼</div>
+    <div class="step">
+      <div class="t"><span class="badge py">kconfig</span>defconfig.py + kconfiglib</div>
+      <div class="d">加载 <code>boards/cv184x/&lt;board&gt;/&lt;board&gt;_defconfig</code>，与顶层 <code>Kconfig</code>（含 <code>Kconfig.memmap</code>）合并，写出 <code>build/.config</code>。其中即包含 <code>CONFIG_DRAM_SIZE</code>。</div>
+      <div class="f">build/scripts/defconfig.py</div>
+    </div>
+    <div class="arrow">▼</div>
+    <div class="step">
+      <div class="t"><span class="badge mk">make</span>make memory-map</div>
+      <div class="d"><code>mmap.mk</code> 定义目标，依赖 <code>memmap.py</code> + <code>mmap_conv.py</code> + <code>.config</code>。任一变化即重新生成。</div>
+      <div class="f">build/scripts/mmap.mk:15</div>
+    </div>
+    <div class="arrow">▼</div>
+    <div class="step">
+      <div class="t"><span class="badge py">python</span>mmap_conv.py --type h memmap.py cvi_board_memmap.h</div>
+      <div class="d">把 <code>memmap.py</code> 作为模块 <b>动态 import 并实例化</b> → 触发 <code>__init__</code> 读 <code>.config</code> → 反射收集所有数值属性 → 排序 → 按 <code>.h</code> 模板输出。</div>
+      <div class="f">build/scripts/mmap_conv.py</div>
+    </div>
+    <div class="arrow">▼</div>
+    <div class="step">
+      <div class="t"><span class="badge cfg">output</span>output/&lt;PROJECT_FULLNAME&gt;/cvi_board_memmap.h</div>
+      <div class="d">同时还会产出 <code>.conf</code>（给 shell/make 读）、<code>.ld</code>（给链接脚本）、<code>.txt</code>（人类可读分阶段表）。最终通过软链接给 u-boot / kernel 使用。</div>
+      <div class="f">build/output/cv1842hp_wevb_0014a_emmc/</div>
+    </div>
+  </div>
+
+  <h3 id="makefile">mmap.mk 触发规则</h3>
+  <p>四种产物各有一条规则，全部依赖同一个 <code>memmap.py</code> 与 <code>.config</code>：</p>
+<pre><code><span class="c-var">BOARD_MMAP_PATH</span> := ${BUILD_PATH}/boards/default/memmap/<span class="c-str">memmap.py</span>
+<span class="c-var">MMAP_CONV_PY</span>   := ${BUILD_PATH}/scripts/mmap_conv.py
+<span class="c-var">CVI_CONFIG_FILE</span>:= ${BUILD_PATH}/<span class="c-str">.config</span>
+
+<span class="c-cmt"># 头文件：给 C 代码用</span>
+${CVI_BOARD_MEMMAP_H_PATH}: ${BOARD_MMAP_PATH} ${MMAP_CONV_PY} ${CVI_CONFIG_FILE}
+	@mkdir -p $(dir $@)
+	@${MMAP_CONV_PY} <span class="c-key">--type h</span> $&lt; $@
+
+memory-map: ${CVI_BOARD_MEMMAP_H_PATH} ${CVI_BOARD_MEMMAP_CONF_PATH} \
+            ${CVI_BOARD_MEMMAP_LD_PATH} ${CVI_BOARD_MEMMAP_TXT_PATH} FORCE</code></pre>
+  <div class="note">
+    <b>注意：</b><code>BOARD_MMAP_PATH</code> 在 Makefile 中是<b>写死</b>的
+    <code>boards/default/memmap/memmap.py</code>——<u>无论哪款芯片都用这一个脚本</u>。
+    芯片差异完全经由 <code>.config</code> 注入，而不是切换脚本。
+  </div>
+</section>
+
+<!-- CONVERT -->
+<section id="convert">
+  <h2><span class="num">②</span>mmap_conv.py：转换器</h2>
+  <p>
+    <code>mmap_conv.py</code> 本身<b>不含任何地址常量</b>，它是一个通用的「Python 类 → 头文件」转换器。
+    工作分三步：动态加载、反射提取、格式化输出。
+  </p>
+
+  <h4>第一步：把 memmap.py 当模块加载并实例化</h4>
+<pre><code><span class="c-cmt"># 用 importlib 动态加载 memmap.py</span>
+spec = importlib.util.<span class="c-fn">spec_from_file_location</span>(map_name, map_file_path)
+mmap_module = importlib.util.<span class="c-fn">module_from_spec</span>(spec)
+spec.loader.<span class="c-fn">exec_module</span>(mmap_module)
+
+<span class="c-cmt"># 关键：创建实例以执行 __init__（这一步才会读 .config 并改写地址）</span>
+_ = mmap_module.<span class="c-fn">MemoryMap</span>()
+mlist = <span class="c-fn">parse_mmap</span>(mmap_module)</code></pre>
+  <div class="note"><b>为什么要实例化？</b>因为 <code>memmap.py</code> 里大量地址是在
+    <code>__init__</code> 中根据 <code>.config</code> 用 <code>setattr(MemoryMap, ...)</code> 动态<b>覆盖</b>类属性的。
+    不 <code>MemoryMap()</code> 一下，拿到的就只是「510MB 默认布局」的占位值。</div>
+
+  <h3 id="parse">属性提取与排序</h3>
+  <p><code>parse_mmap()</code> 用 <code>dir()</code> 反射遍历类的所有属性，<b>只保留数值型</b>，并统一加前缀：</p>
+<pre><code><span class="c-key">for</span> attr <span class="c-key">in</span> <span class="c-fn">dir</span>(mmap):
+    <span class="c-key">if</span> attr.<span class="c-fn">startswith</span>(<span class="c-str">"_"</span>):          <span class="c-cmt"># 跳过 _no_prefix 等私有/魔术属性</span>
+        <span class="c-key">continue</span>
+    value = <span class="c-fn">getattr</span>(mmap, attr)
+    <span class="c-key">if</span> <span class="c-fn">callable</span>(value) <span class="c-key">or</span> <span class="c-key">not</span> <span class="c-fn">isinstance</span>(value, (int, float)):
+        <span class="c-key">continue</span>                     <span class="c-cmt"># 跳过方法 / 非数值</span>
+    <span class="c-key">if</span> attr <span class="c-key">not in</span> no_prefix:        <span class="c-cmt"># _no_prefix 列表里的不加前缀</span>
+        attr = <span class="c-str">"CVIMMAP_"</span> + attr
+    mlist[attr] = <span class="c-fn">int</span>(value)            <span class="c-cmt"># 一律转 int（float 也截断）</span></code></pre>
+  <ul class="clean">
+    <li>所有项默认加上 <code>CVIMMAP_</code> 前缀（如 <code>DRAM_SIZE</code> → <code>CVIMMAP_DRAM_SIZE</code>）。</li>
+    <li><b>例外：</b><code>_no_prefix = ["CONFIG_SYS_TEXT_BASE"]</code>——这个名字直接给 u-boot 用，不加前缀。</li>
+    <li>最后按 <b>名字字母序</b> 排序（先按值，再按键，键序优先），所以 <code>.h</code> 里条目是字母排列的。</li>
+  </ul>
+
+  <h3 id="tohref">生成 .h 的格式</h3>
+  <p><code>mmap_to_h()</code> 为每一项生成一行 <code>#define</code>，并附上人类可读的容量注释；
+     头文件保护宏用一个<b>随机数</b>生成：</p>
+<pre><code><span class="c-key">def</span> <span class="c-fn">mmap_to_h</span>(mlist):
+    mlist = [<span class="c-str">"#define {0:s} {1:#x}  /* {2} */"</span>.<span class="c-fn">format</span>(a, v, <span class="c-fn">int_to_si</span>(v))
+             <span class="c-key">for</span> a, v <span class="c-key">in</span> mlist.<span class="c-fn">items</span>()]
+    r = random.<span class="c-fn">randint</span>(<span class="c-num">0x80000000</span>, <span class="c-num">0xFFFFFFFF</span>)   <span class="c-cmt"># 随机 include guard</span>
+    <span class="c-key">return</span> <span class="c-str">"#ifndef __BOARD_MMAP__{0:08x}__\n#define ...\n{1}\n#endif"</span></code></pre>
+  <p>这解释了实际文件第 1 行的 <code>#ifndef __BOARD_MMAP__a5289037__</code>——
+     <code>a5289037</code> 就是那个随机数，<b>每次重新生成都会变</b>。</p>
+  <p><code>int_to_si()</code> 负责把地址换算成注释里的 <code>offset 85.0MiB</code> 这种描述：
+     先减掉 <code>0x80000000</code>（DRAM 基址）得到偏移，再换算 KiB/MiB。</p>
+</section>
+
+<!-- MEMMAP -->
+<section id="memmap">
+  <h2><span class="num">③</span>memmap.py：地址布局算法</h2>
+  <p>
+    这是<b>真正决定布局</b>的文件。结构上分两部分：
+    <b>类体内的静态默认值</b>（按 510MB 写的占位布局）+ <b><code>__init__</code> 里依据 <code>.config</code> 的动态改写</b>。
+  </p>
+
+  <h3 id="static">静态默认布局（类体）</h3>
+  <p>类体里先用常量公式排好所有区段。注意默认 <code>DRAM_SIZE</code> 是 510MB，这只是占位——真实值在 <code>__init__</code> 被覆盖。</p>
+<pre><code><span class="c-key">class</span> <span class="c-fn">MemoryMap</span>:
+    _no_prefix = [<span class="c-str">"CONFIG_SYS_TEXT_BASE"</span>]
+    DRAM_BASE = <span class="c-num">0x80000000</span>
+    DRAM_SIZE = <span class="c-num">510</span> * SIZE_1M          <span class="c-cmt"># 占位，会被 .config 覆盖</span>
+
+    MONITOR_ADDR  = DRAM_BASE              <span class="c-cmt"># ATF/OpenSBI 在 DRAM 头部</span>
+    ATF_SIZE      = <span class="c-num">640</span> * SIZE_1K
+    OPENSBI_SIZE  = <span class="c-num">640</span> * SIZE_1K
+    FSBL_C906L_START_ADDR = DRAM_BASE + ATF_SIZE   <span class="c-cmt"># C906 RTOS 起点</span>
+
+    <span class="c-cmt"># RTOS 各子区段顺序叠放：SYS → LOG → SHARE_MEM → SHARE_PARAM ×2 → PQBIN → LOGO</span>
+    RTOS_SYS_SIZE = <span class="c-num">4</span> * SIZE_1M
+    ...
+    RTOS_ION_SIZE = <span class="c-num">100</span> * SIZE_1M
+    RTOS_ION_ADDR = DRAM_BASE + <span class="c-num">256</span>*SIZE_1M - RTOS_ION_SIZE   <span class="c-cmt"># 注意写死 256M！见 §④</span>
+
+    ION_SIZE  = <span class="c-num">6</span> * SIZE_1M
+    ION_ADDR  = RTOS_ION_ADDR - ION_SIZE                      <span class="c-cmt"># ION 紧贴 RTOS_ION 之下</span>
+    BOOTLOGO_ADDR = ION_ADDR + ION_SIZE - BOOTLOGO_SIZE       <span class="c-cmt"># Bootlogo 在 ION 尾部</span>
+
+    UIMAG_ADDR = DRAM_BASE + <span class="c-num">20</span>*SIZE_1M             <span class="c-cmt"># kernel 镜像装载缓冲</span>
+    CONFIG_SYS_TEXT_BASE = DRAM_BASE + <span class="c-num">64</span>*SIZE_1M - <span class="c-num">8</span>*SIZE_1M  <span class="c-cmt"># = 0x83800000</span></code></pre>
+
+  <h3 id="init">__init__：依据 .config 动态改写</h3>
+  <p>实例化时，先用 <code>read_kconfig()</code> 把 <code>.config</code> 解析成字典，再 <code>setattr</code> 逐个覆盖关键属性。
+     <b>这是芯片差异真正生效的地方</b>：</p>
+<pre><code><span class="c-key">def</span> <span class="c-fn">__init__</span>(self):
+    config_file = os.path.join(os.environ[<span class="c-str">'BUILD_PATH'</span>], <span class="c-str">'.config'</span>)
+    kconfig = self.<span class="c-fn">read_kconfig</span>(config_file)
+
+    dram_size      = kconfig.<span class="c-fn">get</span>(<span class="c-str">'CONFIG_DRAM_SIZE'</span>, <span class="c-str">''</span>)      <span class="c-cmt"># ← 三款芯片唯一不同处</span>
+    ion_size       = kconfig.<span class="c-fn">get</span>(<span class="c-str">'CONFIG_ION_SIZE'</span>, <span class="c-str">''</span>)
+    rtos_sys_size  = kconfig.<span class="c-fn">get</span>(<span class="c-str">'CONFIG_RTOS_SYS_SIZE'</span>, <span class="c-str">'0x0'</span>)
+    rtos_ion_size  = kconfig.<span class="c-fn">get</span>(<span class="c-str">'CONFIG_RTOS_ION_SIZE'</span>, <span class="c-str">'0x0'</span>)
+    enable_alios   = kconfig.<span class="c-fn">get</span>(<span class="c-str">'CONFIG_ENABLE_ALIOS'</span>, <span class="c-str">'n'</span>)
+
+    <span class="c-fn">setattr</span>(MemoryMap, <span class="c-str">'DRAM_SIZE'</span>,         <span class="c-fn">int</span>(dram_size, <span class="c-num">16</span>))   <span class="c-cmt"># 覆盖占位 510M</span>
+    <span class="c-fn">setattr</span>(MemoryMap, <span class="c-str">'KERNEL_MEMORY_SIZE'</span>, <span class="c-fn">int</span>(dram_size, <span class="c-num">16</span>))   <span class="c-cmt"># kernel 可见全部 DDR</span>
+    ...
+    <span class="c-cmt"># RTOS_ION 钉在 DDR 末尾（= 基址 + DRAM_SIZE - RTOS_ION_SIZE）</span>
+    <span class="c-fn">setattr</span>(MemoryMap, <span class="c-str">'RTOS_ION_ADDR'</span>,
+            MemoryMap.DRAM_BASE + MemoryMap.DRAM_SIZE - MemoryMap.RTOS_ION_SIZE)
+    <span class="c-cmt"># ION 紧贴 RTOS_ION 之下，向低地址生长</span>
+    <span class="c-fn">setattr</span>(MemoryMap, <span class="c-str">'ION_ADDR'</span>, MemoryMap.RTOS_ION_ADDR - MemoryMap.ION_SIZE)
+    ...
+    <span class="c-cmt"># 一系列 assert 检查区段不重叠 / 不越界</span>
+    <span class="c-key">assert</span> MemoryMap.CONFIG_SYS_TEXT_BASE &gt;= MemoryMap.UIMAG_ADDR + MemoryMap.UIMAG_SIZE</code></pre>
+  <div class="tip">
+    <b>布局的「锚点」逻辑：</b>低地址端（Monitor/RTOS/u-boot 镜像缓冲）是<b>固定</b>的；
+    高地址端（<code>RTOS_ION</code>、<code>ION</code>、<code>Bootlogo</code>）则<b>钉在 DDR 末尾</b>往回长。
+    DRAM 越大，这块「尾部多媒体区」整体上移——这正是三款芯片地址表唯一拉开差距的部分。
+  </div>
+</section>
+
+<!-- CHIPS -->
+<section id="chips">
+  <h2><span class="num">④</span>三款芯片的差异根源</h2>
+  <p>
+    三款芯片（实为三种开发板配置）走<b>同一脚本、同一公式</b>，区别只在各自 <code>defconfig</code> 里的
+    <code>CONFIG_DRAM_SIZE</code>。下表是 <code>boards/cv184x/&lt;board&gt;/&lt;board&gt;_defconfig</code> 的实测值：
+  </p>
+
+  <h3 id="dramtable">DRAM_SIZE 对照</h3>
+  <table>
+    <thead>
+      <tr><th>型号</th><th>代表性 board</th><th>CONFIG_DRAM_SIZE</th><th>容量</th><th>ION_SIZE</th><th>RTOS_ION_SIZE</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="c41">cv1841</td>
+        <td class="mono">cv1841cp_wevb_0015a_emmc</td>
+        <td><code>0x08000000</code></td><td class="c41">128 MB</td>
+        <td><code>0x4B00000</code></td><td><code>0x6000000</code></td>
+      </tr>
+      <tr>
+        <td class="c42">cv1842</td>
+        <td class="mono">cv1842hp_wevb_0014a_emmc</td>
+        <td><code>0x10000000</code></td><td class="c42">256 MB</td>
+        <td><code>0x4B00000</code></td><td><code>0x6000000</code></td>
+      </tr>
+      <tr>
+        <td class="c43">cv1843</td>
+        <td class="mono">cv1843hp_wevb_0014a_emmc</td>
+        <td><code>0x20000000</code></td><td class="c43">512 MB</td>
+        <td><code>0x4B00000</code></td><td><code>0x6000000</code></td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="note">
+    <b>观察：</b><code>ION_SIZE</code> 与 <code>RTOS_ION_SIZE</code> 三款<b>完全相同</b>。
+    所以多媒体缓冲的「大小」一样，只是「位置」随 DRAM 末尾平移。
+    <code>CONFIG_ENABLE_ALIOS=y</code>（双系统 AliOS）三款也一致。
+  </div>
+
+  <h3 id="defconfig">defconfig → .config 的流程</h3>
+  <p>用户执行 <code>defconfig cv1842hp_wevb_0014a_emmc</code> 时：</p>
+<pre><code><span class="c-key">function</span> <span class="c-fn">defconfig</span>() {            <span class="c-cmt"># build/common_functions.sh:424</span>
+  board=$1
+  chip_arch=$(boards_scan.py --get-chip-arch --board_name ${board})   <span class="c-cmt"># → cv184x</span>
+  _call_kconfig_script <span class="c-str">"defconfig"</span> \
+      <span class="c-str">"boards/${chip_arch}/${board}/${board}_defconfig"</span>
+}</code></pre>
+  <p><code>_call_kconfig_script</code> 进而调用 <code>scripts/defconfig.py</code>，
+     用 <code>kconfiglib</code> 把板级 defconfig 叠加到顶层 <code>Kconfig</code>（其中
+     <a class="inline" href="#">Kconfig.memmap</a> 定义了 <code>DRAM_SIZE</code> 等条目），生成最终 <code>build/.config</code>。
+     之后 <code>make memory-map</code> 就以这份 <code>.config</code> 为唯一数据源。</p>
+  <p>顶层 <code>Kconfig.memmap</code> 给出的是<b>兜底默认</b>（当 defconfig 未指定时）：</p>
+<pre><code><span class="c-key">config</span> DRAM_SIZE
+    hex <span class="c-str">"DRAM size"</span>
+    default <span class="c-num">0x20000000</span>          <span class="c-cmt"># 缺省 512MB；板级 defconfig 会覆盖它</span></code></pre>
+</section>
+
+<!-- LAYOUTS -->
+<section id="layouts">
+  <h2><span class="num">⑤</span>三款芯片的实际布局对比</h2>
+  <p>把三种 <code>DRAM_SIZE</code> 代入 <code>memmap.py</code> 的公式（其余 config 相同），关键地址如下。
+     可以看到：<b>低地址锚点完全一致，高地址多媒体区随 DDR 末尾整体上移</b>。</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>符号</th>
+        <th class="c41">cv1841 / 128MB</th>
+        <th class="c42">cv1842 / 256MB</th>
+        <th class="c43">cv1843 / 512MB</th>
+        <th>说明</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td class="mono">DRAM_BASE</td><td><code>0x80000000</code></td><td><code>0x80000000</code></td><td><code>0x80000000</code></td><td>DDR 基址（恒定）</td></tr>
+      <tr><td class="mono">DRAM_SIZE</td><td class="c41"><code>0x08000000</code></td><td class="c42"><code>0x10000000</code></td><td class="c43"><code>0x20000000</code></td><td>← 唯一输入差异</td></tr>
+      <tr><td class="mono">CONFIG_SYS_TEXT_BASE</td><td><code>0x83800000</code></td><td><code>0x83800000</code></td><td><code>0x83800000</code></td><td>u-boot 运行址（恒定）</td></tr>
+      <tr><td class="mono">UIMAG_ADDR</td><td><code>0x81400000</code></td><td><code>0x81400000</code></td><td><code>0x81400000</code></td><td>kernel 装载缓冲（恒定）</td></tr>
+      <tr><td class="mono">ION_ADDR</td><td><code>0x7d500000</code> ⚠</td><td class="c42"><code>0x85500000</code></td><td class="c43"><code>0x95500000</code></td><td>多媒体缓冲（随末尾移动）</td></tr>
+      <tr><td class="mono">RTOS_ION_ADDR</td><td><code>0x82000000</code></td><td class="c42"><code>0x8a000000</code></td><td class="c43"><code>0x9a000000</code></td><td>RTOS 多媒体（钉在末尾）</td></tr>
+      <tr><td class="mono">BOOTLOGO_ADDR</td><td><code>0x81e3e000</code></td><td class="c42"><code>0x89e3e000</code></td><td class="c43"><code>0x99e3e000</code></td><td>开机 logo（ION 尾部）</td></tr>
+      <tr><td class="mono">KERNEL_MEMORY_SIZE</td><td class="c41"><code>0x08000000</code></td><td class="c42"><code>0x10000000</code></td><td class="c43"><code>0x20000000</code></td><td>= DRAM_SIZE</td></tr>
+    </tbody>
+  </table>
+
+  <h4>布局示意（按地址从低到高，相对位置）</h4>
+
+  <div class="membar-wrap">
+    <div class="membar-label">cv1842 / 256MB &nbsp; [0x80000000 → 0x90000000]</div>
+    <div class="membar">
+      <div class="seg-mon" style="flex:20">Monitor/RTOS/u-boot<br>0x80000000+</div>
+      <div class="seg-ion" style="flex:18">ION 75M<br>0x85500000</div>
+      <div class="seg-rion" style="flex:6">RTOS_ION 96M<br>0x8a000000</div>
+      <div style="flex:4;background:#30363d;color:#8b949e">空闲</div>
+    </div>
+  </div>
+
+  <div class="membar-wrap">
+    <div class="membar-label">cv1843 / 512MB &nbsp; [0x80000000 → 0xA0000000] （尾部区段整体右移）</div>
+    <div class="membar">
+      <div class="seg-mon" style="flex:20">Monitor/RTOS/u-boot<br>0x80000000+</div>
+      <div style="flex:30;background:#30363d;color:#8b949e">空闲（多出的 256M）</div>
+      <div class="seg-ion" style="flex:18">ION 75M<br>0x95500000</div>
+      <div class="seg-rion" style="flex:6">RTOS_ION 96M<br>0x9a000000</div>
+    </div>
+  </div>
+
+  <h3 id="verify">与实际生成文件的交叉校验</h3>
+  <p>用 cv1842（256MB）参数计算的结果，与你当前打开的
+     <code>build/output/cv1842hp_wevb_0014a_emmc/cvi_board_memmap.h</code> <b>逐字节吻合</b>，验证了上述模型：</p>
+  <table>
+    <thead><tr><th>符号</th><th>计算值</th><th>实际文件值</th><th>一致</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">CVIMMAP_DRAM_SIZE</td><td><code>0x10000000</code></td><td><code>0x10000000</code> (行14)</td><td class="c42">✓</td></tr>
+      <tr><td class="mono">CVIMMAP_ION_ADDR</td><td><code>0x85500000</code></td><td><code>0x85500000</code> (行23)</td><td class="c42">✓</td></tr>
+      <tr><td class="mono">CVIMMAP_RTOS_ION_ADDR</td><td><code>0x8a000000</code></td><td><code>0x8a000000</code> (行35)</td><td class="c42">✓</td></tr>
+      <tr><td class="mono">CVIMMAP_BOOTLOGO_ADDR</td><td><code>0x89e3e000</code></td><td><code>0x89e3e000</code> (行6)</td><td class="c42">✓</td></tr>
+      <tr><td class="mono">CONFIG_SYS_TEXT_BASE</td><td><code>0x83800000</code></td><td><code>0x83800000</code> (行4)</td><td class="c42">✓</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ARTIFACTS -->
+<section id="artifacts">
+  <h2><span class="num">⑥</span>其他衍生产物</h2>
+  <p>同一份 <code>memmap.py</code> 经 <code>mmap_conv.py</code> 的不同 <code>--type</code>，产出三种格式；外加一个文本视图：</p>
+  <table>
+    <thead><tr><th>产物</th><th>--type</th><th>格式样例</th><th>用途</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">cvi_board_memmap.h</td><td><code>h</code></td><td class="mono">#define CVIMMAP_X 0x.. /* .. */</td><td>C 代码（u-boot/kernel/RTOS）</td></tr>
+      <tr><td class="mono">cvi_board_memmap.conf</td><td><code>conf</code></td><td class="mono">CVIMMAP_X=0x..</td><td>shell / make 读取（被 rtos.mk include）</td></tr>
+      <tr><td class="mono">cvi_board_memmap.ld</td><td><code>ld</code></td><td class="mono">CVIMMAP_X = 0x..;</td><td>链接脚本（GNU ld）</td></tr>
+      <tr><td class="mono">cvi_board_memmap.txt</td><td>—<span class="tag">memory_display.py</span></td><td class="mono">分阶段 Markdown 表</td><td>人类可读：FSBL/uboot/kernel 三阶段视图</td></tr>
+    </tbody>
+  </table>
+  <p>三种 <code>.h/.conf/.ld</code> 数据完全同源，只是分隔符和包裹方式不同；
+     <code>.txt</code> 则由 <code>memory_display.py</code> 单独生成，按
+     <b>FSBL → uboot → kernel</b> 三个引导阶段过滤并排序展示，并额外计算 <code>_END</code> 结束地址。</p>
+  <div class="note"><b>提示：</b><code>mmap.mk</code> 注释特别强调——<code>.conf</code> 被 <code>rtos.mk</code> include，
+    所以生成 <code>.conf</code> 的规则里<b>禁止任何日志输出</b>，否则会污染 <code>CVI_TARGET_PACKAGES_LIBDIR</code> 等变量。</div>
+</section>
+
+<!-- FINDINGS -->
+<section id="findings">
+  <h2><span class="num">⑦</span>关键发现与注意事项</h2>
+
+  <h4>1. 头文件保护宏是随机的</h4>
+  <p><code>__BOARD_MMAP__a5289037__</code> 中的 8 位十六进制由 <code>random.randint</code> 生成，
+     <b>每次重新生成 <code>.h</code> 都会变</b>。这意味着该文件不适合纳入「内容稳定性」校验，
+     且不应手工编辑——它是构建产物。</p>
+
+  <h4>2. 单一脚本 + 配置注入，而非每芯片一份脚本</h4>
+  <p>整个 CV184x 系列共用 <code>boards/default/memmap/memmap.py</code>。
+     新增一个 DRAM 容量的板子，<b>通常只需在其 <code>defconfig</code> 改 <code>CONFIG_DRAM_SIZE</code></b>，
+     无需改脚本。这是该设计最值得借鉴之处。</p>
+
+  <h4>3. 存在「未接线」的备用布局脚本</h4>
+  <p>仓库里还有 <code>boards/default/memmap/cv184x/memmap_ddr_128mb.py</code> 与
+     <code>memmap_ddr_64mb.py</code>，是为小内存单独写的整套布局（128MB 版甚至重排了
+     <code>RTOS_ION</code>/<code>ION</code> 顺序）。但<b>当前 <code>mmap.mk</code> 并未引用它们</b>——
+     构建始终走默认 <code>memmap.py</code>。它们更像是历史遗留或正在进行的重构分支。</p>
+
+  <h4>4. ⚠ 128MB 在默认脚本下的潜在越界</h4>
+  <div class="warn">
+    用默认 <code>memmap.py</code> 代入 <span class="c41">cv1841 / 128MB</span> 时，
+    算出的 <code>ION_ADDR = 0x7d500000</code>，<b>低于 DRAM_BASE (0x80000000)</b>——即落到了 DDR 之外。
+    因为 ION(75M)+RTOS_ION(96M)=171M 已超过 128MB 的可用尾部空间。
+    由于 cv1841 的 defconfig 同时 <code>CONFIG_ENABLE_ALIOS=y</code>，
+    <code>__init__</code> 末尾的断言
+    <code>assert ION_ADDR &gt;= FSBL_C906L_START_ADDR + RTOS_SYS_SIZE</code> 会失败。
+    <br><br>
+    <b>含义：</b>128MB 的板子若真要用默认脚本，必须在其 defconfig 调小
+    <code>ION_SIZE</code>/<code>RTOS_ION_SIZE</code>，<u>或</u>切换到那份专用的
+    <code>memmap_ddr_128mb.py</code>（即把它接进 <code>mmap.mk</code>）。
+    这是分析三款芯片时最需要留意的边界条件——256MB / 512MB 不存在此问题。
+  </div>
+
+  <h4>5. float 截断</h4>
+  <p>个别尺寸（如 64MB 版的 <code>ION_SIZE = 26.5*SIZE_1M</code>）是浮点，
+     但 <code>parse_mmap</code> 最终 <code>int(value)</code> 截断，<code>.h</code> 里都是整数地址，不会出现小数。</p>
+</section>
+
+<!-- FILES -->
+<section id="files">
+  <h2><span class="num">附</span>关键文件清单</h2>
+  <table>
+    <thead><tr><th>文件</th><th>角色</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">build/boards/default/memmap/memmap.py</td><td><b>布局算法核心</b>：默认布局 + 读 .config 动态改写</td></tr>
+      <tr><td class="mono">build/scripts/mmap_conv.py</td><td>通用转换器：import 实例化 → 反射提取 → 输出 .h/.conf/.ld</td></tr>
+      <tr><td class="mono">build/scripts/mmap.mk</td><td>make 规则，绑定 memmap.py + .config → memory-map 目标</td></tr>
+      <tr><td class="mono">build/scripts/memory_display.py</td><td>生成人类可读的 .txt 分阶段内存表</td></tr>
+      <tr><td class="mono">build/Kconfig.memmap</td><td>定义 DRAM_SIZE / ION_SIZE / RTOS_SYS_SIZE 等 Kconfig 条目与兜底默认</td></tr>
+      <tr><td class="mono">build/boards/cv184x/&lt;board&gt;/&lt;board&gt;_defconfig</td><td>每块板的配置，<b>含决定性的 CONFIG_DRAM_SIZE</b></td></tr>
+      <tr><td class="mono">build/scripts/defconfig.py</td><td>kconfiglib 驱动，把板级 defconfig 合成 build/.config</td></tr>
+      <tr><td class="mono">build/common_functions.sh</td><td><code>defconfig()</code> 等 shell 入口函数</td></tr>
+      <tr><td class="mono">build/output/&lt;PROJECT_FULLNAME&gt;/cvi_board_memmap.{h,conf,ld,txt}</td><td>最终产物目录</td></tr>
+      <tr><td class="mono">build/boards/default/memmap/cv184x/memmap_ddr_{128,64}mb.py</td><td>备用小内存布局（当前未被 mmap.mk 引用）</td></tr>
+    </tbody>
+  </table>
+</section>
+
+</main>
+
+<footer>
+  分析对象：CviCubeMX · build 目录内存映射生成链路 &nbsp;|&nbsp; 适用芯片：cv1841(128MB) / cv1842(256MB) / cv1843(512MB)
+  &nbsp;|&nbsp; 结论已与 <span class="mono">cv1842hp_wevb_0014a_emmc/cvi_board_memmap.h</span> 实测交叉校验。
+</footer>
+
+<script>
+  // Scrollspy: highlight current section in sidebar
+  const links = [...document.querySelectorAll('#nav a')];
+  const map = {};
+  links.forEach(a => { const id=a.getAttribute('href').slice(1); map[id]=a; });
+  const sections = [...document.querySelectorAll('main section')];
+  const obs = new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{
+      if(e.isIntersecting){
+        links.forEach(l=>l.classList.remove('active'));
+        const a = map[e.target.id];
+        if(a) a.classList.add('active');
+      }
+    });
+  }, {rootMargin:'-10% 0px -80% 0px', threshold:0});
+  sections.forEach(s=>obs.observe(s));
+</script>
+</body>
+</html>

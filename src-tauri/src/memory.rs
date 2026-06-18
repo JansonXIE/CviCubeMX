@@ -70,30 +70,64 @@ pub fn check_memory_overlap(region1: &MemoryRegion, region2: &MemoryRegion) -> b
     region1.end_address > region2.start_address && region2.end_address > region1.start_address
 }
 
-/// 验证内存布局
-/// 检查所有非零大小的区域是否存在重叠，以及地址是否在合理范围内
-/// 注意：与 C++ 源码一致，重叠检测是信息性的——它记录重叠但不阻止配置
-/// 此函数返回重叠区域列表作为警告，不作为硬错误
-pub fn validate_memory_layout(regions: &[MemoryRegion]) -> Result<(), String> {
-    // 过滤出有实际大小的区域
-    let mut sorted_regions: Vec<&MemoryRegion> = regions.iter().filter(|r| r.size > 0).collect();
+/// 已知的合法重叠白名单（设计内的包含/同址复用，不视为内存互踩，跳过提示）。
+/// 顺序无关：(A, B) 与 (B, A) 均匹配。
+/// - KERNEL_MEMORY / RTOS_LOG：KERNEL_MEMORY 覆盖整块 DDR，内核可见全部内存
+/// - FSBL_UNZIP / UIMAG：同址分时复用（同一块缓冲，启动不同阶段先后使用）
+/// - ION / BOOTLOGO：BOOTLOGO 位于 ION 缓冲尾部（嵌套子区）
+const OVERLAP_WHITELIST: &[(&str, &str)] = &[
+    ("KERNEL_MEMORY", "RTOS_LOG"),
+    ("FSBL_UNZIP", "UIMAG"),
+    ("ION", "BOOTLOGO"),
+];
 
-    // 按起始地址排序
+/// 判断某一对区域是否在合法重叠白名单中（顺序无关）
+fn is_whitelisted_overlap(name1: &str, name2: &str) -> bool {
+    OVERLAP_WHITELIST
+        .iter()
+        .any(|&(a, b)| (a == name1 && b == name2) || (a == name2 && b == name1))
+}
+
+/// 收集内存区域重叠提示（信息性，不阻断配置）
+/// 对应 C++ MemoryConfigWidget::checkMemoryOverlap()——仅记录重叠，不阻止配置。
+/// 默认内存表中存在大量"合法重叠"（如 KERNEL_MEMORY 覆盖整块 DDR、FSBL_UNZIP 与
+/// UIMAG 同址分时复用、BOOTLOGO 嵌套在 ION 尾部等），这些已知合法重叠经 OVERLAP_WHITELIST
+/// 跳过；其余重叠才作为警告返回，由上层决定是否提示用户，绝不作为硬错误阻断校验/导出。
+pub fn collect_memory_overlaps(regions: &[MemoryRegion]) -> Vec<String> {
+    // 过滤出有实际大小的区域并按起始地址排序
+    let mut sorted_regions: Vec<&MemoryRegion> = regions.iter().filter(|r| r.size > 0).collect();
     sorted_regions.sort_by_key(|r| r.start_address);
 
-    // 检查相邻区域是否重叠（现改为硬错误）
+    let mut warnings = Vec::new();
+    if sorted_regions.len() < 2 {
+        return warnings;
+    }
+
+    // 检查相邻区域是否重叠（与 C++ 一致，仅比较排序后的相邻对）
     for i in 0..sorted_regions.len() - 1 {
         let current = sorted_regions[i];
         let next = sorted_regions[i + 1];
 
         if check_memory_overlap(current, next) {
-            return Err(format!(
-                "内存重叠检测：区域 {} 与 {} 存在重叠",
+            // 跳过已知合法重叠（设计内的包含/同址复用）
+            if is_whitelisted_overlap(&current.name, &next.name) {
+                continue;
+            }
+            warnings.push(format!(
+                "内存重叠提示：区域 {} 与 {} 存在重叠",
                 current.name, next.name
             ));
         }
     }
 
+    warnings
+}
+
+/// 验证内存布局
+/// 仅检查地址范围约束（所有区域应在基地址范围内）——这是硬错误。
+/// 注意：区段重叠不在此处阻断，改由 collect_memory_overlaps 作为信息性警告返回，
+/// 以与 C++ 源码行为保持一致（默认配置含合法重叠，必须能通过校验）。
+pub fn validate_memory_layout(regions: &[MemoryRegion]) -> Result<(), String> {
     // 检查地址范围约束（所有区域应在基地址范围内）——这是硬错误
     for region in regions.iter().filter(|r| r.size > 0) {
         if region.start_address < MEMORY_BASE_ADDRESS {
@@ -352,12 +386,13 @@ pub fn load_memory_regions() -> Result<Vec<MemoryRegion>, String> {
 }
 
 #[tauri::command]
-pub fn validate_memory(regions: Vec<MemoryRegion>) -> Result<(), String> {
-    // 先检查重叠和地址范围
+pub fn validate_memory(regions: Vec<MemoryRegion>) -> Result<Vec<String>, String> {
+    // 硬错误检查：地址范围（不得低于基地址）
     validate_memory_layout(&regions)?;
-    // 再检查约束条件
+    // 硬错误检查：引导阶段布局约束（防止跨阶段越界）
     validate_memory_constraints(&regions)?;
-    Ok(())
+    // 信息性检查：区段重叠仅作为警告返回，不阻断（与 C++ 原逻辑一致）
+    Ok(collect_memory_overlaps(&regions))
 }
 
 #[tauri::command]
@@ -594,8 +629,8 @@ mod tests {
     }
 
     #[test]
-    fn test_validate_memory_layout_overlap_warning() {
-        // Overlapping regions now produce hard errors
+    fn test_validate_memory_layout_overlap_is_warning_not_error() {
+        // 重叠不再是硬错误：layout 校验应通过，重叠仅作为信息性警告返回
         let regions = vec![
             MemoryRegion {
                 name: "A".to_string(),
@@ -616,10 +651,13 @@ mod tests {
                 description: "".to_string(),
             },
         ];
-        let result = validate_memory_layout(&regions);
-        assert!(result.is_err());
-        let err_msg = result.unwrap_err();
-        assert!(err_msg.contains("重叠"));
+        // 地址范围校验通过（不因重叠而失败）
+        assert!(validate_memory_layout(&regions).is_ok());
+        // 但重叠会被 collect_memory_overlaps 作为警告捕获
+        let warnings = collect_memory_overlaps(&regions);
+        assert_eq!(warnings.len(), 1);
+        assert!(warnings[0].contains("重叠"));
+        assert!(warnings[0].contains("A") && warnings[0].contains("B"));
     }
 
     #[test]
@@ -697,10 +735,67 @@ mod tests {
     #[test]
     fn test_validate_default_memory_regions() {
         let regions = get_default_memory_regions();
-        // 默认配置中有重叠区域（如 KERNEL_MEMORY 与其他区域重叠），严格重叠检测下应该返回 Err
-        let result = validate_memory_layout(&regions);
-        assert!(result.is_err());
-        assert!(result.unwrap_err().contains("重叠"));
+        // 默认（SDK 出厂）配置必须能通过校验——这是回归基线。
+        // 地址范围校验通过
+        assert!(validate_memory_layout(&regions).is_ok());
+        // 引导阶段约束校验通过
+        assert!(validate_memory_constraints(&regions).is_ok());
+        // 整体校验命令返回 Ok（不再因重叠而失败）
+        assert!(validate_memory(regions.clone()).is_ok());
+    }
+
+    #[test]
+    fn test_default_regions_have_no_overlap_warnings() {
+        // 默认配置的全部重叠均为设计内的合法重叠（KERNEL_MEMORY 覆盖整块 DDR、
+        // FSBL_UNZIP 与 UIMAG 同址复用、ION 与 BOOTLOGO 嵌套），均已加入白名单，
+        // 因此默认配置应产生“零”重叠警告。
+        let regions = get_default_memory_regions();
+        let warnings = collect_memory_overlaps(&regions);
+        assert!(
+            warnings.is_empty(),
+            "默认配置预期无重叠警告（合法重叠已白名单），实际: {:?}",
+            warnings
+        );
+    }
+
+    #[test]
+    fn test_whitelisted_overlaps_are_suppressed() {
+        // 三处白名单重叠对应被静默（顺序无关）
+        assert!(is_whitelisted_overlap("KERNEL_MEMORY", "RTOS_LOG"));
+        assert!(is_whitelisted_overlap("RTOS_LOG", "KERNEL_MEMORY"));
+        assert!(is_whitelisted_overlap("FSBL_UNZIP", "UIMAG"));
+        assert!(is_whitelisted_overlap("ION", "BOOTLOGO"));
+        // 非白名单对不受影响
+        assert!(!is_whitelisted_overlap("ION", "RTOS_ION"));
+        assert!(!is_whitelisted_overlap("FOO", "BAR"));
+    }
+
+    #[test]
+    fn test_non_whitelisted_overlap_still_warns() {
+        // 不在白名单内的真实重叠仍应作为警告出现
+        let regions = vec![
+            MemoryRegion {
+                name: "CUSTOM_A".to_string(),
+                start_address: 0x82000000,
+                end_address: 0x82200000,
+                size: 0x200000,
+                size_string: "2M".to_string(),
+                is_editable: true,
+                description: "".to_string(),
+            },
+            MemoryRegion {
+                name: "CUSTOM_B".to_string(),
+                start_address: 0x82100000, // 与 A 部分交叠
+                end_address: 0x82300000,
+                size: 0x200000,
+                size_string: "2M".to_string(),
+                is_editable: true,
+                description: "".to_string(),
+            },
+        ];
+        let warnings = collect_memory_overlaps(&regions);
+        assert_eq!(warnings.len(), 1);
+        assert!(warnings[0].contains("CUSTOM_A") && warnings[0].contains("CUSTOM_B"));
     }
 
     #[test]
