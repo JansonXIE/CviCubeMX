@@ -3,7 +3,7 @@
 // ============================================================
 
 import { describe, it, expect, vi } from 'vitest';
-import { useMemoryStore } from '../../stores/memoryStore';
+import { useMemoryStore, getDramSizeByChip } from '../../stores/memoryStore';
 import { useFlashStore } from '../../stores/flashStore';
 
 vi.mock('@tauri-apps/api/core', () => {
@@ -200,6 +200,176 @@ describe('M5 - 内存配置 (特征化测试)', () => {
 
       store.removeRegion('TEST_REGION');
       expect(useMemoryStore.getState().regions).toHaveLength(1);
+    });
+  });
+
+  // ===========================================================
+  // M5-T9: 不同芯片型号下 ION / RTOS_ION / RTOS_LOGO 大小修改的级联联动
+  // cv1841(128MB) / cv1842(256MB) / cv1843(512MB)
+  // 验证 updateRegion 按芯片 DRAM 边界（0x88000000/0x90000000/0xA0000000）联动
+  // ===========================================================
+  describe('M5-T9: 多芯片内存区段大小修改 (ION/RTOS_ION/RTOS_LOGO)', () => {
+    const BASE = 0x80000000;
+    const ION_SIZE = 0x4b00000; // 75M
+    const RTOS_ION_SIZE = 0x6000000; // 96M
+
+    // 构造一份最小可用的区段集合（含 ION 子缓冲与 RTOS_LOGO）
+    function buildRegions() {
+      const mk = (
+        name: string,
+        start_address: number,
+        size: number,
+      ) => ({
+        name,
+        start_address,
+        end_address: start_address + size,
+        size,
+        size_string: '',
+        is_editable: true,
+        description: '',
+      });
+      return [
+        mk('ION', 0x85500000, ION_SIZE),
+        mk('RTOS_ION', 0x8a000000, RTOS_ION_SIZE),
+        mk('H26X_BITSTREAM', 0x85500000, 0),
+        mk('H26X_ENC_BUFF', 0x85500000, 0),
+        mk('ISP_MEM_BASE', 0x85500000, 0),
+        mk('RTOS_LOGO', 0x80580000, 0),
+      ];
+    }
+
+    function setRegions() {
+      useMemoryStore.setState({ regions: buildRegions() });
+    }
+    function region(name: string) {
+      return useMemoryStore.getState().regions.find((r) => r.name === name)!;
+    }
+
+    // 每款芯片的 DRAM 容量与末尾边界
+    const CHIPS: Array<{ chip: string; dram: number; endBoundary: number }> = [
+      { chip: 'cv1841cp_wevb_0015a_emmc', dram: 0x08000000, endBoundary: 0x88000000 },
+      { chip: 'cv1842hp_wevb_0014a_emmc', dram: 0x10000000, endBoundary: 0x90000000 },
+      { chip: 'cv1843hp_wevb_0014a_emmc', dram: 0x20000000, endBoundary: 0xa0000000 },
+    ];
+
+    it('getDramSizeByChip 按型号前缀解析 DRAM 容量', () => {
+      expect(getDramSizeByChip('cv1841cp_wevb_0015a_emmc')).toBe(0x08000000);
+      expect(getDramSizeByChip('cv1842hp_wevb_0014a_emmc')).toBe(0x10000000);
+      expect(getDramSizeByChip('cv1843hp_wevb_0014a_emmc')).toBe(0x20000000);
+      // 未识别/未指定回退到默认 256M
+      expect(getDramSizeByChip('cv1840cp_wevb_0015a_spinor')).toBe(0x10000000);
+      expect(getDramSizeByChip(undefined)).toBe(0x10000000);
+    });
+
+    // ---- 修改 RTOS_ION 大小：end 钉死在各芯片 DDR 末尾，并联动 ION ----
+    describe('修改 RTOS_ION 大小（end 钉死在 DDR 末尾）', () => {
+      it.each(CHIPS)('$chip: RTOS_ION/ION 起止地址随 DRAM 边界平移', ({ chip, endBoundary }) => {
+        setRegions();
+        useMemoryStore.getState().updateRegion('RTOS_ION', { size: RTOS_ION_SIZE }, chip);
+
+        const rtosIon = region('RTOS_ION');
+        // 结束地址恒为该芯片的 DDR 末尾
+        expect(rtosIon.end_address).toBe(endBoundary);
+        expect(rtosIon.start_address).toBe(endBoundary - RTOS_ION_SIZE);
+
+        // ION 紧贴 RTOS_ION 之下
+        const ion = region('ION');
+        expect(ion.end_address).toBe(rtosIon.start_address);
+        expect(ion.start_address).toBe(rtosIon.start_address - ION_SIZE);
+
+        // 子缓冲与 ION 共享起始地址
+        for (const sub of ['H26X_BITSTREAM', 'H26X_ENC_BUFF', 'ISP_MEM_BASE']) {
+          expect(region(sub).start_address).toBe(ion.start_address);
+        }
+      });
+
+      it('cv1842(256M): 与默认布局精确吻合', () => {
+        setRegions();
+        useMemoryStore.getState().updateRegion('RTOS_ION', { size: RTOS_ION_SIZE }, 'cv1842hp_wevb_0014a_emmc');
+        expect(region('RTOS_ION').start_address).toBe(0x8a000000);
+        expect(region('ION').start_address).toBe(0x85500000);
+        expect(region('ION').end_address).toBe(0x8a000000);
+      });
+
+      it('cv1843(512M): RTOS_ION 上移到 0x9A000000，ION 上移到 0x95500000', () => {
+        setRegions();
+        useMemoryStore.getState().updateRegion('RTOS_ION', { size: RTOS_ION_SIZE }, 'cv1843hp_wevb_0014a_emmc');
+        expect(region('RTOS_ION').start_address).toBe(0x9a000000);
+        expect(region('ION').start_address).toBe(0x95500000);
+        expect(region('ION').end_address).toBe(0x9a000000);
+      });
+
+      it('cv1841(128M): 默认 ION+RTOS_ION(171M) 超出 128M，ION 起始跌破基址（已知约束，需调小尺寸）', () => {
+        setRegions();
+        useMemoryStore.getState().updateRegion('RTOS_ION', { size: RTOS_ION_SIZE }, 'cv1841cp_wevb_0015a_emmc');
+        expect(region('RTOS_ION').start_address).toBe(0x82000000);
+        // 75M+96M=171M > 128M，ION 被挤到基址 0x80000000 之下
+        expect(region('ION').start_address).toBe(0x7d500000);
+        expect(region('ION').start_address).toBeLessThan(BASE);
+      });
+
+      it('cv1841(128M): 调小 ION/RTOS_ION 后布局回到合法范围', () => {
+        // 32M + 32M = 64M，可容于 128M
+        const small = 0x2000000;
+        useMemoryStore.setState({
+          regions: [
+            { name: 'ION', start_address: 0x84000000, end_address: 0x86000000, size: small, size_string: '', is_editable: true, description: '' },
+            { name: 'RTOS_ION', start_address: 0x86000000, end_address: 0x88000000, size: small, size_string: '', is_editable: true, description: '' },
+          ],
+        });
+        useMemoryStore.getState().updateRegion('RTOS_ION', { size: small }, 'cv1841cp_wevb_0015a_emmc');
+        expect(region('RTOS_ION').end_address).toBe(0x88000000);
+        expect(region('RTOS_ION').start_address).toBe(0x86000000);
+        expect(region('ION').start_address).toBe(0x84000000);
+        expect(region('ION').start_address).toBeGreaterThanOrEqual(BASE);
+      });
+    });
+
+    // ---- 修改 ION 大小：end = RTOS_ION.start，向低地址扩展 ----
+    describe('修改 ION 大小（end 对齐 RTOS_ION 起始）', () => {
+      it.each(CHIPS)('$chip: ION 扩到 80M 后起始地址正确', ({ chip, endBoundary }) => {
+        setRegions();
+        // 先让 RTOS_ION 处于该芯片正确位置
+        useMemoryStore.getState().updateRegion('RTOS_ION', { size: RTOS_ION_SIZE }, chip);
+        const rtosIonStart = endBoundary - RTOS_ION_SIZE;
+
+        const newIon = 0x5000000; // 80M
+        useMemoryStore.getState().updateRegion('ION', { size: newIon }, chip);
+
+        const ion = region('ION');
+        expect(ion.end_address).toBe(rtosIonStart);
+        expect(ion.start_address).toBe(rtosIonStart - newIon);
+        // 子缓冲跟随 ION 起始
+        expect(region('H26X_BITSTREAM').start_address).toBe(ion.start_address);
+        expect(region('ISP_MEM_BASE').start_address).toBe(ion.start_address);
+      });
+
+      it('无 RTOS_ION 时走回退分支：end = endBoundary - 96M（随芯片不同）', () => {
+        const mkIon = () => useMemoryStore.setState({
+          regions: [
+            { name: 'ION', start_address: 0x85500000, end_address: 0x8a000000, size: ION_SIZE, size_string: '', is_editable: true, description: '' },
+          ],
+        });
+        mkIon();
+        useMemoryStore.getState().updateRegion('ION', { size: ION_SIZE }, 'cv1842hp_wevb_0014a_emmc');
+        expect(region('ION').end_address).toBe(0x90000000 - 96 * 1024 * 1024); // 0x8a000000
+        mkIon();
+        useMemoryStore.getState().updateRegion('ION', { size: ION_SIZE }, 'cv1843hp_wevb_0014a_emmc');
+        expect(region('ION').end_address).toBe(0xa0000000 - 96 * 1024 * 1024); // 0x9a000000
+      });
+    });
+
+    // ---- 修改 RTOS_LOGO 大小：普通区段，仅 end = start + size，不随 DRAM 边界移动 ----
+    describe('修改 RTOS_LOGO 大小（普通区段，简单重算 end）', () => {
+      it.each(CHIPS)('$chip: RTOS_LOGO 起始不变，end = start + size', ({ chip }) => {
+        setRegions();
+        const newSize = 0x100000; // 1M
+        useMemoryStore.getState().updateRegion('RTOS_LOGO', { start_address: 0x80580000, size: newSize }, chip);
+        const logo = region('RTOS_LOGO');
+        // 普通区段不被 DDR 末尾边界影响
+        expect(logo.start_address).toBe(0x80580000);
+        expect(logo.end_address).toBe(0x80580000 + newSize);
+      });
     });
   });
 });

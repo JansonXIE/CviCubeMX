@@ -21,10 +21,38 @@ interface MemoryState {
   loadMemoryRegions: () => Promise<void>;
   addRegion: (region: MemoryRegion) => void;
   removeRegion: (name: string) => void;
-  updateRegion: (name: string, updated: Partial<MemoryRegion>) => void;
+  updateRegion: (name: string, updated: Partial<MemoryRegion>, chipType?: string) => void;
   validateMemory: () => Promise<string[]>;
   exportDefconfig: (sourcePath: string, chipType: string) => Promise<void>;
   exportMemoryJson: (path: string) => Promise<void>;
+}
+
+// 物理内存基地址（CV184x 系列固定为 0x80000000）
+export const MEMORY_BASE_ADDRESS = 0x80000000;
+
+// 默认 DRAM 容量：256MB（与历史行为保持一致），用于未指定/未识别的芯片
+export const DEFAULT_DRAM_SIZE = 0x10000000;
+
+// 不同芯片型号对应的 DRAM 容量
+// 对应 build/boards/cv184x/<board>/<board>_defconfig 中的 CONFIG_DRAM_SIZE
+export const DRAM_SIZE_BY_CHIP: Record<string, number> = {
+  cv1841: 0x08000000, // 128MB
+  cv1842: 0x10000000, // 256MB
+  cv1843: 0x20000000, // 512MB
+};
+
+/**
+ * 根据芯片型号推导 DRAM 容量（字节）。
+ * chipType 可以是完整板名（如 "cv1842hp_wevb_0014a_emmc"），按型号前缀匹配；
+ * 未识别时回退到默认 256MB，保证旧调用方行为不变。
+ */
+export function getDramSizeByChip(chipType?: string | null): number {
+  if (!chipType) return DEFAULT_DRAM_SIZE;
+  const lc = chipType.toLowerCase();
+  for (const [model, size] of Object.entries(DRAM_SIZE_BY_CHIP)) {
+    if (lc.includes(model)) return size;
+  }
+  return DEFAULT_DRAM_SIZE;
 }
 
 export const useMemoryStore = create<MemoryState>((set, get) => ({
@@ -57,9 +85,9 @@ export const useMemoryStore = create<MemoryState>((set, get) => ({
     set({ regions: regions.filter((r) => r.name !== name) });
   },
 
-  updateRegion: (name: string, updated: Partial<MemoryRegion>) => {
+  updateRegion: (name: string, updated: Partial<MemoryRegion>, chipType?: string) => {
     const { regions } = get();
-    
+
     // 1. 深拷贝当前的内存区域列表
     let newRegions = regions.map((r) => {
       if (r.name === name) {
@@ -76,9 +104,11 @@ export const useMemoryStore = create<MemoryState>((set, get) => ({
     const target = newRegions.find((r) => r.name === name);
     if (!target) return;
 
-    const baseAddr = 0x80000000;
-    const totalSpan = 0x10000000; // 256MB
-    const endBoundary = baseAddr + totalSpan; // 0x90000000 (256M 边界)
+    const baseAddr = MEMORY_BASE_ADDRESS;
+    // DRAM 末尾边界随芯片型号变化：cv1841=128M / cv1842=256M / cv1843=512M
+    // 未指定芯片时回退默认 256M，保持历史行为不变
+    const dramSize = getDramSizeByChip(chipType);
+    const endBoundary = baseAddr + dramSize; // RTOS_ION 钉死的 DDR 末尾
 
     // 2. 级联联动计算 (对照 memoryconfig.cpp 逻辑)
     if (name === "ION") {

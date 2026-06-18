@@ -131,13 +131,17 @@ export default function MemoryTable({
     const end = start + size;
     const sizeStr = formatSizeReadable(size);
 
-    updateRegion(editTarget.name, {
-      start_address: start,
-      end_address: end,
-      size,
-      size_string: sizeStr,
-      description: editDesc.trim(),
-    });
+    updateRegion(
+      editTarget.name,
+      {
+        start_address: start,
+        end_address: end,
+        size,
+        size_string: sizeStr,
+        description: editDesc.trim(),
+      },
+      chipType, // 按当前选定芯片确定 DRAM 边界（128/256/512MB）
+    );
 
     setShowEditForm(false);
     setEditTarget(null);
