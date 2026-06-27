@@ -1,8 +1,13 @@
 import React from "react";
 import PartitionTable from "../components/PartitionTable";
 import { Zap, HelpCircle } from "lucide-react";
+import { useFlashStore } from "../stores/flashStore";
+import { useSdkStore } from "../stores/sdkStore";
 
 export default function FlashPage() {
+  const { flashSize } = useFlashStore();
+  const { chipType } = useSdkStore();
+
   return (
     <div className="flex flex-col h-full space-y-5">
       {/* 头部配置栏 */}
@@ -15,12 +20,14 @@ export default function FlashPage() {
           </div>
           <div>
             <h2 className="text-base font-bold text-slate-100">闪存分区表配置 (Flash Partition Layout)</h2>
-            <p className="text-xs text-slate-500 font-medium">规划 SPI Nor/Nand Flash 上的分区边界、打包镜像文件挂载点及对应的文件系统类型</p>
+            <p className="text-xs text-slate-500 font-medium">规划 SPI Nor/Nand/eMMC Flash 上的分区边界、打包镜像文件挂载点及对应的文件系统类型</p>
           </div>
         </div>
 
         <div className="flex items-center gap-2 relative z-10 text-xs text-slate-400 font-semibold bg-slate-950/40 px-3 py-1.5 rounded-xl border border-slate-800 font-mono">
-          FLASH: 32 MB SPI Nor
+          FLASH: {flashSize}
+          {chipType && <span className="text-slate-600">·</span>}
+          {chipType && <span className="text-slate-500 truncate max-w-[220px]" title={chipType}>{chipType}</span>}
         </div>
       </div>
 

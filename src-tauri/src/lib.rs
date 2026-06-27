@@ -52,6 +52,7 @@ pub fn run() {
             memory::export_memory_defconfig,
             // M6: Flash partition commands
             flash::load_partitions,
+            flash::read_flash_board_info,
             flash::validate_partitions,
             flash::export_flash_json,
             flash::export_flash_defconfig,

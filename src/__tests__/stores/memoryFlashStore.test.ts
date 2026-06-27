@@ -35,6 +35,35 @@ vi.mock('@tauri-apps/api/core', () => {
         }
       ];
     }
+    if (cmd === 'read_flash_board_info') {
+      return {
+        flash_size: '32GB',
+        flash_size_kb: 32 * 1024 * 1024,
+        partition_count: 9,
+        partitions: [
+          {
+            partition_number: 2,
+            label: '2nd',
+            size: 3072,
+            size_string: '3MB',
+            file: 'yoc.bin',
+            mountpoint: '',
+            type_field: '',
+            enabled: true
+          },
+          {
+            partition_number: 9,
+            label: 'DATA',
+            size: 0,
+            size_string: '0KB',
+            file: 'data.emmc',
+            mountpoint: 'mnt/data',
+            type_field: 'ext4',
+            enabled: true
+          }
+        ]
+      };
+    }
     return Promise.resolve();
   });
   return { invoke: mockInvoke };
@@ -504,6 +533,59 @@ describe('M6 - Flash 分区管理 (特征化测试)', () => {
 
       store.removePartition(2);
       expect(useFlashStore.getState().partitions).toHaveLength(1);
+    });
+  });
+
+  describe('M6-T6: 从 SDK 板卡读取分区信息', () => {
+    it('loadBoardInfo 写入分区表与 Flash 容量', async () => {
+      const store = useFlashStore.getState();
+      await store.loadBoardInfo('/fake/sdk', 'cv1842hp_wevb_0014a_emmc');
+
+      const state = useFlashStore.getState();
+      expect(state.flashSize).toBe('32GB');
+      expect(state.flashSizeKb).toBe(32 * 1024 * 1024);
+      expect(state.partitionCount).toBe(9);
+      expect(state.partitions).toHaveLength(2);
+      expect(state.partitions[0].label).toBe('2nd');
+      // DATA 分区 size 为 0 => 自动分配
+      expect(state.partitions[1].label).toBe('DATA');
+      expect(state.partitions[1].size).toBe(0);
+    });
+  });
+
+  describe('M6-T7: 修改分区大小', () => {
+    it('updatePartitionSize 只改对应分区的 size 与 size_string', async () => {
+      const store = useFlashStore.getState();
+      await store.loadBoardInfo('/fake/sdk', 'cv1842hp_wevb_0014a_emmc');
+
+      store.updatePartitionSize(2, 8192);
+      let p2 = useFlashStore.getState().partitions.find((p) => p.partition_number === 2)!;
+      expect(p2.size).toBe(8192);
+      expect(p2.size_string).toBe('8MB');
+
+      // 留空（size 0）=> 自动分配
+      store.updatePartitionSize(2, 0);
+      p2 = useFlashStore.getState().partitions.find((p) => p.partition_number === 2)!;
+      expect(p2.size).toBe(0);
+    });
+  });
+
+  describe('M6-T8: 重置恢复载入基线', () => {
+    it('修改并（模拟）保存后，重置恢复到载入时的分区大小', async () => {
+      const store = useFlashStore.getState();
+      await store.loadBoardInfo('/fake/sdk', 'cv1842hp_wevb_0014a_emmc');
+      const original = useFlashStore
+        .getState()
+        .partitions.find((p) => p.partition_number === 2)!.size;
+      expect(original).toBe(3072);
+
+      // 用户改大小并“保存”（保存只写磁盘，不影响内存基线）
+      store.updatePartitionSize(2, 4096);
+      expect(useFlashStore.getState().partitions.find((p) => p.partition_number === 2)!.size).toBe(4096);
+
+      // 重置 => 恢复到载入时的 3072（而非已保存的 4096）
+      store.resetToBaseline();
+      expect(useFlashStore.getState().partitions.find((p) => p.partition_number === 2)!.size).toBe(original);
     });
   });
 });
