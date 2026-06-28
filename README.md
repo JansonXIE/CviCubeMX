@@ -114,6 +114,26 @@ src-tauri/target/release/bundle/
 └── msi/           # Windows Installer (.msi)
 ```
 
+### GitHub Release 自动发布
+
+仓库内置 `.github/workflows/release.yml`，在 CI 校验通过后会分别构建 Windows 和 Ubuntu 安装包，并上传到 GitHub Release。
+
+触发方式：
+
+```bash
+git tag v0.0.1
+git push origin v0.0.1
+```
+
+也可以在 GitHub Actions 页面手动运行 `Build and Release` workflow，并填写发布 tag。
+
+发布产物包括：
+
+```
+Windows: .exe(NSIS), .msi
+Ubuntu: .deb, .AppImage
+```
+
 ### 仅构建前端
 
 ```bash
