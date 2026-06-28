@@ -111,4 +111,4 @@ jobs:
           tag_name: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
           name: CviCubeMX ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
           target_commitish: ${{ github.sha }}
-          files: release-assets/*
+          files: release-assets/**/*
