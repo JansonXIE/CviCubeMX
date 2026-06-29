@@ -133,13 +133,14 @@ impl DtsWriter {
             channel_names.join(" ")
         };
 
-        // If the node doesn't exist in the file, create it
+        // If the node doesn't exist in the file, create it.
+        // Mirrors C++ updateSinglePeripheralContent: only create the node and
+        // return early WITHOUT cascading DMA config updates.
         let node_pos =
             DtsParser::find_node_position_in_content(parser.get_file_content(), peripheral);
         if node_pos.is_none() && peripheral == "sysdma_remap" {
             Self::create_sysdma_remap_node(parser, &channels);
             parser.set_peripheral_sysdma_channels(peripheral, channels.clone())?;
-            Self::update_peripheral_dma_config(parser, &previous_channels, &channels);
             return Ok(());
         }
 

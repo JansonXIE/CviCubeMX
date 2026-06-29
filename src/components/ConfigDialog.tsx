@@ -1,6 +1,91 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { usePeripheralStore, PeripheralInfo } from "../stores/peripheralStore";
 import { X, Save } from "lucide-react";
+
+// SYSDMA 通道号 → 外设常量名映射
+// 与 C++ dtsconfig.cpp::getChannelName 及 Rust SysdmaChannelMap::channel_name 保持一致
+const SYSDMA_CHANNEL_NAMES: Record<string, string> = {
+  "0": "CVI_I2S0_RX", "1": "CVI_I2S0_TX", "2": "CVI_I2S1_RX", "3": "CVI_I2S1_TX",
+  "4": "CVI_I2S2_RX", "5": "CVI_I2S2_TX", "6": "CVI_I2S3_RX", "7": "CVI_I2S3_TX",
+  "8": "CVI_UART0_RX", "9": "CVI_UART0_TX", "10": "CVI_UART1_RX", "11": "CVI_UART1_TX",
+  "12": "CVI_UART2_RX", "13": "CVI_UART2_TX", "14": "CVI_UART3_RX", "15": "CVI_UART3_TX",
+  "16": "CVI_SPI0_RX", "17": "CVI_SPI0_TX", "18": "CVI_SPI1_RX", "19": "CVI_SPI1_TX",
+  "20": "CVI_SPI2_RX", "21": "CVI_SPI2_TX", "22": "CVI_SPI3_RX", "23": "CVI_SPI3_TX",
+  "24": "CVI_I2C0_RX", "25": "CVI_I2C0_TX", "26": "CVI_I2C1_RX", "27": "CVI_I2C1_TX",
+  "28": "CVI_I2C2_RX", "29": "CVI_I2C2_TX", "30": "CVI_I2C3_RX", "31": "CVI_I2C3_TX",
+  "32": "CVI_I2C4_RX", "33": "CVI_I2C4_TX", "34": "CVI_TDM0_RX", "35": "CVI_TDM0_TX",
+  "36": "CVI_TDM1_RX", "37": "CVI_AUDSRC", "38": "CVI_SPI_NOR_RX", "39": "CVI_SPI_NOR_TX",
+  "40": "CVI_UART4_RX", "41": "CVI_UART4_TX", "42": "CVI_SPI_NAND",
+};
+
+// 下拉可选项（按通道号升序）
+const SYSDMA_CHANNEL_OPTIONS = Object.entries(SYSDMA_CHANNEL_NAMES).sort(
+  (a, b) => Number(a[0]) - Number(b[0])
+);
+
+// 根据通道号获取外设名称（找不到时回退到 CVI_I2S0_RX，与 C++/Rust 默认一致）
+function getSysdmaChannelName(num: string): string {
+  return SYSDMA_CHANNEL_NAMES[num] ?? "CVI_I2S0_RX";
+}
+
+// 自定义 SYSDMA 通道下拉：收起时只显示通道号，展开时显示「通道号 - 外设名」
+function SysdmaChannelSelect({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (val: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [open]);
+
+  return (
+    <div ref={ref} className="relative">
+      {/* 收起态按钮：只显示通道号 */}
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="w-full bg-slate-900 border border-slate-700/80 rounded-lg px-2 py-1 text-[10px] text-slate-200 focus:outline-none focus:border-indigo-500 transition focus:ring-0 font-mono text-left"
+      >
+        {value}
+      </button>
+      {/* 展开态选项列表：显示「通道号 - 外设名」 */}
+      {open && (
+        <ul className="absolute z-50 mt-1 max-h-48 w-max min-w-full overflow-auto rounded-lg border border-slate-700 bg-slate-900 shadow-xl">
+          {SYSDMA_CHANNEL_OPTIONS.map(([num, name]) => (
+            <li key={num}>
+              <button
+                type="button"
+                onClick={() => {
+                  onChange(num);
+                  setOpen(false);
+                }}
+                className={`block w-full px-2 py-1 text-left text-[10px] font-mono whitespace-nowrap transition ${
+                  num === value
+                    ? "bg-indigo-600 text-white"
+                    : "text-slate-200 hover:bg-slate-800"
+                }`}
+              >
+                {num} - {name}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
 
 interface ConfigDialogProps {
   peripheral: PeripheralInfo;
@@ -188,12 +273,13 @@ export default function ConfigDialog({ peripheral, isOpen, onClose }: ConfigDial
                 {sysdmaChs.map((ch, idx) => (
                   <div key={`dma-ch-${idx}`} className="flex flex-col gap-1">
                     <span className="text-[10px] text-slate-500 font-mono font-bold">通道 {idx}</span>
-                    <input
-                      type="text"
+                    <SysdmaChannelSelect
                       value={ch}
-                      onChange={(e) => handleDmaChChange(idx, e.target.value)}
-                      className="bg-slate-900 border border-slate-700/80 rounded-lg px-2 py-1 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 transition focus:ring-0 font-mono text-center"
+                      onChange={(val) => handleDmaChChange(idx, val)}
                     />
+                    <span className="text-[10px] text-indigo-400/80 font-mono truncate" title={getSysdmaChannelName(ch)}>
+                      {getSysdmaChannelName(ch)}
+                    </span>
                   </div>
                 ))}
               </div>

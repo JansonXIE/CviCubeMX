@@ -85,9 +85,12 @@ impl Default for PeripheralInfo {
 }
 
 impl PeripheralInfo {
-    /// Default SYSDMA channel mapping: ["0","5","12","13","42","42","4","7"]
+    /// Default SYSDMA channel mapping: ["0","5","2","3","42","42","4","7"]
+    ///
+    /// Mirrors the C++ reference `dtsconfig.cpp` (parseDtsFile / updatePeripheralDmaConfigWithPrevious),
+    /// which both use {"0", "5", "2", "3", "42", "42", "4", "7"}.
     pub fn default_sysdma_channels() -> Vec<String> {
-        vec!["0", "5", "12", "13", "42", "42", "4", "7"]
+        vec!["0", "5", "2", "3", "42", "42", "4", "7"]
             .into_iter()
             .map(|s| s.to_string())
             .collect()
@@ -406,7 +409,7 @@ mod tests {
     #[test]
     fn test_default_sysdma_channels() {
         let channels = PeripheralInfo::default_sysdma_channels();
-        assert_eq!(channels, vec!["0", "5", "12", "13", "42", "42", "4", "7"]);
+        assert_eq!(channels, vec!["0", "5", "2", "3", "42", "42", "4", "7"]);
     }
 
     #[test]
