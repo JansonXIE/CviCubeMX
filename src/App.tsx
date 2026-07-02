@@ -73,16 +73,6 @@ function Sidebar() {
  */
 function TopBar() {
   const { sdkPath, chipType, setIsOnboardingOpen } = useSdkStore();
-  const [greetResult, setGreetResult] = React.useState("");
-
-  const handleGreet = async () => {
-    try {
-      const result = await invoke<string>("greet", { name: "CviCubeMX" });
-      setGreetResult(result);
-    } catch (e) {
-      console.error(e);
-    }
-  };
 
   return (
     <header className="h-16 bg-slate-900/40 backdrop-blur-lg flex items-center justify-between px-6 border-b border-slate-700/50 z-10">
@@ -106,19 +96,6 @@ function TopBar() {
             </button>
           </div>
         )}
-      </div>
-      <div className="flex items-center gap-4">
-        {greetResult && (
-          <span className="text-emerald-400 text-sm font-medium animate-fade-in">
-            {greetResult}
-          </span>
-        )}
-        <button
-          onClick={handleGreet}
-          className="bg-indigo-500 hover:bg-indigo-600 text-white px-5 py-2 rounded-lg shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/40 transition-all duration-300 transform hover:-translate-y-0.5 active:translate-y-0 active:scale-95 outline-none focus:outline-none focus:ring-0 border-transparent font-medium"
-        >
-          测试 IPC
-        </button>
       </div>
     </header>
   );
