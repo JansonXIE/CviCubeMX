@@ -42,14 +42,18 @@ interface ChatState {
   initListener: () => Promise<UnlistenFn>;
 }
 
-let unlistenFn: UnlistenFn | null = null;
+// 缓存 listen() 返回的 Promise 而非解析后的 UnlistenFn：作为同步守卫，
+// 保证监听器只注册一次（详见 initListener 内注释）。
+let listenerPromise: Promise<UnlistenFn> | null = null;
 
 export const useChatStore = create<ChatState>((set, get) => ({
   messages: [],
+  // 敏感信息不硬编码在前端。启动时通过 loadConfig() 从 Rust 端加载
+  // (Rust 端的值来自编译时注入的环境变量 AI_API_KEY / AI_BASE_URL / AI_MODEL)。
   aiConfig: {
-    api_key: 'your_api_key_here',
+    api_key: '',
     base_url: 'https://www.sophnet.com/api/open-apis/v1',
-    model: 'DeepSeek-V3.2-Exp:6P2FGzuj1EOFpP2DCX2miK',
+    model: '',
   },
   isStreaming: false,
   currentAIResponse: '',
@@ -57,11 +61,15 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
   /** 初始化 Tauri Event listener，监听 ai-chunk 事件 */
   initListener: async () => {
-    if (unlistenFn) {
-      return unlistenFn;
+    // 同步缓存 listen() 的 Promise：React.StrictMode 在开发环境会双调用挂载 effect，
+    // 若守卫用的是 await 之后才赋值的 unlistenFn，两次调用会都看到 null 而各自注册
+    // 一个 'ai-chunk' 监听器，导致同一 chunk 被追加两次（输出重复交错）。
+    // 在任何 await 之前就把 Promise 存入 listenerPromise，可保证只注册一次。
+    if (listenerPromise) {
+      return listenerPromise;
     }
 
-    unlistenFn = await listen<AiChunkPayload>('ai-chunk', (event) => {
+    listenerPromise = listen<AiChunkPayload>('ai-chunk', (event) => {
       const payload = event.payload;
 
       if (payload.done) {
@@ -96,12 +104,14 @@ export const useChatStore = create<ChatState>((set, get) => ({
         const lastMsgIdx = messages.length - 1;
 
         if (lastMsgIdx >= 0 && messages[lastMsgIdx].role === 'assistant') {
-          // 更新最后一条 AI 消息的显示内容
+          // 更新最后一条 AI 消息的显示内容。
+          // 每个 chunk 都实时重算 isMarkdown，使标题/列表等在流式过程中即渲染为
+          // markdown（ReactMarkdown 可安全渲染未闭合的片段），无需等到 done 才刷新。
           set({
             currentAIResponse: newContent,
             messages: messages.map((msg, i) =>
               i === lastMsgIdx
-                ? { ...msg, content: newContent }
+                ? { ...msg, content: newContent, isMarkdown: isMarkdownContent(newContent) }
                 : msg
             ),
           });
@@ -109,7 +119,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       }
     });
 
-    return unlistenFn;
+    return listenerPromise;
   },
 
   /** 发送消息到 AI */

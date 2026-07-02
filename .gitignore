@@ -9,3 +9,8 @@ target/
 coverage/
 src-tauri/target/
 .vscode/settings.json
+
+# 本地环境变量（含敏感信息，禁止提交）
+.env
+.env.local
+src-tauri/.env

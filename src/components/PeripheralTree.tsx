@@ -5,49 +5,40 @@ import ConfigDialog from "./ConfigDialog";
 
 export default function PeripheralTree() {
   const { peripherals, setPeripheralStatus } = usePeripheralStore();
-  const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({
-    I2C: true,
-    UART: true,
-    PWM: true,
-    SPI: true,
-    DMA: true,
-    OTHERS: false,
-  });
+  const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
   const [activePeripheral, setActivePeripheral] = useState<PeripheralInfo | null>(null);
 
-  // 分类策略
-  const categorize = (name: string): string => {
-    const n = name.toLowerCase();
-    if (n.includes("i2c") || n.includes("iic")) return "I2C";
-    if (n.includes("uart")) return "UART";
-    if (n.includes("pwm")) return "PWM";
-    if (n.includes("spi")) return "SPI";
-    if (n.includes("dma")) return "DMA";
-    return "OTHERS";
+  // 将外设名拆分为字母前缀与末尾序号（如 i2c0 -> { prefix: "i2c", index: 0 }）
+  const splitName = (name: string): { prefix: string; index: number } => {
+    const m = name.match(/^(.*?)(\d+)$/);
+    if (m) {
+      return { prefix: m[1], index: parseInt(m[2], 10) };
+    }
+    return { prefix: name, index: -1 };
   };
 
-  // 分类汇总
-  const groups: Record<string, PeripheralInfo[]> = {
-    I2C: [],
-    UART: [],
-    PWM: [],
-    SPI: [],
-    DMA: [],
-    OTHERS: [],
-  };
-
+  // 按外设名的字母前缀动态分组（不再使用 OTHERS 兜底折叠）
+  const groups: Record<string, PeripheralInfo[]> = {};
   peripherals.forEach((p) => {
-    const cat = categorize(p.name);
+    const cat = splitName(p.name).prefix.toUpperCase();
     if (!groups[cat]) {
       groups[cat] = [];
     }
     groups[cat].push(p);
   });
 
+  // 分组按字母排序；组内按外设号从 0 起递增排序
+  const sortedGroups = Object.entries(groups)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([cat, items]) => {
+      items.sort((a, b) => splitName(a.name).index - splitName(b.name).index);
+      return [cat, items] as [string, PeripheralInfo[]];
+    });
+
   const toggleCategory = (cat: string) => {
     setExpandedCategories((prev) => ({
       ...prev,
-      [cat]: !prev[cat],
+      [cat]: prev[cat] === false,
     }));
   };
 
@@ -66,9 +57,9 @@ export default function PeripheralTree() {
       </h3>
 
       <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar relative z-10">
-        {Object.entries(groups).map(([cat, items]) => {
+        {sortedGroups.map(([cat, items]) => {
           if (items.length === 0) return null;
-          const isExpanded = expandedCategories[cat];
+          const isExpanded = expandedCategories[cat] !== false;
 
           return (
             <div key={cat} className="border border-slate-800 rounded-xl bg-slate-950/20 overflow-hidden">

@@ -15,10 +15,17 @@ pub struct AiApiConfig {
 
 impl Default for AiApiConfig {
     fn default() -> Self {
+        // 敏感信息从编译时环境变量读取，避免硬编码到源码中被泄露。
+        // GitHub Actions 构建 release 时通过 secrets 注入 AI_API_KEY / AI_BASE_URL / AI_MODEL。
+        // 本地开发可在 src-tauri/.env 或 shell 中设置这些变量（参见 .env.example）。
         Self {
-            api_key: "your_api_key_here".to_string(),
-            base_url: "https://www.sophnet.com/api/open-apis/v1".to_string(),
-            model: "DeepSeek-V3.2-Exp:6P2FGzuj1EOFpP2DCX2miK".to_string(),
+            api_key: option_env!("AI_API_KEY").unwrap_or("").to_string(),
+            base_url: option_env!("AI_BASE_URL")
+                .unwrap_or("https://www.sophnet.com/api/open-apis/v1")
+                .to_string(),
+            model: option_env!("AI_MODEL")
+                .unwrap_or("DeepSeek-V4-Pro:2Hz6HohcSFaiFG98gqzSwW")
+                .to_string(),
         }
     }
 }

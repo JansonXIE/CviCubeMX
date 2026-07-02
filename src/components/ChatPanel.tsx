@@ -22,7 +22,7 @@ export default function ChatPanel() {
   const [inputValue, setInputValue] = useState('');
   const [showConfig, setShowConfig] = useState(false);
   const [configForm, setConfigForm] = useState<AiApiConfig>(aiConfig);
-  const chatEndRef = useRef<HTMLDivElement>(null);
+  const messageListRef = useRef<HTMLDivElement>(null);
 
   // 初始化 listener 和加载配置
   useEffect(() => {
@@ -35,9 +35,14 @@ export default function ChatPanel() {
     setConfigForm(aiConfig);
   }, [aiConfig]);
 
-  // 滚动到底部
+  // 滚动到底部：仅滚动消息列表容器本身，避免 scrollIntoView 连带滚动
+  // 外层 overflow-hidden 祖先（overflow:hidden 仍可被程序化滚动），
+  // 否则进入本页时整页会被顶上去。
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const el = messageListRef.current;
+    if (el) {
+      el.scrollTop = el.scrollHeight;
+    }
   }, [messages]);
 
   // 发送消息
@@ -89,7 +94,7 @@ export default function ChatPanel() {
           <h3 className="text-sm font-medium text-gray-600 mb-2">API 配置</h3>
           <div className="grid grid-cols-1 gap-2">
             <input
-              className="px-3 py-2 text-sm border rounded-lg focus:border-blue-400 focus:outline-none"
+              className="px-3 py-2 text-sm border rounded-lg focus:border-blue-400 focus:outline-none bg-white text-gray-800 placeholder-gray-400"
               placeholder="API Key"
               value={configForm.api_key}
               onChange={(e) =>
@@ -97,7 +102,7 @@ export default function ChatPanel() {
               }
             />
             <input
-              className="px-3 py-2 text-sm border rounded-lg focus:border-blue-400 focus:outline-none"
+              className="px-3 py-2 text-sm border rounded-lg focus:border-blue-400 focus:outline-none bg-white text-gray-800 placeholder-gray-400"
               placeholder="Base URL"
               value={configForm.base_url}
               onChange={(e) =>
@@ -105,7 +110,7 @@ export default function ChatPanel() {
               }
             />
             <input
-              className="px-3 py-2 text-sm border rounded-lg focus:border-blue-400 focus:outline-none"
+              className="px-3 py-2 text-sm border rounded-lg focus:border-blue-400 focus:outline-none bg-white text-gray-800 placeholder-gray-400"
               placeholder="Model"
               value={configForm.model}
               onChange={(e) =>
@@ -144,7 +149,7 @@ export default function ChatPanel() {
       )}
 
       {/* 消息列表 */}
-      <div className="flex-1 overflow-y-auto px-4 py-2 space-y-3">
+      <div ref={messageListRef} className="flex-1 overflow-y-auto px-4 py-2 space-y-3">
         {messages.length === 0 && (
           <div className="text-center text-gray-400 py-8">
             请输入您的问题，AI 助手将为您解答
@@ -159,7 +164,7 @@ export default function ChatPanel() {
             }`}
           >
             <div
-              className={`max-w-[70%] px-4 py-3 rounded-2xl shadow-sm ${
+              className={`max-w-[70%] min-w-0 px-4 py-3 rounded-2xl shadow-sm overflow-hidden break-words ${
                 msg.role === 'user'
                   ? 'bg-blue-500 text-white'
                   : 'bg-white text-gray-800 border border-gray-200'
@@ -179,13 +184,12 @@ export default function ChatPanel() {
             </div>
           </div>
         ))}
-        <div ref={chatEndRef} />
       </div>
 
       {/* 输入区域 */}
       <div className="flex gap-2 px-4 py-3 bg-white border-t">
         <textarea
-          className="flex-1 px-3 py-2 border-2 rounded-lg resize-none focus:border-blue-400 focus:outline-none text-sm"
+          className="flex-1 px-3 py-2 border-2 rounded-lg resize-none focus:border-blue-400 focus:outline-none text-sm bg-white text-gray-800 placeholder-gray-400"
           placeholder="请输入您的问题... (Enter发送 | Shift+Enter换行)"
           rows={1}
           value={inputValue}
