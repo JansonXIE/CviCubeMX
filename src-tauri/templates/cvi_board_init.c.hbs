@@ -1,11 +1,11 @@
 {{#if incremental_only}}
-{{#each pinmux_configs}}
+{{{eth_sequence}}}{{#each pinmux_configs}}
 	// {{this.func_name}} pins configuration
 {{#each this.pins}}
 	PINMUX_CONFIG({{this.pin_name}}, {{this.pinmux_macro}});
 {{/each}}
 {{/each}}
-{{{eth_sequence}}}{{{mipi_sequence}}}{{{audio_sequence}}}
+{{{mipi_sequence}}}{{{audio_sequence}}}
 {{else}}
 /**
  * @file cvi_board_init.c
@@ -43,14 +43,17 @@ int cvi_board_init(void)
 {{/if}}
      */
 
-{{#each pinmux_configs}}
+{{#unless is_empty}}
+    // Generated PINMUX configurations
+{{/unless}}
+{{{eth_sequence}}}{{#each pinmux_configs}}
     // {{this.func_name}} pins configuration
 {{#each this.pins}}
     PINMUX_CONFIG({{this.pin_name}}, {{this.pinmux_macro}});
 {{/each}}
 
 {{/each}}
-{{{eth_sequence}}}{{{mipi_sequence}}}{{{audio_sequence}}}
+{{{mipi_sequence}}}{{{audio_sequence}}}
 {{#if is_empty}}
     // No special pin functions configured
     // All pins are set to GPIO by default

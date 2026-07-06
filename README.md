@@ -321,7 +321,7 @@ int cvi_board_init(void)
     PINMUX_CONFIG(UART0_RX, UART0_RX);
 
     /* Special sequence: configure EPHY for GPIO on ETH pads */
-    mmio_write(0x03009804, mmio_read(0x03009804) | 0x1);
+    mmio_write_32(0x03009804, mmio_read(0x03009804) | 0x1);
     // ... (ETH / MIPI / Audio 特殊寄存器序列)
 
     return 0;

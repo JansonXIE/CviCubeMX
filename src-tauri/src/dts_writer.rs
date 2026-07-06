@@ -162,6 +162,76 @@ impl DtsWriter {
         Ok(())
     }
 
+    // ── Raw property writing (generic key/value editor) ──────
+
+    /// Upsert an arbitrary property on a node.
+    ///
+    /// If a property with the same key already exists it is replaced;
+    /// otherwise it is inserted. Protected keys are rejected. `kind` selects
+    /// the value syntax: `cell` (`<...>`), `string` (`"..."`), or `bool`.
+    pub fn set_raw_property(
+        parser: &mut DtsParser,
+        peripheral: &str,
+        key: &str,
+        value: &str,
+        kind: &str,
+    ) -> Result<(), String> {
+        if crate::peripheral::is_protected_property(key) {
+            return Err(format!("属性 {} 受保护，不可修改", key));
+        }
+
+        let new_line = match kind {
+            "cell" => format!("\n\t\t{} = <{}>;", key, value),
+            "string" => format!("\n\t\t{} = \"{}\";", key, value),
+            "bool" => format!("\n\t\t{};", key),
+            _ => return Err(format!("不支持的属性类型: {}", kind)),
+        };
+
+        // Matches an existing same-key line in any of the three forms so the
+        // upsert replaces in place instead of duplicating.
+        let property_regex = format!(
+            r#"\s*{}\s*(=\s*(<[^>]*>|"[^"]*"))?\s*;"#,
+            regex::escape(key)
+        );
+
+        // Reuse the line-level replace/insert core (should_add = true).
+        Self::update_property_in_node(parser, peripheral, &property_regex, new_line, true)
+    }
+
+    /// Delete an arbitrary property from a node.
+    ///
+    /// Protected keys are rejected. The match swallows the property's leading
+    /// newline + indentation so no dangling blank line remains after removal.
+    pub fn delete_raw_property(
+        parser: &mut DtsParser,
+        peripheral: &str,
+        key: &str,
+    ) -> Result<(), String> {
+        if crate::peripheral::is_protected_property(key) {
+            return Err(format!("属性 {} 受保护，不可删除", key));
+        }
+
+        let content = parser.get_file_content();
+        let (start, end) = DtsParser::find_node_position_in_content(content, peripheral)
+            .ok_or_else(|| format!("未找到节点: {}", peripheral))?;
+        let node_content = &content[start..end];
+
+        // Include the leading `\n` + indentation in the match so the whole
+        // physical line disappears, leaving no blank line behind.
+        let pattern = format!(
+            r#"\n[ \t]*{}\s*(=\s*(<[^>]*>|"[^"]*"))?\s*;"#,
+            regex::escape(key)
+        );
+        let re = regex::Regex::new(&pattern).map_err(|e| format!("无效的正则表达式: {}", e))?;
+
+        let new_node_content = re.replace_all(node_content, "").to_string();
+
+        let mut new_content = content.to_string();
+        new_content.replace_range(start..end, &new_node_content);
+        parser.load_content(&new_content);
+        Ok(())
+    }
+
     // ── Helper methods ──────────────────────────────────────
 
     /// Core method: find a node, replace or insert a property line.
@@ -411,6 +481,11 @@ impl DtsWriter {
             _ => return,
         };
 
+        // SDK 设备树常把 dmas/dma-names/capability 用 `#if 0 ... #endif` 包裹
+        // （默认禁用）。启用 DMA 前先去掉该守卫，否则后续的属性更新会写回到被
+        // 禁用的块内部而不生效。
+        Self::activate_guarded_dma_block(parser, peripheral_node);
+
         Self::update_or_add_property(
             parser,
             peripheral_node,
@@ -429,6 +504,54 @@ impl DtsWriter {
             r#"\s*capability\s*=\s*[^;]+;"#,
             capability_line,
         );
+    }
+
+    /// Remove the `#if 0 ... #endif` preprocessor guard that the SDK template
+    /// wraps around a peripheral's DMA config, activating the block.
+    ///
+    /// Only guards whose body actually contains DMA properties
+    /// (`dmas` / `dma-names` / `capability`) are unwrapped; any unrelated
+    /// `#if 0` block in the node is left untouched. The guarded properties keep
+    /// their position and indentation, so the subsequent value updates replace
+    /// them in place.
+    fn activate_guarded_dma_block(parser: &mut DtsParser, peripheral: &str) {
+        let content = parser.get_file_content();
+        let (start, end) = match DtsParser::find_node_position_in_content(content, peripheral) {
+            Some(pos) => pos,
+            None => return,
+        };
+        let node_content = &content[start..end];
+
+        // Match a whole `#if 0` line, capture the body, then the `#endif` line.
+        let re =
+            regex::Regex::new(r"(?s)[ \t]*#if[ \t]+0\b[^\n]*\r?\n(.*?)[ \t]*#endif\b[^\n]*\r?\n?")
+                .unwrap();
+
+        if !re.is_match(node_content) {
+            return;
+        }
+
+        let new_node_content = re
+            .replace_all(node_content, |caps: &regex::Captures| {
+                let body = &caps[1];
+                if body.contains("dmas")
+                    || body.contains("dma-names")
+                    || body.contains("capability")
+                {
+                    // Drop the guard lines, keep the body → block becomes active.
+                    body.to_string()
+                } else {
+                    // Not a DMA guard — leave it exactly as it was.
+                    caps[0].to_string()
+                }
+            })
+            .to_string();
+
+        if new_node_content != node_content {
+            let mut new_content = content.to_string();
+            new_content.replace_range(start..end, &new_node_content);
+            parser.load_content(&new_content);
+        }
     }
 
     /// Remove DMA configuration from a peripheral node.
@@ -663,5 +786,61 @@ sysdma_remap {
         assert!(new_content.contains("dmas = <&dmac 2 1 1>;")); // 对应 channel_index1 = 2 (因为通道 8 在 new_channels 的索引是 2)
         assert!(new_content.contains("dma-names = \"rx\";"));
         assert!(new_content.contains("capability = \"rx\";"));
+    }
+
+    #[test]
+    fn test_enable_dma_removes_if0_guard() {
+        // SDK 模板把 DMA 配置放在 `#if 0 ... #endif` 里（默认禁用）。
+        // 当把 spi0 的 RX/TX 映射到 SYSDMA 通道后，应移除守卫并写入新通道索引。
+        let content = "\
+spi0:spi0@04180000 {
+	compatible = \"snps,dw-apb-ssi\";
+	reg = <0x0 0x04180000 0x0 0x10000>;
+	clocks = <&clk CV184X_CLK_APB_SPI0>;
+	#address-cells = <1>;
+	#size-cells = <0>;
+#if 0
+	dmas = <&dmac 0 1 1
+		&dmac 1 1 1>;
+	dma-names = \"rx\", \"tx\";
+	capability = \"txrx\";
+#endif
+	status = \"okay\";
+	num-cs = <1>;
+	spidev@0 {
+		compatible = \"rohm,dh2228fv\";
+		spi-max-frequency = <1000000>;
+		reg = <0>;
+	};
+};
+sysdma_remap {
+	ch-remap = <0 5 2 3 42 42 4 7>;
+	status = \"okay\";
+};
+";
+        let mut parser = DtsParser::new();
+        parser.load_content(content);
+
+        // 将 spi0 的 RX/TX 映射到通道位置 2、3（CVI_SPI0_RX=16, CVI_SPI0_TX=17）
+        let new_channels: Vec<String> = vec!["0", "5", "16", "17", "42", "42", "4", "7"]
+            .into_iter()
+            .map(|s| s.to_string())
+            .collect();
+
+        DtsWriter::update_sysdma_channels(&mut parser, "sysdma_remap", new_channels).unwrap();
+
+        let c = parser.get_file_content();
+
+        // #if 0 / #endif 守卫应被移除，DMA 配置生效
+        assert!(!c.contains("#if 0"), "残留 #if 0:\n{}", c);
+        assert!(!c.contains("#endif"), "残留 #endif:\n{}", c);
+        // DMA 属性更新为新的通道索引 2、3（txrx）
+        assert!(c.contains("dmas = <&dmac 2 1 1"), "缺少新的 dmas:\n{}", c);
+        assert!(c.contains("&dmac 3 1 1>;"), "缺少 tx 通道:\n{}", c);
+        assert!(c.contains("dma-names = \"rx\", \"tx\";"));
+        assert!(c.contains("capability = \"txrx\";"));
+        // 其它属性保持不变
+        assert!(c.contains("status = \"okay\";"));
+        assert!(c.contains("num-cs = <1>;"));
     }
 }

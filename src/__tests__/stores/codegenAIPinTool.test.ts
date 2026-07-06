@@ -151,24 +151,6 @@ int board_init(void) {
       expect(AUDIO_KEYWORDS.some(k => 'PAD_AUD_AOUTL'.includes(k))).toBe(true);
     });
   });
-
-  describe('M7-T7: CodeGenPreview (待前端实现)', () => {
-    it('生成后展示正确的 C 代码', async () => {
-      const mockInvoke = vi.mocked(invoke);
-      mockInvoke.mockResolvedValueOnce(`
-#include <linux/init.h>
-void __init cvi_board_init(void) {
-    PINMUX(PAD_MIPI_TXM4, XGPIOC_18);
-}
-      `);
-
-      const result = await invoke<string>('generate_code', { chipType: 'cv1842hp' });
-      expect(result).toContain('#include <linux/init.h>');
-      expect(result).toContain('cvi_board_init');
-      expect(result).toContain('PINMUX(PAD_MIPI_TXM4, XGPIOC_18)');
-      expect(mockInvoke).toHaveBeenCalledWith('generate_code', { chipType: 'cv1842hp' });
-    });
-  });
 });
 
 // ---- M8 参考数据 ----

@@ -97,6 +97,40 @@ impl PeripheralInfo {
     }
 }
 
+// ─── RawProperty ─────────────────────────────────────────────────
+
+/// A single raw property parsed from a DTS node.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RawProperty {
+    /// e.g. "clock-frequency", "compatible", "#pwm-cells"
+    pub key: String,
+    /// Raw inner value WITHOUT surrounding `<>`/`""`. Empty for bool props.
+    pub value: String,
+    /// "cell" (<...>), "string" ("..."), or "bool" (no value).
+    pub kind: String,
+    /// Whether this property is protected (read-only in UI).
+    pub protected: bool,
+}
+
+/// Properties that must never be edited/deleted via the raw editor.
+pub const PROTECTED_PROPERTIES: &[&str] = &[
+    "compatible",
+    "reg",
+    "interrupts",
+    "interrupt-parent",
+    "clocks",
+    "clock-names",
+    "#address-cells",
+    "#size-cells",
+    "dmas",
+    "dma-names",
+];
+
+/// Whether the given property key is protected (read-only in the raw editor).
+pub fn is_protected_property(key: &str) -> bool {
+    PROTECTED_PROPERTIES.contains(&key)
+}
+
 // ─── SysdmaChannelMap ────────────────────────────────────────────
 
 /// Helper for SYSDMA channel constant ↔ number conversions.
@@ -285,9 +319,7 @@ pub fn load_dts_peripherals(
 
 /// Get the current DTS file content.
 #[tauri::command]
-pub fn get_dts_content(
-    state: tauri::State<'_, DtsState>,
-) -> Result<String, String> {
+pub fn get_dts_content(state: tauri::State<'_, DtsState>) -> Result<String, String> {
     let parser = state.parser.lock().map_err(|e| e.to_string())?;
     Ok(parser.get_file_content().to_string())
 }
@@ -377,6 +409,58 @@ pub fn set_peripheral_sysdma_channels(
 ) -> Result<(), String> {
     let mut parser = state.parser.lock().map_err(|e| e.to_string())?;
     DtsWriter::update_sysdma_channels(&mut parser, &peripheral, channels)?;
+
+    // Write back to file
+    if let Some(path) = parser.get_file_path() {
+        let content = parser.get_file_content().to_string();
+        std::fs::write(path, content).map_err(|e| format!("无法写入文件: {}", e))?;
+    }
+
+    Ok(())
+}
+
+// ─── Raw property commands (generic key/value editor) ────────────
+
+/// Get all raw properties of a peripheral node (read-only, no file write).
+#[tauri::command]
+pub fn get_peripheral_raw_properties(
+    state: tauri::State<'_, DtsState>,
+    peripheral: String,
+) -> Result<Vec<RawProperty>, String> {
+    let parser = state.parser.lock().map_err(|e| e.to_string())?;
+    parser.get_raw_properties(&peripheral)
+}
+
+/// Upsert a raw property on a peripheral node, then write back to file.
+#[tauri::command]
+pub fn set_peripheral_raw_property(
+    state: tauri::State<'_, DtsState>,
+    peripheral: String,
+    key: String,
+    value: String,
+    kind: String,
+) -> Result<(), String> {
+    let mut parser = state.parser.lock().map_err(|e| e.to_string())?;
+    DtsWriter::set_raw_property(&mut parser, &peripheral, &key, &value, &kind)?;
+
+    // Write back to file
+    if let Some(path) = parser.get_file_path() {
+        let content = parser.get_file_content().to_string();
+        std::fs::write(path, content).map_err(|e| format!("无法写入文件: {}", e))?;
+    }
+
+    Ok(())
+}
+
+/// Delete a raw property from a peripheral node, then write back to file.
+#[tauri::command]
+pub fn delete_peripheral_raw_property(
+    state: tauri::State<'_, DtsState>,
+    peripheral: String,
+    key: String,
+) -> Result<(), String> {
+    let mut parser = state.parser.lock().map_err(|e| e.to_string())?;
+    DtsWriter::delete_raw_property(&mut parser, &peripheral, &key)?;
 
     // Write back to file
     if let Some(path) = parser.get_file_path() {

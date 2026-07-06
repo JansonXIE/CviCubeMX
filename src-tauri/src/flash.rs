@@ -208,7 +208,13 @@ pub fn parse_flash_defconfig(content: &str) -> FlashBoardInfo {
             let size = b
                 .size_str
                 .as_deref()
-                .map(|s| if s.trim().is_empty() { 0 } else { parse_flash_size(s) })
+                .map(|s| {
+                    if s.trim().is_empty() {
+                        0
+                    } else {
+                        parse_flash_size(s)
+                    }
+                })
                 .unwrap_or(0);
             FlashPartition {
                 partition_number: num,
@@ -539,7 +545,10 @@ pub fn write_flash_defconfig(
     let by_num: BTreeMap<i32, &FlashPartition> =
         partitions.iter().map(|p| (p.partition_number, p)).collect();
     let ui_numbers: HashSet<i32> = by_num.keys().copied().collect();
-    let file_numbers: HashSet<i32> = lines.iter().filter_map(|l| line_partition_number(l)).collect();
+    let file_numbers: HashSet<i32> = lines
+        .iter()
+        .filter_map(|l| line_partition_number(l))
+        .collect();
 
     // 1. Delete partitions that are in the file but no longer in the UI list.
     let to_delete: HashSet<i32> = file_numbers.difference(&ui_numbers).copied().collect();
@@ -557,7 +566,11 @@ pub fn write_flash_defconfig(
                 *line = match field {
                     "LABEL" => format!("CONFIG_PARTITION_{}_LABEL=\"{}\"", n, p.label),
                     "SIZE" => {
-                        format!("CONFIG_PARTITION_{}_SIZE=\"{}\"", n, format_size_value(p.size))
+                        format!(
+                            "CONFIG_PARTITION_{}_SIZE=\"{}\"",
+                            n,
+                            format_size_value(p.size)
+                        )
                     }
                     "FILE" => format!("CONFIG_PARTITION_{}_FILE=\"{}\"", n, p.file),
                     "MOUNTPOINT" => {
@@ -579,7 +592,11 @@ pub fn write_flash_defconfig(
         let block = vec![
             format!("CONFIG_PARTITION_{}=y", n),
             format!("CONFIG_PARTITION_{}_LABEL=\"{}\"", n, p.label),
-            format!("CONFIG_PARTITION_{}_SIZE=\"{}\"", n, format_size_value(p.size)),
+            format!(
+                "CONFIG_PARTITION_{}_SIZE=\"{}\"",
+                n,
+                format_size_value(p.size)
+            ),
             format!("CONFIG_PARTITION_{}_FILE=\"{}\"", n, p.file),
             format!("CONFIG_PARTITION_{}_MOUNTPOINT=\"{}\"", n, p.mountpoint),
             format!("CONFIG_PARTITION_{}_TYPE=\"{}\"", n, p.type_field),
@@ -945,7 +962,11 @@ CONFIG_TAIL=y
         assert_eq!(info.partitions[0].size, 3072);
 
         // Partition 7 has no `=y` line yet must still be parsed.
-        let p7 = info.partitions.iter().find(|p| p.partition_number == 7).unwrap();
+        let p7 = info
+            .partitions
+            .iter()
+            .find(|p| p.partition_number == 7)
+            .unwrap();
         assert_eq!(p7.label, "SYSTEM");
         assert_eq!(p7.mountpoint, "/mnt/system");
         assert_eq!(p7.type_field, "ext4");
@@ -1060,7 +1081,9 @@ CONFIG_PARTITION_2_SIZE=\"\"
     #[test]
     fn test_flash_defconfig_path_fallback() {
         let p = flash_defconfig_path("/sdk", "");
-        assert!(p.ends_with("build/boards/cv184x/cv1842hp_wevb_0014a_emmc/cv1842hp_wevb_0014a_emmc_defconfig"));
+        assert!(p.ends_with(
+            "build/boards/cv184x/cv1842hp_wevb_0014a_emmc/cv1842hp_wevb_0014a_emmc_defconfig"
+        ));
         let p2 = flash_defconfig_path("/sdk", "cv1842hp_wevb_0014a_spinor");
         assert!(p2.ends_with("cv1842hp_wevb_0014a_spinor/cv1842hp_wevb_0014a_spinor_defconfig"));
     }
@@ -1105,7 +1128,9 @@ CONFIG_PARTITION_2_SIZE=\"\"
             .map(|(i, (a, b))| (i, *a, *b))
             .collect();
         assert_eq!(diffs.len(), 1, "unexpected diffs: {:?}", diffs);
-        assert!(diffs[0].2.contains(&format!("CONFIG_PARTITION_3_SIZE=\"{}\"", new_size)));
+        assert!(diffs[0]
+            .2
+            .contains(&format!("CONFIG_PARTITION_3_SIZE=\"{}\"", new_size)));
 
         fs::remove_dir_all(&root).ok();
     }

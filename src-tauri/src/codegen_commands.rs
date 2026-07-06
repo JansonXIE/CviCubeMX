@@ -1,26 +1,12 @@
 /// 代码生成器命令模块 (对应重构计划 M7)
 ///
 /// Tauri command wrappers for codegen.rs:
-/// - generate_code: 生成 cvi_board_init.c 代码
 /// - update_existing_code: 增量更新已有文件
+/// - generate_board_init_code: 生成或增量更新 SDK 内的 cvi_board_init.c
 use crate::codegen::{
-    generate_code as generate_code_impl, update_existing_code as update_existing_code_impl,
-    PinConfig,
+    generate_code as generate_code_impl, parse_board_init as parse_board_init_impl,
+    update_existing_code as update_existing_code_impl, PinConfig,
 };
-
-/// 生成 cvi_board_init.c 代码
-///
-/// 对应 C++ CodeGenerator::generateCode()
-/// 前端传入: chip_type, pin_configs (仅 user_configured=true 的引脚), output_path (可选)
-/// 返回: 生成的 C 代码内容
-#[tauri::command]
-pub fn generate_code(
-    chip_type: String,
-    pin_configs: Vec<PinConfig>,
-    output_path: Option<String>,
-) -> Result<String, String> {
-    generate_code_impl(&chip_type, &pin_configs, output_path.as_deref())
-}
 
 /// 增量更新已有 cvi_board_init.c 文件
 ///
@@ -81,4 +67,39 @@ pub fn generate_board_init_code(
         std::fs::write(&full_path, &code).map_err(|e| format!("无法写入代码文件: {}", e))?;
         Ok("File generated successfully".to_string())
     }
+}
+
+/// 读取并解析 SDK 内已有的 cvi_board_init.c，恢复引脚复用配置
+///
+/// 读取 build/boards/cv184x/{chip_type}/u-boot/cvi_board_init.c，
+/// 解析其中的 PINMUX_CONFIG 语句，并写入后端用户配置 (USER_CONFIG)，
+/// 使前端随后重新 load_pin_data 时能反映已保存的复用状态（而不是每次都是默认值）。
+///
+/// 若文件不存在，返回空列表（视为「尚未生成」而非错误）。
+/// 返回解析出的 PinConfig 列表，供前端按需使用。
+#[tauri::command]
+pub fn read_board_init_config(
+    sdk_path: String,
+    chip_type: String,
+) -> Result<Vec<PinConfig>, String> {
+    let relative_path = format!("build/boards/cv184x/{}/u-boot/cvi_board_init.c", chip_type);
+    let full_path = std::path::Path::new(&sdk_path).join(&relative_path);
+
+    if !full_path.exists() {
+        return Ok(Vec::new());
+    }
+
+    let content = std::fs::read_to_string(&full_path)
+        .map_err(|e| format!("无法读取 cvi_board_init.c: {}", e))?;
+
+    let configs = parse_board_init_impl(&content);
+
+    // 写入后端用户配置，使 load_pin_data 反映恢复出的状态 (含二级 mux 的 state)
+    let pairs: Vec<(String, String, Option<String>)> = configs
+        .iter()
+        .map(|c| (c.pin_name.clone(), c.function.clone(), c.state.clone()))
+        .collect();
+    crate::pin_data::seed_user_configs(&chip_type, &pairs);
+
+    Ok(configs)
 }

@@ -483,7 +483,8 @@ pub fn export_memory_defconfig(
     let dot_config_path_obj = Path::new(&dot_config_path);
     if dot_config_path_obj.exists() {
         if let Ok(config_content) = fs::read_to_string(dot_config_path_obj) {
-            let mut config_lines: Vec<String> = config_content.lines().map(|s| s.to_string()).collect();
+            let mut config_lines: Vec<String> =
+                config_content.lines().map(|s| s.to_string()).collect();
             let mut found_dot_ion = false;
             let mut found_dot_rtos_ion = false;
             let mut found_dot_rtos_logo = false;

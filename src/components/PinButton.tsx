@@ -1,11 +1,15 @@
 import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { PinInfo } from "../stores/chipStore";
+import { PinInfo, MuxDef } from "../stores/chipStore";
 
 interface PinButtonProps {
   pin: PinInfo;
   isHighlighted: boolean;
   onSelectFunction: (func: string) => Promise<void>;
+  /** 当 pin.current_function 为二级 mux 时的定义 (否则 undefined) */
+  muxOptions?: MuxDef;
+  /** 选择二级功能的回调 */
+  onSelectSubFunction?: (subFunc: string) => Promise<void>;
 }
 
 function getPinColor(func: string): string {
@@ -19,7 +23,7 @@ function getPinColor(func: string): string {
   return "bg-indigo-500 text-white hover:bg-indigo-400";
 }
 
-export default function PinButton({ pin, isHighlighted, onSelectFunction }: PinButtonProps) {
+export default function PinButton({ pin, isHighlighted, onSelectFunction, muxOptions, onSelectSubFunction }: PinButtonProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuPos, setMenuPos] = useState({ x: 0, y: 0 });
   const menuRef = useRef<HTMLDivElement>(null);
@@ -90,6 +94,14 @@ export default function PinButton({ pin, isHighlighted, onSelectFunction }: PinB
     await onSelectFunction(func);
   };
 
+  // 选择二级 mux 功能后关闭菜单
+  const selectSubFunc = async (subFunc: string) => {
+    setMenuOpen(false);
+    if (onSelectSubFunction) {
+      await onSelectSubFunction(subFunc);
+    }
+  };
+
   const colorClass = getPinColor(pin.current_function);
 
   return (
@@ -104,10 +116,14 @@ export default function PinButton({ pin, isHighlighted, onSelectFunction }: PinB
           isHighlighted ? "animate-pulse ring-4 ring-indigo-500/80 shadow-[0_0_15px_rgba(99,102,241,0.6)] scale-110" : ""
         }`}
         style={{ outline: "none", WebkitTapHighlightColor: "transparent" }}
-        title={`引脚: ${pin.pin_num}\n名称: ${pin.pin_name}\n当前功能: ${pin.current_function}`}
+        title={`引脚: ${pin.pin_num}\n名称: ${pin.pin_name}\n当前功能: ${pin.current_function}${
+          muxOptions && pin.current_state ? `\n二级功能: ${pin.current_state}` : ""
+        }`}
       >
         <span className="opacity-80 scale-75">{pin.pin_num}</span>
-        <span className="truncate max-w-full scale-75 leading-none">{pin.current_function.split("_")[0]}</span>
+        <span className="truncate max-w-full scale-75 leading-none">
+          {(muxOptions && pin.current_state ? pin.current_state : pin.current_function).split("_")[0]}
+        </span>
       </button>
 
       {/* 右键功能选择菜单 */}
@@ -136,6 +152,39 @@ export default function PinButton({ pin, isHighlighted, onSelectFunction }: PinB
                 {fn}
               </button>
             ))}
+
+            {/* 二级功能选择: 仅当当前一级功能是 SPI1 二级 mux 时显示 */}
+            {muxOptions && (
+              <div className="pt-1 mt-1 border-t border-slate-700/50">
+                <div className="px-3 py-1.5 text-[10px] uppercase tracking-wider text-amber-400/80 font-bold flex items-center gap-1.5">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                  二级功能 ({muxOptions.name})
+                </div>
+                {muxOptions.options.map((sub) => {
+                  const active = (pin.current_state ?? muxOptions.default) === sub;
+                  const isDefault = sub === muxOptions.default;
+                  return (
+                    <button
+                      key={sub}
+                      type="button"
+                      onClick={() => selectSubFunc(sub)}
+                      className={`w-full text-left px-3 py-2 text-xs rounded-lg transition-all duration-200 outline-none focus:outline-none focus-visible:outline-none focus:ring-0 flex items-center justify-between ${
+                        active
+                          ? "bg-amber-500/25 text-amber-300 font-semibold"
+                          : "text-slate-300 hover:bg-slate-800/80 hover:text-white"
+                      }`}
+                      style={{ outline: "none", WebkitTapHighlightColor: "transparent" }}
+                    >
+                      <span>{sub}</span>
+                      {isDefault && (
+                        <span className="text-[9px] text-slate-500 uppercase tracking-wide">默认</span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
             {pin.current_function !== pin.default_function && (
               <div className="pt-1 mt-1 border-t border-slate-700/50">
                 <button

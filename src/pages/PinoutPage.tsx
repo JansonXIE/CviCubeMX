@@ -31,6 +31,7 @@ export default function PinoutPage() {
           pin_name: pin.pin_name,
           function: pin.current_function,
           user_configured: pin.user_configured,
+          state: pin.current_state ?? null,
         }));
 
       // 触发 Rust 端的代码生成/合并命令

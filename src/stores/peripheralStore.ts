@@ -19,6 +19,14 @@ export interface PeripheralInfo {
   line_number: number;
 }
 
+/** A single raw property parsed from a DTS node (generic key/value editor). */
+export interface RawProperty {
+  key: string;
+  value: string;
+  kind: 'cell' | 'string' | 'bool';
+  protected: boolean;
+}
+
 interface PeripheralState {
   peripherals: PeripheralInfo[];
   isLoading: boolean;
@@ -33,6 +41,11 @@ interface PeripheralState {
   setPwmCells: (name: string, cells: number) => Promise<void>;
   setCurrentSpeed: (name: string, speed: number) => Promise<void>;
   setSysdmaChannels: (name: string, channels: string[]) => Promise<void>;
+
+  // Raw property actions (generic key/value editor)
+  getRawProperties: (name: string) => Promise<RawProperty[]>;
+  setRawProperty: (name: string, key: string, value: string, kind: string) => Promise<void>;
+  deleteRawProperty: (name: string, key: string) => Promise<void>;
 }
 
 export const usePeripheralStore = create<PeripheralState>((set, get) => ({
@@ -124,6 +137,22 @@ export const usePeripheralStore = create<PeripheralState>((set, get) => ({
     } catch (err) {
       set({ error: String(err) });
     }
+  },
+
+  // ── Raw property actions ──────────────────────────────────
+  // Errors intentionally propagate (no swallow) so the ConfigDialog can keep
+  // the dialog open and surface failures (e.g. protected-property rejection).
+  getRawProperties: async (name: string) =>
+    await invoke<RawProperty[]>('get_peripheral_raw_properties', { peripheral: name }),
+
+  setRawProperty: async (name: string, key: string, value: string, kind: string) => {
+    await invoke('set_peripheral_raw_property', { peripheral: name, key, value, kind });
+    await get().fetchDtsContent();
+  },
+
+  deleteRawProperty: async (name: string, key: string) => {
+    await invoke('delete_peripheral_raw_property', { peripheral: name, key });
+    await get().fetchDtsContent();
   },
 }));
 

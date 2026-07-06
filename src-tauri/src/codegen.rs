@@ -72,6 +72,9 @@ pub struct PinConfig {
     pub function: String,
     /// 是否已被用户配置 (仅输出 user_configured = true 的引脚)
     pub user_configured: bool,
+    /// 二级 mux 功能选择 (仅当 function 为 MUX_SPI1_* 时有意义)
+    #[serde(default)]
+    pub state: Option<String>,
 }
 
 /// 判断某个功能字符串是否表示 GPIO 模式
@@ -101,6 +104,74 @@ pub fn generate_pinmux_config_statement(pin_name: &str, function: &str) -> Strin
     format!("PINMUX_CONFIG({}, {});", pin_name, function)
 }
 
+/// 从已有的 cvi_board_init.c 内容中解析出「工具生成块」内的引脚复用配置
+///
+/// 本工具只管理 `// Generated PINMUX configurations` 标记块（该块由
+/// generate_code / update_existing_code 写入，位于 `return 0;` 之前）。
+/// 回读时也**只解析该块**，绝不解析用户手写代码或 `#if 0` 禁用块——否则再次
+/// 生成时会重复写入手写行、甚至把被禁用的配置复活成有效配置。
+///
+/// 返回的 PinConfig 均标记 user_configured = true；若文件中没有生成块则返回空列表。
+///
+/// 注意: GPIO 功能在生成时不会写出 PINMUX_CONFIG 行 (见 is_gpio_mode)，
+/// 因此无法从文件反向恢复被设为 GPIO 的引脚——这些引脚将回落到默认功能。
+pub fn parse_board_init(content: &str) -> Vec<PinConfig> {
+    const MARKER: &str = "// Generated PINMUX configurations";
+
+    // 仅在生成块范围内解析：从标记之后到 `return 0;` 之前
+    let block = match content.find(MARKER) {
+        Some(pos) => {
+            let after = &content[pos + MARKER.len()..];
+            match after.find("return") {
+                Some(end) => &after[..end],
+                None => after,
+            }
+        }
+        None => return Vec::new(),
+    };
+
+    let re = regex::Regex::new(r"PINMUX_CONFIG\s*\(\s*([A-Za-z0-9_]+)\s*,\s*([A-Za-z0-9_]+)\s*\)")
+        .expect("valid PINMUX_CONFIG regex");
+
+    let mut result: Vec<PinConfig> = Vec::new();
+    let mut seen = std::collections::HashSet::new();
+    // 二级 mux 行 PINMUX_CONFIG(MUX_name, sub) 暂存，循环后回填到对应引脚的 state
+    let mut mux_state: HashMap<String, String> = HashMap::new();
+
+    for line in block.lines() {
+        // 跳过注释行 (生成块内含 "// xxx pins configuration" 等注释)
+        let trimmed = line.trim_start();
+        if trimmed.starts_with("//") || trimmed.starts_with('*') || trimmed.starts_with("/*") {
+            continue;
+        }
+
+        if let Some(caps) = re.captures(line) {
+            let first = caps[1].to_string();
+            let second = caps[2].to_string();
+            if crate::pin_mux::is_mux_function(&first) {
+                // 二级行: 第一个参数是 MUX 名称，第二个是二级功能
+                mux_state.insert(first, second);
+            } else if seen.insert(first.clone()) {
+                result.push(PinConfig {
+                    pin_name: first,
+                    function: second,
+                    user_configured: true,
+                    state: None,
+                });
+            }
+        }
+    }
+
+    // 把二级功能回填到 function 为 MUX 的引脚上
+    for cfg in result.iter_mut() {
+        if crate::pin_mux::is_mux_function(&cfg.function) {
+            cfg.state = mux_state.get(&cfg.function).cloned();
+        }
+    }
+
+    result
+}
+
 /// 检查功能是否包含 ETH 关键词
 fn has_eth_keyword(function: &str) -> bool {
     ETH_KEYWORDS.iter().any(|k| function.contains(k))
@@ -116,43 +187,43 @@ fn has_audio_keyword(function: &str) -> bool {
     AUDIO_KEYWORDS.iter().any(|k| function.contains(k))
 }
 
-/// 生成 ETH 特殊寄存器序列
+/// 生成 ETH pad 解锁寄存器序列
 ///
-/// 对应 C++ codegenerator.cpp: generateEthSequence()
-/// 当 ETH pads (PAD_ETH_RXM/RXP/TXM/TXP) 配置为 GPIO 时，需要写入特殊寄存器序列
+/// PAD_ETH_TXP/TXM/RXP/RXM 默认被内部 EPHY 占用 (硬件锁定)。当客户不使用 ETH、
+/// 而把这几个 pad 用作其它功能 (UART3/IIC1/GPIO/PWM/CAM/SPI1/IIS2) 时，
+/// 需要写入该序列把 pad 从 EPHY 释放出来。
+///
+/// 触发条件: 这 4 个 pad 中任意一个被用户配置 (无论配成哪种功能)——因为它们的
+/// supported_functions 中没有任何 ETH 功能，被配置即意味着要脱离 EPHY。
 pub fn generate_eth_sequence(pin_functions: &HashMap<String, String>) -> String {
     let special_eth_pads = ["PAD_ETH_RXM", "PAD_ETH_RXP", "PAD_ETH_TXM", "PAD_ETH_TXP"];
 
-    // 检查是否有 ETH pad 被配置为 GPIO
+    // 只要有任意 ETH pad 被用户配置 (出现在 map 中) 就需要解锁
     let need = special_eth_pads
         .iter()
-        .any(|pad| is_gpio_mode(pin_functions.get(*pad).unwrap_or(&String::new())));
+        .any(|pad| pin_functions.contains_key(*pad));
 
     if !need {
         return String::new();
     }
 
     let mut seq = String::new();
-    seq += "/* Special sequence: configure EPHY for GPIO on ETH pads */\n";
-    seq += "/* Note: requires mmio_read/mmio_write and udelay helpers */\n";
-    seq += "/* enable apb interface */\n";
-    seq += "mmio_write(0x03009804, mmio_read(0x03009804) | 0x1); // rg_ephy_apb_rw_sel = 1\n";
-    seq += "/* set pll stable cnt = 1 (10us) */\n";
-    seq += "mmio_write(0x03009808, (mmio_read(0x03009808) & ~0x1F) | 0x1);\n";
-    seq += "/* release ephy reset */\n";
-    seq += "mmio_write(0x03009800, mmio_read(0x03009800) | (1 << 2)); // rg_ephy_dig_rst_n = 1\n";
+    seq += "/* Unlock ETH pads (release from internal EPHY) for non-ETH pinmux use */\n";
+    seq += "/* Note: requires mmio_write_32 and udelay helpers */\n";
+    seq += "mmio_write_32(0x03009804, 0x1);\n";
+    seq += "mmio_write_32(0x0300907C, 0x0500);\n";
+    seq += "mmio_write_32(0x03009078, 0x1000);\n";
+    seq += "mmio_write_32(0x03009050, 0x4000);\n";
+    seq += "mmio_write_32(0x0300907C, 0x0);\n";
+    seq += "mmio_write_32(0x03009804, 0x0);\n";
+    seq += "mmio_write_32(0x03009804, 0x1);\n";
+    seq += "mmio_write_32(0x03009808, 0x181);\n";
+    seq += "mmio_write_32(0x03009800, 0x0905);\n";
     seq += "udelay(10); /* wait 10us */\n";
-    seq += "/* select page 5 */\n";
-    seq += "mmio_write(0x0300987C, (mmio_read(0x0300987C) & ~(0x1F << 8)) | (5 << 8));\n";
-    seq += "/* set to gpio from top */\n";
-    seq += "mmio_write(0x03009878, (mmio_read(0x03009878) & ~0xFFF) | 0xF00);\n";
-    seq += "/* enable ephy rxp&rxm input & output */\n";
-    seq += "mmio_write(0x03009874, (mmio_read(0x03009874)| 0x606));\n";
-    seq += "mmio_write(0x03009870, (mmio_read(0x03009870)| 0x606));\n";
-    seq += "/* back to page 0 */\n";
-    seq += "mmio_write(0x0300987C, 0x0);\n";
-    seq += "/* set PHY MDI mode to Force MDIX (bits[1:0] = 01) */\n";
-    seq += "mmio_write(0x0300984C, (mmio_read(0x0300984C) & ~0x3) | 0x1);\n";
+    seq += "mmio_write_32(0x0300907C, 0x0500);\n";
+    seq += "mmio_write_32(0x03009078, 0x1F00);\n";
+    seq += "mmio_write_32(0x03009074, 0x606);\n";
+    seq += "mmio_write_32(0x03009070, 0x606);\n";
     seq += "\n";
     seq += "/* PAD_ETH PINMUX GPIO extra config END */\n";
     seq += "\n";
@@ -234,14 +305,14 @@ pub fn generate_mipi_sequence(pin_functions: &HashMap<String, String>) -> String
     if val_low != 0 {
         seq += "    /* MIPI TX: set reg_pd_lptrx/reg_pd_txdvr_ldo according to GPIO/MIPI selection */\n";
         seq += &format!(
-            "    mmio_write(0x0A098064, (mmio_read(0x0A098064) & ~0x{:X}) | 0x{:X});\n",
+            "    mmio_write_32(0x0A098064, (mmio_read(0x0A098064) & ~0x{:X}) | 0x{:X});\n",
             mask_low, val_low
         );
     }
 
     if val_top != 0 {
         seq += &format!(
-            "    mmio_write(0x0A098064, (mmio_read(0x0A098064) & ~0x{:X}) | 0x{:X});\n",
+            "    mmio_write_32(0x0A098064, (mmio_read(0x0A098064) & ~0x{:X}) | 0x{:X});\n",
             mask_top, val_top
         );
         seq += "\n";
@@ -250,7 +321,7 @@ pub fn generate_mipi_sequence(pin_functions: &HashMap<String, String>) -> String
     if val_rx != 0 {
         seq += "    /* MIPI RX: reg_mipirx_pd_rxlp set for GPIO/MIPI */\n";
         seq += &format!(
-            "    mmio_write(0x0A0A6000, (mmio_read(0x0A0A6000) & ~0x{:X}) | 0x{:X});\n",
+            "    mmio_write_32(0x0A0A6000, (mmio_read(0x0A0A6000) & ~0x{:X}) | 0x{:X});\n",
             mask_rx, val_rx
         );
         seq += "\n";
@@ -284,7 +355,7 @@ pub fn generate_audio_sequence(pin_functions: &HashMap<String, String>) -> Strin
             0
         };
         seq += &format!(
-            "    mmio_write(0x03002204, (mmio_read(0x03002204) & ~0x{:X}) | 0x{:X});\n",
+            "    mmio_write_32(0x03002204, (mmio_read(0x03002204) & ~0x{:X}) | 0x{:X});\n",
             mask, val
         );
         let mask: u32 = 0x3u32 << 2;
@@ -294,7 +365,7 @@ pub fn generate_audio_sequence(pin_functions: &HashMap<String, String>) -> Strin
             0
         };
         seq += &format!(
-            "    mmio_write(0x0300212C, (mmio_read(0x0300212C) & ~0x{:X}) | 0x{:X});\n",
+            "    mmio_write_32(0x0300212C, (mmio_read(0x0300212C) & ~0x{:X}) | 0x{:X});\n",
             mask, val
         );
         need = true;
@@ -314,7 +385,7 @@ pub fn generate_audio_sequence(pin_functions: &HashMap<String, String>) -> Strin
             0
         };
         seq += &format!(
-            "    mmio_write(0x03002204, (mmio_read(0x03002204) & ~0x{:X}) | 0x{:X});\n",
+            "    mmio_write_32(0x03002204, (mmio_read(0x03002204) & ~0x{:X}) | 0x{:X});\n",
             mask, val
         );
         let mask: u32 = 0x3u32;
@@ -324,7 +395,7 @@ pub fn generate_audio_sequence(pin_functions: &HashMap<String, String>) -> Strin
             0
         };
         seq += &format!(
-            "    mmio_write(0x03002100, (mmio_read(0x03002100) & ~0x{:X}) | 0x{:X});\n",
+            "    mmio_write_32(0x03002100, (mmio_read(0x03002100) & ~0x{:X}) | 0x{:X});\n",
             mask, val
         );
         need = true;
@@ -341,6 +412,59 @@ pub fn generate_audio_sequence(pin_functions: &HashMap<String, String>) -> Strin
     seq += "\t/*PAD_AUD PINMUX extra config END*/\n";
     seq += "\n";
     seq
+}
+
+/// 构建 pinmux 配置组
+///
+/// 普通功能: 每个引脚一行 `PINMUX_CONFIG(pin_name, function)`。
+/// 二级 mux 功能 (MUX_SPI1_*): 在同一组内紧接着追加第二行
+/// `PINMUX_CONFIG(MUX_name, sub_function)`，两行相邻输出。
+/// sub_function 取被配置引脚的 state，缺省回落到该 mux 的默认值。
+fn build_pinmux_configs(
+    function_groups: &BTreeMap<String, Vec<String>>,
+    configured_pins: &[&PinConfig],
+) -> Vec<PinmuxConfigGroup> {
+    // 收集每个 mux 对应的二级功能
+    let mut mux_state: HashMap<String, String> = HashMap::new();
+    for pin in configured_pins {
+        if crate::pin_mux::is_mux_function(&pin.function) {
+            let sub = pin
+                .state
+                .clone()
+                .or_else(|| crate::pin_mux::mux_default(&pin.function))
+                .unwrap_or_default();
+            if !sub.is_empty() {
+                mux_state.insert(pin.function.clone(), sub);
+            }
+        }
+    }
+
+    let mut pinmux_configs = Vec::new();
+    for (func_name, pins) in function_groups {
+        let mut items: Vec<PinmuxConfigItem> = pins
+            .iter()
+            .map(|pin_name| PinmuxConfigItem {
+                pin_name: pin_name.clone(),
+                pinmux_macro: func_name.clone(),
+            })
+            .collect();
+
+        // 二级 mux: 追加 PINMUX_CONFIG(MUX_name, sub_function)
+        if crate::pin_mux::is_mux_function(func_name) {
+            if let Some(sub) = mux_state.get(func_name) {
+                items.push(PinmuxConfigItem {
+                    pin_name: func_name.clone(),
+                    pinmux_macro: sub.clone(),
+                });
+            }
+        }
+
+        pinmux_configs.push(PinmuxConfigGroup {
+            func_name: func_name.clone(),
+            pins: items,
+        });
+    }
+    pinmux_configs
 }
 
 /// 生成完整的 cvi_board_init.c 文件内容 (用于不存在已有文件时的新建场景)
@@ -392,20 +516,7 @@ pub fn generate_code(
         })
         .collect();
 
-    let mut pinmux_configs = Vec::new();
-    for (func_name, pins) in &function_groups {
-        let items = pins
-            .iter()
-            .map(|pin_name| PinmuxConfigItem {
-                pin_name: pin_name.clone(),
-                pinmux_macro: func_name.clone(),
-            })
-            .collect();
-        pinmux_configs.push(PinmuxConfigGroup {
-            func_name: func_name.clone(),
-            pins: items,
-        });
-    }
+    let pinmux_configs = build_pinmux_configs(&function_groups, &configured_pins);
 
     let pin_functions: HashMap<String, String> = configured_pins
         .iter()
@@ -482,20 +593,7 @@ pub fn update_existing_code(file_path: &str, pin_configs: &[PinConfig]) -> Resul
         }
     }
 
-    let mut pinmux_configs = Vec::new();
-    for (func_name, pins) in &function_groups {
-        let items = pins
-            .iter()
-            .map(|pin_name| PinmuxConfigItem {
-                pin_name: pin_name.clone(),
-                pinmux_macro: func_name.clone(),
-            })
-            .collect();
-        pinmux_configs.push(PinmuxConfigGroup {
-            func_name: func_name.clone(),
-            pins: items,
-        });
-    }
+    let pinmux_configs = build_pinmux_configs(&function_groups, &configured_pins);
 
     // 生成特殊序列 (ETH / MIPI / Audio)
     let eth_raw = generate_eth_sequence(&pin_functions);
@@ -802,7 +900,7 @@ mod tests {
         let mut pin_functions = HashMap::new();
         pin_functions.insert("PAD_ETH_RXM".to_string(), "XGPIOB_26".to_string());
         let seq = generate_eth_sequence(&pin_functions);
-        assert!(seq.contains("mmio_write(0x03009804"));
+        assert!(seq.contains("mmio_write_32(0x03009804"));
         assert!(seq.contains("PAD_ETH PINMUX GPIO extra config END"));
     }
 
@@ -820,7 +918,7 @@ mod tests {
         let mut pin_functions = HashMap::new();
         pin_functions.insert("PAD_MIPI_TXM4".to_string(), "XGPIOC_18".to_string());
         let seq = generate_mipi_sequence(&pin_functions);
-        assert!(seq.contains("mmio_write(0x0A098064"));
+        assert!(seq.contains("mmio_write_32(0x0A098064"));
         assert!(seq.contains("PAD_MIPI PINMUX extra config set END"));
     }
 
@@ -838,7 +936,7 @@ mod tests {
         let mut pin_functions = HashMap::new();
         pin_functions.insert("PAD_AUD_AINL_MIC".to_string(), "XGPIOA_0".to_string());
         let seq = generate_audio_sequence(&pin_functions);
-        assert!(seq.contains("mmio_write(0x03002204"));
+        assert!(seq.contains("mmio_write_32(0x03002204"));
         assert!(seq.contains("PAD_AUD PINMUX extra config END"));
     }
 
@@ -857,6 +955,7 @@ mod tests {
             pin_name: "PAD_MIPI_TXM4".to_string(),
             function: "VI0_D_15".to_string(),
             user_configured: true,
+            state: None,
         }];
         let code = generate_code("cv1842hp", &pin_configs, None).unwrap();
         assert!(code.contains("cvi_board_init.c"));
@@ -878,6 +977,7 @@ mod tests {
             pin_name: "PAD_MIPI_TXM4".to_string(),
             function: "XGPIOC_18".to_string(),
             user_configured: true,
+            state: None,
         }];
         let code = generate_code("cv1842hp", &pin_configs, None).unwrap();
         // GPIO 功能不应生成 PINMUX_CONFIG (但应出现在调试注释中)
@@ -891,6 +991,7 @@ mod tests {
             pin_name: "PAD_MIPI_TXM4".to_string(),
             function: "reset_state".to_string(),
             user_configured: true,
+            state: None,
         }];
         let code = generate_code("cv1842hp", &pin_configs, None).unwrap();
         // reset_state 不应生成 any 配置
@@ -903,6 +1004,7 @@ mod tests {
             pin_name: "PAD_MIPI_TXM4".to_string(),
             function: "VI0_D_15".to_string(),
             user_configured: false,
+            state: None,
         }];
         let code = generate_code("cv1842hp", &pin_configs, None).unwrap();
         // 非 user_configured 的引脚不应出现在配置中
@@ -922,6 +1024,7 @@ mod tests {
             pin_name: "PAD_MIPI_TXM4".to_string(),
             function: "VI0_D_15".to_string(),
             user_configured: true,
+            state: None,
         }];
 
         let result = update_existing_code(test_file.to_str().unwrap(), &pin_configs);
@@ -948,6 +1051,7 @@ mod tests {
             pin_name: "PAD_MIPI_TXM4".to_string(),
             function: "VI0_D_15".to_string(),
             user_configured: true,
+            state: None,
         }];
 
         let result = update_existing_code(test_file.to_str().unwrap(), &pin_configs);
@@ -999,6 +1103,7 @@ mod tests {
             pin_name: "PAD_MIPI_TXM4".to_string(),
             function: "VI0_D_15".to_string(),
             user_configured: true,
+            state: None,
         }];
 
         let result = update_existing_code(test_file.to_str().unwrap(), &pin_configs);
@@ -1006,6 +1111,223 @@ mod tests {
         assert!(result.unwrap_err().contains("return 0"));
 
         // 清理
+        fs::remove_file(&test_file).ok();
+    }
+
+    // ---- parse_board_init ----
+
+    #[test]
+    fn test_parse_board_init_basic() {
+        let content = "int cvi_board_init(void) {\n    // Generated PINMUX configurations\n    // IIC1 pins configuration\n    PINMUX_CONFIG(PAD_MIPI_TXM4, VI0_D_15);\n    PINMUX_CONFIG(UART0_TX, UART0_TX);\n    return 0;\n}";
+        let configs = parse_board_init(content);
+        assert_eq!(configs.len(), 2);
+        let p = configs
+            .iter()
+            .find(|c| c.pin_name == "PAD_MIPI_TXM4")
+            .unwrap();
+        assert_eq!(p.function, "VI0_D_15");
+        assert!(p.user_configured);
+    }
+
+    #[test]
+    fn test_parse_board_init_ignores_out_of_block_lines() {
+        // 只解析生成块内的行: #if 0 禁用块 + 手写行都在生成块之外，必须忽略
+        let content = "int cvi_board_init(void)\n{\n#if 0 /* pinmux set in alios */\n\tPINMUX_CONFIG(CAM_MCLK0, CAM_MCLK0);\n\tPINMUX_CONFIG(IIC2_SCL, IIC2_SCL);\n#endif\n\n\tPINMUX_CONFIG(JTAG_CPU_TMS, UART1_TX);\n\tPINMUX_CONFIG(UART2_TX, UART2_TX);\n\tmmio_setbits_32(0x030002d0, 1 << 9);\n\n\t// Generated PINMUX configurations\n\t// IIC1_SCL pins configuration\n\tPINMUX_CONFIG(PAD_MIPIRX0N, IIC1_SCL);\n\t// IIC1_SDA pins configuration\n\tPINMUX_CONFIG(PAD_MIPI_TXM4, IIC1_SDA);\n\n\treturn 0;\n}";
+        let configs = parse_board_init(content);
+        // 只应解析出生成块内配置的两个引脚，禁用块与手写行都被忽略
+        assert_eq!(configs.len(), 2);
+        assert!(configs
+            .iter()
+            .any(|c| c.pin_name == "PAD_MIPIRX0N" && c.function == "IIC1_SCL"));
+        assert!(configs
+            .iter()
+            .any(|c| c.pin_name == "PAD_MIPI_TXM4" && c.function == "IIC1_SDA"));
+        // 禁用块 / 手写行不得出现
+        assert!(!configs.iter().any(|c| c.pin_name == "CAM_MCLK0"));
+        assert!(!configs.iter().any(|c| c.pin_name == "IIC2_SCL"));
+        assert!(!configs.iter().any(|c| c.pin_name == "JTAG_CPU_TMS"));
+        assert!(!configs.iter().any(|c| c.pin_name == "UART2_TX"));
+    }
+
+    #[test]
+    fn test_parse_board_init_no_marker_returns_empty() {
+        // 没有生成块标记的文件 (全部手写) 不应解析出任何配置
+        let content =
+            "int cvi_board_init(void) {\n\tPINMUX_CONFIG(UART2_TX, UART2_TX);\n\treturn 0;\n}";
+        let configs = parse_board_init(content);
+        assert!(configs.is_empty());
+    }
+
+    #[test]
+    fn test_parse_board_init_empty() {
+        let configs = parse_board_init("int cvi_board_init(void) { return 0; }");
+        assert!(configs.is_empty());
+    }
+
+    #[test]
+    fn test_parse_board_init_dedup() {
+        let content = "\t// Generated PINMUX configurations\n\tPINMUX_CONFIG(UART0_TX, UART0_TX);\n\tPINMUX_CONFIG(UART0_TX, UART0_TX);\n\treturn 0;\n";
+        let configs = parse_board_init(content);
+        assert_eq!(configs.len(), 1);
+    }
+
+    #[test]
+    fn test_generate_then_parse_roundtrip() {
+        // 生成的非 GPIO 引脚配置应能被完整解析回来
+        let pin_configs = vec![
+            PinConfig {
+                pin_name: "PAD_MIPI_TXM4".to_string(),
+                function: "VI0_D_15".to_string(),
+                user_configured: true,
+                state: None,
+            },
+            PinConfig {
+                pin_name: "UART0_TX".to_string(),
+                function: "UART0_TX".to_string(),
+                user_configured: true,
+                state: None,
+            },
+        ];
+        let code = generate_code("cv1842hp", &pin_configs, None).unwrap();
+        let parsed = parse_board_init(&code);
+        assert_eq!(parsed.len(), 2);
+        assert!(parsed
+            .iter()
+            .any(|c| c.pin_name == "PAD_MIPI_TXM4" && c.function == "VI0_D_15"));
+        assert!(parsed
+            .iter()
+            .any(|c| c.pin_name == "UART0_TX" && c.function == "UART0_TX"));
+    }
+
+    #[test]
+    fn test_update_then_parse_roundtrip_preserves_handwritten() {
+        // 模拟用户提供的文件: 含 #if 0 禁用块 + 手写行，再增量写入配置后回读
+        let dir = std::env::temp_dir();
+        let test_file = dir.join("test_cvi_board_init_roundtrip.c");
+        let content = "int cvi_board_init(void)\n{\n#if 0 /* pinmux set in alios */\n\tPINMUX_CONFIG(CAM_MCLK0, CAM_MCLK0);\n\tPINMUX_CONFIG(IIC2_SCL, IIC2_SCL);\n#endif\n\n\tPINMUX_CONFIG(JTAG_CPU_TMS, UART1_TX);\n\tPINMUX_CONFIG(UART2_TX, UART2_TX);\n\tmmio_setbits_32(0x030002d0, 1 << 9);\n\n\treturn 0;\n}\n";
+        fs::write(&test_file, content).unwrap();
+
+        let pin_configs = vec![
+            PinConfig {
+                pin_name: "PAD_MIPIRX0N".to_string(),
+                function: "IIC1_SCL".to_string(),
+                user_configured: true,
+                state: None,
+            },
+            PinConfig {
+                pin_name: "PAD_MIPI_TXM4".to_string(),
+                function: "IIC1_SDA".to_string(),
+                user_configured: true,
+                state: None,
+            },
+        ];
+
+        update_existing_code(test_file.to_str().unwrap(), &pin_configs).unwrap();
+        let written = fs::read_to_string(&test_file).unwrap();
+
+        // 手写行 / 禁用块只应出现一次 (不被重复写入生成块)
+        assert_eq!(
+            written.matches("PINMUX_CONFIG(UART2_TX, UART2_TX)").count(),
+            1
+        );
+        assert_eq!(
+            written
+                .matches("PINMUX_CONFIG(JTAG_CPU_TMS, UART1_TX)")
+                .count(),
+            1
+        );
+        assert_eq!(
+            written
+                .matches("PINMUX_CONFIG(CAM_MCLK0, CAM_MCLK0)")
+                .count(),
+            1
+        );
+
+        // 回读只得到工具生成的两个引脚
+        let parsed = parse_board_init(&written);
+        assert_eq!(parsed.len(), 2);
+        assert!(parsed.iter().any(|c| c.pin_name == "PAD_MIPIRX0N"));
+        assert!(parsed.iter().any(|c| c.pin_name == "PAD_MIPI_TXM4"));
+
+        fs::remove_file(&test_file).ok();
+    }
+
+    // ---- 二级 mux (MUX_SPI1_*) ----
+
+    #[test]
+    fn test_generate_code_mux_two_lines() {
+        // 选择 MUX_SPI1_MISO 并指定二级功能 PWM_9，应生成相邻两行
+        let pin_configs = vec![PinConfig {
+            pin_name: "PAD_MIPIRX3N".to_string(),
+            function: "MUX_SPI1_MISO".to_string(),
+            user_configured: true,
+            state: Some("PWM_9".to_string()),
+        }];
+        let code = generate_code("cv1842hp", &pin_configs, None).unwrap();
+        assert!(code.contains("PINMUX_CONFIG(PAD_MIPIRX3N, MUX_SPI1_MISO)"));
+        assert!(code.contains("PINMUX_CONFIG(MUX_SPI1_MISO, PWM_9)"));
+        // 两行相邻: 一级行紧接着二级行
+        let one = code
+            .find("PINMUX_CONFIG(PAD_MIPIRX3N, MUX_SPI1_MISO)")
+            .unwrap();
+        let two = code.find("PINMUX_CONFIG(MUX_SPI1_MISO, PWM_9)").unwrap();
+        assert!(two > one);
+    }
+
+    #[test]
+    fn test_generate_code_mux_defaults_state() {
+        // 未指定 state 时，二级功能回落到该 mux 的默认值
+        let pin_configs = vec![PinConfig {
+            pin_name: "PAD_MIPIRX3N".to_string(),
+            function: "MUX_SPI1_MISO".to_string(),
+            user_configured: true,
+            state: None,
+        }];
+        let code = generate_code("cv1842hp", &pin_configs, None).unwrap();
+        assert!(code.contains("PINMUX_CONFIG(MUX_SPI1_MISO, XGPIOB_8)"));
+    }
+
+    #[test]
+    fn test_generate_then_parse_mux_roundtrip() {
+        let pin_configs = vec![PinConfig {
+            pin_name: "PAD_MIPIRX3N".to_string(),
+            function: "MUX_SPI1_MISO".to_string(),
+            user_configured: true,
+            state: Some("PWM_9".to_string()),
+        }];
+        let code = generate_code("cv1842hp", &pin_configs, None).unwrap();
+        let parsed = parse_board_init(&code);
+        // 二级行不应被当成独立引脚: 只解析出 1 个引脚
+        assert_eq!(parsed.len(), 1);
+        let p = &parsed[0];
+        assert_eq!(p.pin_name, "PAD_MIPIRX3N");
+        assert_eq!(p.function, "MUX_SPI1_MISO");
+        assert_eq!(p.state.as_deref(), Some("PWM_9"));
+    }
+
+    #[test]
+    fn test_update_existing_code_mux_two_lines() {
+        let dir = std::env::temp_dir();
+        let test_file = dir.join("test_cvi_board_init_mux.c");
+        let content = "int cvi_board_init(void)\n{\n\treturn 0;\n}\n";
+        fs::write(&test_file, content).unwrap();
+
+        let pin_configs = vec![PinConfig {
+            pin_name: "PAD_MIPIRX3N".to_string(),
+            function: "MUX_SPI1_MISO".to_string(),
+            user_configured: true,
+            state: Some("PWM_9".to_string()),
+        }];
+
+        update_existing_code(test_file.to_str().unwrap(), &pin_configs).unwrap();
+        let written = fs::read_to_string(&test_file).unwrap();
+        assert!(written.contains("PINMUX_CONFIG(PAD_MIPIRX3N, MUX_SPI1_MISO)"));
+        assert!(written.contains("PINMUX_CONFIG(MUX_SPI1_MISO, PWM_9)"));
+
+        let parsed = parse_board_init(&written);
+        assert_eq!(parsed.len(), 1);
+        assert_eq!(parsed[0].state.as_deref(), Some("PWM_9"));
+
         fs::remove_file(&test_file).ok();
     }
 }

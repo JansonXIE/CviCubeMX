@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
-import { usePeripheralStore, PeripheralInfo } from "../stores/peripheralStore";
-import { X, Save } from "lucide-react";
+import { usePeripheralStore, PeripheralInfo, RawProperty } from "../stores/peripheralStore";
+import { X, Save, ChevronDown, ChevronRight, Plus, Trash2, Lock } from "lucide-react";
 
 // SYSDMA 通道号 → 外设常量名映射
 // 与 C++ dtsconfig.cpp::getChannelName 及 Rust SysdmaChannelMap::channel_name 保持一致
@@ -100,6 +100,9 @@ export default function ConfigDialog({ peripheral, isOpen, onClose }: ConfigDial
     setPwmCells,
     setCurrentSpeed,
     setSysdmaChannels,
+    getRawProperties,
+    setRawProperty,
+    deleteRawProperty,
   } = usePeripheralStore();
 
   const [status, setStatus] = useState(peripheral.status);
@@ -111,6 +114,11 @@ export default function ConfigDialog({ peripheral, isOpen, onClose }: ConfigDial
       ? [...peripheral.sysdma_channels]
       : ["0", "0", "0", "0", "0", "0", "0", "0"]
   );
+
+  // 原始属性（通用键值编辑器）本地状态
+  const [rawProps, setRawProps] = useState<RawProperty[]>([]);
+  const [initialRawProps, setInitialRawProps] = useState<RawProperty[]>([]);
+  const [rawExpanded, setRawExpanded] = useState(false);
 
   const [isSaving, setIsSaving] = useState(false);
 
@@ -126,14 +134,44 @@ export default function ConfigDialog({ peripheral, isOpen, onClose }: ConfigDial
     );
   }, [peripheral]);
 
+  // 弹窗打开时加载该节点的全部原始属性
+  useEffect(() => {
+    if (!isOpen) return;
+    let cancelled = false;
+    getRawProperties(peripheral.name)
+      .then((props) => {
+        if (cancelled) return;
+        setRawProps(props);
+        setInitialRawProps(props);
+      })
+      .catch((err) => console.error("加载原始属性失败:", err));
+    return () => {
+      cancelled = true;
+    };
+  }, [peripheral, isOpen]);
+
   if (!isOpen) return null;
+
+  // SPI / UART 不再提供「友好」的 status 开关（如需仍可在下方高级原始属性中编辑）
+  const showStatus = peripheral.has_status && !/^(spi|uart)\d+$/.test(peripheral.name);
+
+  // ── 原始属性行编辑 ──────────────────────────────────
+  const updateRawRow = (index: number, patch: Partial<RawProperty>) => {
+    setRawProps((prev) => prev.map((p, i) => (i === index ? { ...p, ...patch } : p)));
+  };
+  const addRawRow = () => {
+    setRawProps((prev) => [...prev, { key: "", value: "", kind: "cell", protected: false }]);
+  };
+  const removeRawRow = (index: number) => {
+    setRawProps((prev) => prev.filter((_, i) => i !== index));
+  };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
     try {
       // 逐个保存有变更且符合条件的值
-      if (peripheral.has_status && status !== peripheral.status) {
+      if (showStatus && status !== peripheral.status) {
         await setPeripheralStatus(peripheral.name, status);
       }
       if (peripheral.has_clock_freq && clockFreq !== peripheral.clock_frequency) {
@@ -148,6 +186,30 @@ export default function ConfigDialog({ peripheral, isOpen, onClose }: ConfigDial
       if (peripheral.has_sysdma_channels) {
         await setSysdmaChannels(peripheral.name, sysdmaChs);
       }
+
+      // 原始属性：先删除被移除的行，再对新增/变更的行执行 upsert
+      const currentKeys = new Set(
+        rawProps.filter((p) => p.key.trim() !== "").map((p) => p.key)
+      );
+      // 删除：原有、非保护、且当前列表已不含该 key
+      for (const orig of initialRawProps) {
+        if (orig.protected) continue;
+        if (!currentKeys.has(orig.key)) {
+          await deleteRawProperty(peripheral.name, orig.key);
+        }
+      }
+      // 新增 / 修改：key 非空、非保护、且为新增或 value/kind 有变更
+      const initialByKey = new Map(initialRawProps.map((p) => [p.key, p]));
+      for (const row of rawProps) {
+        const key = row.key.trim();
+        if (key === "" || row.protected) continue;
+        const prev = initialByKey.get(key);
+        const changed = !prev || prev.value !== row.value || prev.kind !== row.kind;
+        if (changed) {
+          await setRawProperty(peripheral.name, key, row.kind === "bool" ? "" : row.value, row.kind);
+        }
+      }
+
       onClose();
     } catch (err) {
       console.error(err);
@@ -184,8 +246,8 @@ export default function ConfigDialog({ peripheral, isOpen, onClose }: ConfigDial
 
         {/* 表单内容 */}
         <form onSubmit={handleSave} className="mt-4 space-y-4 flex-1 relative z-10">
-          {/* status 属性 */}
-          {peripheral.has_status && (
+          {/* status 属性（SPI / UART 不显示此友好开关） */}
+          {showStatus && (
             <div className="flex items-center justify-between bg-slate-950/30 p-3.5 rounded-xl border border-slate-800">
               <div>
                 <label className="block text-xs font-bold uppercase text-slate-400 tracking-wider">
@@ -285,6 +347,99 @@ export default function ConfigDialog({ peripheral, isOpen, onClose }: ConfigDial
               </div>
             </div>
           )}
+
+          {/* ⚙️ 高级：原始属性编辑（通用键值编辑器，任意节点均可见） */}
+          <div className="bg-slate-950/30 rounded-xl border border-slate-800 overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setRawExpanded((v) => !v)}
+              className="w-full flex items-center justify-between px-3.5 py-3 text-left hover:bg-slate-900/40 transition focus:outline-none focus:ring-0"
+            >
+              <span className="text-xs font-bold uppercase text-slate-400 tracking-wider">
+                ⚙️ 高级：原始属性编辑
+              </span>
+              {rawExpanded ? (
+                <ChevronDown size={16} className="text-slate-500" />
+              ) : (
+                <ChevronRight size={16} className="text-slate-500" />
+              )}
+            </button>
+
+            {rawExpanded && (
+              <div className="px-3.5 pb-3.5 pt-1 space-y-2 border-t border-slate-800/60">
+                <p className="text-[10px] text-slate-500 font-medium">
+                  直接编辑该节点在 DTS 中的属性；🔒 为受保护属性，只读不可改删。
+                </p>
+
+                {rawProps.length === 0 && (
+                  <p className="text-[10px] text-slate-500 py-1">该节点暂无属性，点击下方按钮新增。</p>
+                )}
+
+                {rawProps.map((row, idx) => (
+                  <div key={`raw-${idx}`} className="flex items-center gap-1.5">
+                    {/* 属性名 */}
+                    <input
+                      type="text"
+                      value={row.key}
+                      disabled={row.protected}
+                      onChange={(e) => updateRawRow(idx, { key: e.target.value })}
+                      placeholder="属性名"
+                      className="flex-1 min-w-0 bg-slate-900 border border-slate-700/80 rounded-lg px-2 py-1 text-[11px] text-slate-200 focus:outline-none focus:border-indigo-500 transition focus:ring-0 font-mono disabled:opacity-60 disabled:cursor-not-allowed"
+                    />
+                    {/* 值类型 */}
+                    <select
+                      value={row.kind}
+                      disabled={row.protected}
+                      onChange={(e) => {
+                        const kind = e.target.value as RawProperty["kind"];
+                        updateRawRow(idx, kind === "bool" ? { kind, value: "" } : { kind });
+                      }}
+                      className="bg-slate-900 border border-slate-700/80 rounded-lg px-1.5 py-1 text-[11px] text-slate-200 focus:outline-none focus:border-indigo-500 transition focus:ring-0 font-mono disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                      <option value="cell">cell</option>
+                      <option value="string">string</option>
+                      <option value="bool">bool</option>
+                    </select>
+                    {/* 值 */}
+                    <input
+                      type="text"
+                      value={row.kind === "bool" ? "" : row.value}
+                      disabled={row.protected || row.kind === "bool"}
+                      onChange={(e) => updateRawRow(idx, { value: e.target.value })}
+                      placeholder={row.kind === "bool" ? "—" : "值"}
+                      className="flex-1 min-w-0 bg-slate-900 border border-slate-700/80 rounded-lg px-2 py-1 text-[11px] text-slate-200 focus:outline-none focus:border-indigo-500 transition focus:ring-0 font-mono disabled:opacity-60 disabled:cursor-not-allowed"
+                    />
+                    {/* 受保护锁 / 删除按钮 */}
+                    {row.protected ? (
+                      <span
+                        className="w-7 flex items-center justify-center text-slate-500 shrink-0"
+                        title="受保护属性，只读"
+                      >
+                        <Lock size={13} />
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => removeRawRow(idx)}
+                        title="删除该属性"
+                        className="w-7 flex items-center justify-center text-slate-500 hover:text-rose-400 transition focus:outline-none focus:ring-0 shrink-0"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    )}
+                  </div>
+                ))}
+
+                <button
+                  type="button"
+                  onClick={addRawRow}
+                  className="w-full flex items-center justify-center gap-1 border border-dashed border-slate-700 hover:border-indigo-500/60 text-slate-400 hover:text-indigo-300 rounded-lg py-1.5 text-[11px] font-semibold transition focus:outline-none focus:ring-0"
+                >
+                  <Plus size={13} /> 新增属性
+                </button>
+              </div>
+            )}
+          </div>
 
           {/* 底部操作按钮 */}
           <div className="flex items-center justify-end gap-3 border-t border-slate-800 pt-4 mt-6">

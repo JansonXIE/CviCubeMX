@@ -135,7 +135,12 @@ pub fn compute_clock_tree(configs: HashMap<String, PllConfig>) -> Result<ClockTr
         let (source, divider, multiplier, frequency): (&str, i32, i32, f64) = match *output_name {
             "clk_mipimpll_d3" => ("clk_mipimpll", 3, 1, mipimpll_output / 3.0),
             "clk_cam1pll" => ("OSC", 1, 1, OSC_FREQUENCY_MHZ),
-            _ => ("OSC", 1, 1, compute_output_frequency(OSC_FREQUENCY_MHZ, 1, 1)),
+            _ => (
+                "OSC",
+                1,
+                1,
+                compute_output_frequency(OSC_FREQUENCY_MHZ, 1, 1),
+            ),
         };
 
         outputs.insert(
@@ -261,15 +266,9 @@ fn get_parent_frequency(
             let fpll_freq = get_parent_frequency("clk_fpll", pll_configs, outputs);
             fpll_freq / 10.0
         }
-        "clk_apb_i2c" => {
-            get_parent_frequency("clk_i2c", pll_configs, outputs)
-        }
-        "clk_apb_vcsys" => {
-            get_parent_frequency("clk_fab_100M", pll_configs, outputs)
-        }
-        "clk_x2p" => {
-            get_parent_frequency("clk_fab_100M", pll_configs, outputs)
-        }
+        "clk_apb_i2c" => get_parent_frequency("clk_i2c", pll_configs, outputs),
+        "clk_apb_vcsys" => get_parent_frequency("clk_fab_100M", pll_configs, outputs),
+        "clk_x2p" => get_parent_frequency("clk_fab_100M", pll_configs, outputs),
         // clk_rtc_sys_* 门控时钟在板端是 osc 的直接子节点（25MHz），
         // 而非 clk_rtc_sys(=clk_mpll/4=300M) 的子节点。
         "clk_rtc_sys" => OSC_FREQUENCY_MHZ,
@@ -308,9 +307,7 @@ fn get_parent_frequency(
         }
         // rtc_32k 域 (32.768kHz) -> clk_rtc_sys_wdt / clk_rtc_sys_gpio_db
         "rtc_32k" => RTC_FREQUENCY_MHZ,
-        "clk_raw_axi" => {
-            get_parent_frequency("clk_cam1pll", pll_configs, outputs)
-        }
+        "clk_raw_axi" => get_parent_frequency("clk_cam1pll", pll_configs, outputs),
         _ => 25.0, // default fallback
     }
 }
@@ -320,18 +317,18 @@ fn get_default_subnode_divider(name: &str) -> i32 {
     match name {
         // Cam0PLL sub-nodes
         "clk_cam0_vip" => 50,
-        
+
         // DispPLL sub-nodes
         "clk_cam2_vip" => 32,
         "clk_cam1_vip" => 44,
         "clk_sys_disp" => 8,
-        
+
         // A0PLL sub-nodes
         "clk_aud3" | "clk_aud2" | "clk_aud1" | "clk_aud0" | "clk_audsrc" => 17,
-        
+
         // RVPLL sub-nodes
         "clk_rv1" => 2,
-        
+
         // FPLL sub-nodes
         "clk_xtal_misc" => 40,
         "clk_pwm" => 4,
@@ -342,25 +339,33 @@ fn get_default_subnode_divider(name: &str) -> i32 {
         "clk_video_axi" => 2,
         "clk_fab_500M" => 2,
         "clk_fab_100M" => 10,
-        
+
         // TPLL sub-nodes
         "clk_tpu" | "clk_tpu_gdma" => 3,
-        
+
         // MPLL sub-nodes
         "clk_uart0" => 651,
         "clk_uart4" | "clk_uart3" | "clk_uart2" | "clk_uart1" | "clk_spi" | "clk_vip_sys_4" => 6,
-        "clk_spi_nand" | "clk_spi_nor" | "clk_usb20_bus_early" | "clk_rtc_spi_nor" | "clk_cyc_scan_300M" |
-        "clk_vip_sys_1" | "clk_tpu_sys" | "clk_gic" | "clk_rtc_sys" | "clk_hsperi" => 4,
+        "clk_spi_nand"
+        | "clk_spi_nor"
+        | "clk_usb20_bus_early"
+        | "clk_rtc_spi_nor"
+        | "clk_cyc_scan_300M"
+        | "clk_vip_sys_1"
+        | "clk_tpu_sys"
+        | "clk_gic"
+        | "clk_rtc_sys"
+        | "clk_hsperi" => 4,
         "clk_usb20_ref" => 50,
         "clk_vip_sys_3" | "clk_vc_src0" | "clk_bus" => 2,
         "clk_vip_sys_0" => 8,
-        
+
         // XtalMisc sub-nodes
         "clk_1M" => 250,
         "clk_usb20_suspend" => 125,
 
         // EthPLL sub-nodes (clk_eth_pll=500M)
-        "eth_csrclk" => 2, // 500 / 2 = 250 MHz
+        "eth_csrclk" => 2,  // 500 / 2 = 250 MHz
         "eth_ptpclk" => 10, // 500 / 10 = 50 MHz
 
         // Default divider is 1

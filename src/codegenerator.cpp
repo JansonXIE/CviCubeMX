@@ -182,25 +182,25 @@ static QString generateEthSequence(const QMap<QString, QString>& pinFunctions)
         return seq;
 
     seq += "/* Special sequence: configure EPHY for GPIO on ETH pads */\n";
-    seq += "/* Note: requires mmio_read/mmio_write and udelay helpers */\n";
+    seq += "/* Note: requires mmio_read/mmio_write_32 and udelay helpers */\n";
     seq += "/* enable apb interface */\n";
-    seq += "mmio_write(0x03009804, mmio_read(0x03009804) | 0x1); // rg_ephy_apb_rw_sel = 1\n";
+    seq += "mmio_write_32(0x03009804, mmio_read(0x03009804) | 0x1); // rg_ephy_apb_rw_sel = 1\n";
     seq += "/* set pll stable cnt = 1 (10us) */\n";
-    seq += "mmio_write(0x03009808, (mmio_read(0x03009808) & ~0x1F) | 0x1);\n";
+    seq += "mmio_write_32(0x03009808, (mmio_read(0x03009808) & ~0x1F) | 0x1);\n";
     seq += "/* release ephy reset */\n";
-    seq += "mmio_write(0x03009800, mmio_read(0x03009800) | (1 << 2)); // rg_ephy_dig_rst_n = 1\n";
+    seq += "mmio_write_32(0x03009800, mmio_read(0x03009800) | (1 << 2)); // rg_ephy_dig_rst_n = 1\n";
     seq += "udelay(10); /* wait 10us */\n";
     seq += "/* select page 5 */\n";
-    seq += "mmio_write(0x0300907C, (mmio_read(0x0300907C) & ~(0x1F << 8)) | (5 << 8));\n";
+    seq += "mmio_write_32(0x0300907C, (mmio_read(0x0300907C) & ~(0x1F << 8)) | (5 << 8));\n";
     seq += "/* set to gpio from top */\n";
-    seq += "mmio_write(0x03009078, (mmio_read(0x03009078) & ~0xFFF) | 0xF00);\n";
+    seq += "mmio_write_32(0x03009078, (mmio_read(0x03009078) & ~0xFFF) | 0xF00);\n";
     seq += "/* enable ephy rxp&rxm input & output */\n";
-    seq += "mmio_write(0x03009074, (mmio_read(0x03009074)| 0x606));\n";
-    seq += "mmio_write(0x03009070, (mmio_read(0x03009070)| 0x606));\n";
+    seq += "mmio_write_32(0x03009074, (mmio_read(0x03009074)| 0x606));\n";
+    seq += "mmio_write_32(0x03009070, (mmio_read(0x03009070)| 0x606));\n";
     seq += "/* back to page 0 */\n";
-    seq += "mmio_write(0x0300907C, 0x0);\n";
+    seq += "mmio_write_32(0x0300907C, 0x0);\n";
     seq += "/* set PHY MDI mode to Force MDIX (bits[1:0] = 01) */\n";
-    seq += "mmio_write(0x0300904C, (mmio_read(0x0300904C) & ~0x3) | 0x1);\n";
+    seq += "mmio_write_32(0x0300904C, (mmio_read(0x0300904C) & ~0x3) | 0x1);\n";
     seq += "\n";
     seq += "/* PAD_ETH PINMUX GPIO extra config END */\n";
     seq += "\n";
@@ -252,14 +252,14 @@ static QString generateMipiSequence(const QMap<QString, QString>& pinFunctions)
     if(vallow){
         seq += "    /* MIPI TX: set reg_pd_lptrx/reg_pd_txdvr_ldo according to GPIO/MIPI selection */\n";
 
-        seq += QString("    mmio_write(0x0A098064, (mmio_read(0x0A098064) & ~0x%1) | 0x%2);\n")
+        seq += QString("    mmio_write_32(0x0A098064, (mmio_read(0x0A098064) & ~0x%1) | 0x%2);\n")
             .arg(QString::number(masklow, 16).toUpper())
             .arg(QString::number(vallow, 16).toUpper());
 
     }
 
    if(valtop){
-    seq += QString("    mmio_write(0x0A098064, (mmio_read(0x0A098064) & ~0x%1) | 0x%2);\n")
+    seq += QString("    mmio_write_32(0x0A098064, (mmio_read(0x0A098064) & ~0x%1) | 0x%2);\n")
             .arg(QString::number(masktop, 16).toUpper())
             .arg(QString::number(valtop, 16).toUpper());
 
@@ -267,7 +267,7 @@ static QString generateMipiSequence(const QMap<QString, QString>& pinFunctions)
     }
     if(valRX){
         seq += "    /* MIPI RX: reg_mipirx_pd_rxlp set for GPIO/MIPI */\n";
-        seq += QString("    mmio_write(0x0A0A6000, (mmio_read(0x0A0A6000) & ~0x%1) | 0x%2);\n")
+        seq += QString("    mmio_write_32(0x0A0A6000, (mmio_read(0x0A0A6000) & ~0x%1) | 0x%2);\n")
                 .arg(QString::number(maskRX, 16).toUpper())
                 .arg(QString::number(valRX, 16).toUpper());
         seq += "\n";
@@ -291,12 +291,12 @@ static QString generateAudioSequence(const QMap<QString, QString>& pinFunctions)
     if (pinFunctions.contains(p1)||pinFunctions.contains(p2)) {
         unsigned int mask = (0x3u << 22);
         unsigned int val = (isGpioMode(pinValue1)||isGpioMode(pinValue2)) ? (0x1u << 22) : 0;
-        seq += QString("    mmio_write(0x03002204, (mmio_read(0x03002204) & ~0x%1) | 0x%2);\n")
+        seq += QString("    mmio_write_32(0x03002204, (mmio_read(0x03002204) & ~0x%1) | 0x%2);\n")
                 .arg(QString::number(mask, 16).toUpper())
                 .arg(QString::number(val, 16).toUpper());
         mask = (0x3u << 2);
         val = (isGpioMode(pinValue1)||isGpioMode(pinValue2)) ? (0x1u << 2) : 0;
-        seq += QString("    mmio_write(0x0300212C, (mmio_read(0x0300212C) & ~0x%1) | 0x%2);\n")
+        seq += QString("    mmio_write_32(0x0300212C, (mmio_read(0x0300212C) & ~0x%1) | 0x%2);\n")
                 .arg(QString::number(mask, 16).toUpper())
                 .arg(QString::number(val, 16).toUpper());
         need = true;
@@ -311,12 +311,12 @@ static QString generateAudioSequence(const QMap<QString, QString>& pinFunctions)
     if (pinFunctions.contains(p3)||pinFunctions.contains(p4)) {
         unsigned int mask = (0x3u << 24);
         unsigned int val = (isGpioMode(pinValue3)||isGpioMode(pinValue4))? (0x1u << 24) : 0;
-        seq += QString("    mmio_write(0x03002204, (mmio_read(0x03002204) & ~0x%1) | 0x%2);\n")
+        seq += QString("    mmio_write_32(0x03002204, (mmio_read(0x03002204) & ~0x%1) | 0x%2);\n")
                 .arg(QString::number(mask, 16).toUpper())
                 .arg(QString::number(val, 16).toUpper());
         mask = 0x3u;
         val =  (isGpioMode(pinValue3)||isGpioMode(pinValue4)) ? 0x1u : 0;
-        seq += QString("    mmio_write(0x03002100, (mmio_read(0x03002100) & ~0x%1) | 0x%2);\n")
+        seq += QString("    mmio_write_32(0x03002100, (mmio_read(0x03002100) & ~0x%1) | 0x%2);\n")
                 .arg(QString::number(mask, 16).toUpper())
                 .arg(QString::number(val, 16).toUpper());
         need = true;

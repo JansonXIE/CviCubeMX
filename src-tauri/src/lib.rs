@@ -11,6 +11,7 @@ pub mod memory;
 pub mod peripheral;
 pub mod pin_data;
 pub mod pin_data_tool;
+pub mod pin_mux;
 
 use peripheral::DtsState;
 
@@ -34,6 +35,7 @@ pub fn run() {
             pin_data::load_pin_data,
             pin_data::set_pin_function,
             pin_data::clear_pin_functions,
+            pin_mux::get_mux_functions,
             clock_commands::compute_clock_tree,
             clock_commands::save_module_positions,
             clock_commands::load_module_positions,
@@ -45,6 +47,9 @@ pub fn run() {
             peripheral::set_peripheral_pwm_cells,
             peripheral::set_peripheral_current_speed,
             peripheral::set_peripheral_sysdma_channels,
+            peripheral::get_peripheral_raw_properties,
+            peripheral::set_peripheral_raw_property,
+            peripheral::delete_peripheral_raw_property,
             // M5: Memory configuration commands
             memory::load_memory_regions,
             memory::validate_memory,
@@ -57,10 +62,10 @@ pub fn run() {
             flash::export_flash_json,
             flash::export_flash_defconfig,
             // M7: Codegen commands
-            codegen_commands::generate_code,
             codegen_commands::update_existing_code,
             codegen_commands::validate_sdk_path,
             codegen_commands::generate_board_init_code,
+            codegen_commands::read_board_init_config,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

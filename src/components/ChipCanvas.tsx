@@ -4,7 +4,7 @@ import { getQfnLayout, getBgaPins } from "../utils/pinLayout";
 import PinButton from "./PinButton";
 
 export default function ChipCanvas() {
-  const { chipSpec, pins, highlightedPins, setPinFunction, isLoading } = useChipStore();
+  const { chipSpec, pins, highlightedPins, setPinFunction, setPinSubFunction, muxFunctions, isLoading } = useChipStore();
 
   if (isLoading) {
     return (
@@ -108,6 +108,8 @@ export default function ChipCanvas() {
                     pin={pin}
                     isHighlighted={highlightedPins.has(pin.pin_name)}
                     onSelectFunction={(fn) => setPinFunction(pin.pin_name, fn)}
+                    muxOptions={muxFunctions[pin.current_function]}
+                    onSelectSubFunction={(sub) => setPinSubFunction(pin.pin_name, sub)}
                   />
                 );
               })}
@@ -243,6 +245,8 @@ export default function ChipCanvas() {
         pin={pin}
         isHighlighted={highlightedPins.has(pin.pin_name)}
         onSelectFunction={(fn) => setPinFunction(pin.pin_name, fn)}
+        muxOptions={muxFunctions[pin.current_function]}
+        onSelectSubFunction={(sub) => setPinSubFunction(pin.pin_name, sub)}
       />
     );
   };

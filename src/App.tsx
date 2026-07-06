@@ -1,7 +1,7 @@
 import React from "react";
 import { BrowserRouter, Routes, Route, NavLink } from "react-router-dom";
 import { invoke } from "@tauri-apps/api/core";
-import { MapPin, Clock, Cpu, Zap, Beaker, Settings, Code, MessageSquare } from "lucide-react";
+import { MapPin, Clock, Cpu, Zap, Beaker, Settings, MessageSquare } from "lucide-react";
 
 // 页面组件
 import PinoutPage from "./pages/PinoutPage";
@@ -9,7 +9,6 @@ import PeripheralPage from "./pages/PeripheralPage";
 import ClockPage from "./pages/ClockPage";
 import MemoryPage from "./pages/MemoryPage";
 import FlashPage from "./pages/FlashPage";
-import CodeGenPage from "./pages/CodeGenPage";
 import AIChatPage from "./pages/AIChatPage";
 
 // 引导组件与状态管理
@@ -28,7 +27,6 @@ function Sidebar() {
     { to: "/clock", label: "Clock", icon: <Clock size={20} /> },
     { to: "/memory", label: "Memory", icon: <Cpu size={20} /> },
     { to: "/flash", label: "Flash", icon: <Zap size={20} /> },
-    { to: "/codegen", label: "CodeGen", icon: <Code size={20} /> },
     { to: "/aichat", label: "AI Chat", icon: <MessageSquare size={20} /> },
   ];
 
@@ -113,7 +111,6 @@ function ContentArea() {
         <Route path="/clock" element={<ClockPage />} />
         <Route path="/memory" element={<MemoryPage />} />
         <Route path="/flash" element={<FlashPage />} />
-        <Route path="/codegen" element={<CodeGenPage />} />
         <Route path="/aichat" element={<AIChatPage />} />
       </Routes>
     </div>
@@ -125,13 +122,15 @@ function ContentArea() {
  */
 export default function App() {
   const { sdkPath, chipType, setSdkPath, setChipType, isOnboardingOpen, setIsOnboardingOpen } = useSdkStore();
-  const { selectChip } = useChipStore();
+  const { selectChip, syncBoardInit } = useChipStore();
   const { loadPeripherals } = usePeripheralStore();
 
   // 校验并加载数据
   const initializeApp = async (path: string, chip: string) => {
     try {
       await selectChip(chip);
+      // 恢复该板卡 cvi_board_init.c 中已保存的引脚复用配置
+      await syncBoardInit(path);
       const dtsPath = `${path}/build/boards/default/dts/cv184x/cv184x_base.dtsi`;
       await loadPeripherals(dtsPath);
     } catch (e) {

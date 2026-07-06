@@ -26,6 +26,8 @@ pub struct PinInfo {
     pub current_function: String,
     /// 是否已被用户配置 (初始 = false)
     pub user_configured: bool,
+    /// 二级 mux 功能选择 (仅当 current_function 为 MUX_SPI1_* 时有值)
+    pub current_state: Option<String>,
 }
 
 /// JSON 数据中的原始引脚记录 (不含运行时字段)
@@ -102,10 +104,10 @@ pub fn load_pin_data(chip_type: String) -> Result<Vec<PinInfo>, String> {
 
                 if let Some(raw) = bga_pins.get(&pin_num) {
                     // 有硬编码数据
-                    let (current, user_configured) = user_config
+                    let (current, state, user_configured) = user_config
                         .get(&(chip_type.clone(), raw.pin_name.clone()))
-                        .map(|(func, _state)| (func.clone(), true))
-                        .unwrap_or_else(|| (raw.default_function.clone(), false));
+                        .map(|(func, st)| (func.clone(), st.clone(), true))
+                        .unwrap_or_else(|| (raw.default_function.clone(), None, false));
 
                     result.push(PinInfo {
                         pin_num: raw.pin_num.clone(),
@@ -115,6 +117,7 @@ pub fn load_pin_data(chip_type: String) -> Result<Vec<PinInfo>, String> {
                         default_function: raw.default_function.clone(),
                         current_function: current,
                         user_configured,
+                        current_state: state,
                     });
                 }
             }
@@ -131,10 +134,10 @@ pub fn load_pin_data(chip_type: String) -> Result<Vec<PinInfo>, String> {
             let pin_num = i.to_string();
 
             if let Some(raw) = qfn_pins.get(&pin_num) {
-                let (current, user_configured) = user_config
+                let (current, state, user_configured) = user_config
                     .get(&(chip_type.clone(), raw.pin_name.clone()))
-                    .map(|(func, _state)| (func.clone(), true))
-                    .unwrap_or_else(|| (raw.default_function.clone(), false));
+                    .map(|(func, st)| (func.clone(), st.clone(), true))
+                    .unwrap_or_else(|| (raw.default_function.clone(), None, false));
 
                 result.push(PinInfo {
                     pin_num: raw.pin_num.clone(),
@@ -144,6 +147,7 @@ pub fn load_pin_data(chip_type: String) -> Result<Vec<PinInfo>, String> {
                     default_function: raw.default_function.clone(),
                     current_function: current,
                     user_configured,
+                    current_state: state,
                 });
             }
         }
@@ -173,6 +177,20 @@ pub fn clear_pin_functions(chip_type: String) -> Result<(), String> {
     let mut config = USER_CONFIG.lock().unwrap();
     config.retain(|(ct, _), _| ct != &chip_type);
     Ok(())
+}
+
+/// 批量写入用户配置 (用于从 cvi_board_init.c 恢复引脚状态)
+///
+/// 每个元组为 (pin_name, function, state)，其中 state 为二级 mux 功能选择。
+/// 一次性获取锁写入，供 codegen_commands::read_board_init_config 调用。
+pub fn seed_user_configs(chip_type: &str, configs: &[(String, String, Option<String>)]) {
+    let mut config = USER_CONFIG.lock().unwrap();
+    for (pin_name, function, state) in configs {
+        config.insert(
+            (chip_type.to_string(), pin_name.clone()),
+            (function.clone(), state.clone()),
+        );
+    }
 }
 
 #[cfg(test)]

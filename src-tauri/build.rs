@@ -32,9 +32,7 @@ fn inject_ai_config() {
     for key in ["AI_API_KEY", "AI_BASE_URL", "AI_MODEL"] {
         // shell 环境变量优先，其次 .env 文件；两者都没有则不注入，
         // 交由 ai_chat.rs 中的代码默认值兜底。
-        let value = std::env::var(key)
-            .ok()
-            .or_else(|| dotenv.get(key).cloned());
+        let value = std::env::var(key).ok().or_else(|| dotenv.get(key).cloned());
         if let Some(v) = value {
             println!("cargo:rustc-env={}={}", key, v);
         }
