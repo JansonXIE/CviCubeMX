@@ -21,3 +21,5 @@ tokio = { version = "1", features = ["io-util"] }
 futures-util = "0.3"
 handlebars = "5"
 tauri-plugin-dialog = "2"
+uuid = { version = "1", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }

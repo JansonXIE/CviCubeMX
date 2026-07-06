@@ -171,6 +171,47 @@ button:focus {
   height: auto;
 }
 
+.markdown-body-dark {
+ color: #e2e8f0; /* slate-200 */
+}
+
+.markdown-body-dark a {
+ color: #818cf8; /* indigo-400 */
+}
+
+.markdown-body-dark blockquote {
+ border-left-color: #475569; /* slate-600 */
+ color: #cbd5e1; /* slate-300 */
+}
+
+.markdown-body-dark code {
+ background: rgba(148,163,184,0.14);
+ color: #f8fafc;
+}
+
+.markdown-body-dark pre {
+ background: #020617; /* slate-950 */
+ border:1px solid #334155; /* slate-700 */
+}
+
+.markdown-body-dark pre code {
+ background: transparent;
+ color: inherit;
+}
+
+.markdown-body-dark th,
+.markdown-body-dark td {
+ border-color: #475569; /* slate-600 */
+}
+
+.markdown-body-dark th {
+ background: #1e293b; /* slate-800 */
+}
+
+.markdown-body-dark hr {
+ border-top-color: #475569;
+}
+
 .markdown-body hr {
   border: none;
   border-top: 1px solid #e2e8f0;

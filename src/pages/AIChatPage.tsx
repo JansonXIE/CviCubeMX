@@ -1,5 +1,6 @@
 import React from "react";
 import ChatPanel from "../components/ChatPanel";
+import ChatSidebar from "../components/ChatSidebar";
 import { MessageSquare } from "lucide-react";
 
 export default function AIChatPage() {
@@ -21,9 +22,10 @@ export default function AIChatPage() {
       </div>
 
       {/* 消息聊天框容器 */}
-      <div className="flex-1 bg-slate-900/60 border border-slate-800 rounded-2xl overflow-hidden shadow-xl flex flex-col min-h-[400px]">
-        {/* 我们将主聊天组件融入暗色毛玻璃卡片，且消除聊天内部按钮聚焦框 */}
-        <div className="flex-1 overflow-hidden rounded-2xl [&_button]:focus:outline-none [&_button]:focus:ring-0 [&_input]:focus:outline-none [&_textarea]:focus:outline-none">
+      <div className="flex-1 bg-slate-900/60 border border-slate-800 rounded-2xl overflow-hidden shadow-xl flex min-h-[400px]">
+        <ChatSidebar />
+ {/* 我们将主聊天组件融入暗色毛玻璃卡片，且消除聊天内部按钮聚焦框 */}
+        <div className="flex-1 overflow-hidden [&_button]:focus:outline-none [&_button]:focus:ring-0 [&_input]:focus:outline-none [&_textarea]:focus:outline-none">
           <ChatPanel />
         </div>
       </div>

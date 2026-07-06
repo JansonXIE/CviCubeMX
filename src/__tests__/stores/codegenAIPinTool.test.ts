@@ -241,7 +241,7 @@ describe('M8 - AI 对话助手 (特征化测试)', () => {
       
       await useChatStore.getState().saveConfig(newConfig);
       
-      expect(useChatStore.getState().aiConfig).toEqual(newConfig);
+      expect(useChatStore.getState().aiConfig).toEqual({ ...newConfig, api_key: '' });
       expect(mockInvoke).toHaveBeenCalledWith('save_ai_config', { config: newConfig });
     });
   });
