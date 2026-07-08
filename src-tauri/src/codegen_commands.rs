@@ -85,6 +85,9 @@ pub fn read_board_init_config(
     let relative_path = format!("build/boards/cv184x/{}/u-boot/cvi_board_init.c", chip_type);
     let full_path = std::path::Path::new(&sdk_path).join(&relative_path);
 
+    // The selected SDK path is the source of truth for restored pin state.
+    // Clear stale runtime config before applying the current SDK file.
+    crate::pin_data::clear_pin_functions(chip_type.clone())?;
     if !full_path.exists() {
         return Ok(Vec::new());
     }
@@ -102,4 +105,101 @@ pub fn read_board_init_config(
     crate::pin_data::seed_user_configs(&chip_type, &pairs);
 
     Ok(configs)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::pin_data;
+
+    fn temp_sdk_path(name: &str) -> std::path::PathBuf {
+        let path = std::env::temp_dir().join(format!("cvicubemx_{}_{}", name, std::process::id()));
+        let _ = std::fs::remove_dir_all(&path);
+        path
+    }
+
+    fn find_pin(chip_type: &str, pin_name: &str) -> pin_data::PinInfo {
+        pin_data::load_pin_data(chip_type.to_string())
+            .unwrap()
+            .into_iter()
+            .find(|pin| pin.pin_name == pin_name)
+            .unwrap()
+    }
+
+    #[test]
+    fn read_board_init_config_clears_when_file_missing() {
+        let chip_type = "cv1842hp";
+        pin_data::set_pin_function(
+            chip_type.to_string(),
+            "PAD_MIPI_TXM4".to_string(),
+            "UART0_TX".to_string(),
+            None,
+        )
+        .unwrap();
+
+        let configured = find_pin(chip_type, "PAD_MIPI_TXM4");
+        assert_eq!(configured.current_function, "UART0_TX");
+        assert!(configured.user_configured);
+
+        let sdk_path = temp_sdk_path("missing_board_init");
+        std::fs::create_dir_all(&sdk_path).unwrap();
+
+        let configs = read_board_init_config(
+            sdk_path.to_string_lossy().to_string(),
+            chip_type.to_string(),
+        )
+        .unwrap();
+
+        assert!(configs.is_empty());
+        let reset = find_pin(chip_type, "PAD_MIPI_TXM4");
+        assert_eq!(reset.current_function, "XGPIOC_18");
+        assert!(!reset.user_configured);
+
+        let _ = std::fs::remove_dir_all(sdk_path);
+    }
+
+    #[test]
+    fn read_board_init_config_replaces_existing_chip_config() {
+        let chip_type = "cv1842hp";
+        pin_data::set_pin_function(
+            chip_type.to_string(),
+            "PAD_MIPI_TXM4".to_string(),
+            "UART0_TX".to_string(),
+            None,
+        )
+        .unwrap();
+        pin_data::set_pin_function(
+            chip_type.to_string(),
+            "CAM_MCLK0".to_string(),
+            "CAM_MCLK0".to_string(),
+            None,
+        )
+        .unwrap();
+
+        let sdk_path = temp_sdk_path("replace_board_init");
+        let board_dir = sdk_path.join(format!("build/boards/cv184x/{}/u-boot", chip_type));
+        std::fs::create_dir_all(&board_dir).unwrap();
+        std::fs::write(
+ board_dir.join("cvi_board_init.c"),
+ "void cvi_board_init(void) {\n// Generated PINMUX configurations\nPINMUX_CONFIG(PAD_MIPI_TXM4, SD1_CLK);\nreturn0;\n}\n",
+ )
+ .unwrap();
+
+        let configs = read_board_init_config(
+            sdk_path.to_string_lossy().to_string(),
+            chip_type.to_string(),
+        )
+        .unwrap();
+
+        assert_eq!(configs.len(), 1);
+        let replaced = find_pin(chip_type, "PAD_MIPI_TXM4");
+        assert_eq!(replaced.current_function, "SD1_CLK");
+        assert!(replaced.user_configured);
+
+        let removed = find_pin(chip_type, "CAM_MCLK0");
+        assert_eq!(removed.current_function, "XGPIOA_0");
+        assert!(!removed.user_configured);
+
+        let _ = std::fs::remove_dir_all(sdk_path);
+    }
 }

@@ -104,17 +104,19 @@ export const useChipStore = create<ChipState>((set, get) => ({
   /**
    * 读取当前 SDK 内已有的 cvi_board_init.c，将其中保存的引脚复用配置
    * 恢复到界面上（避免每次打开都是默认状态）。
-   * 需在 selectChip 之后调用；若文件不存在则保持默认状态。
+   * 需在 selectChip 之后调用；若文件不存在则恢复为默认状态。
    */
   syncBoardInit: async (sdkPath: string) => {
     const { chipType } = get();
     if (!chipType || !sdkPath) return;
     try {
-      // 后端读取并解析文件，同时把配置写入 USER_CONFIG
+      // 后端读取并解析文件，同时用当前 SDK 的配置替换 USER_CONFIG
       await invoke('read_board_init_config', { sdkPath, chipType });
       // 重新加载引脚数据，此时已反映恢复出的复用状态
       const pinsMap = await buildPinsMap(chipType);
-      set({ pins: pinsMap });
+      if (get().chipType === chipType) {
+        set({ pins: pinsMap });
+      }
     } catch (err) {
       set({ error: String(err) });
     }

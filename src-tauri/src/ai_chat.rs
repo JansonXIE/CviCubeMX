@@ -47,45 +47,45 @@ pub struct AiChunkPayload {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ChatMessage {
- pub id: String,
- pub role: String,
- pub content: String,
- pub timestamp: u64,
- pub is_markdown: bool,
+    pub id: String,
+    pub role: String,
+    pub content: String,
+    pub timestamp: u64,
+    pub is_markdown: bool,
 }
 
 /// 聊天会话完整数据
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ChatSession {
- pub id: String,
- pub title: String,
- pub messages: Vec<ChatMessage>,
- pub created_at: String,
- pub updated_at: String,
+    pub id: String,
+    pub title: String,
+    pub messages: Vec<ChatMessage>,
+    pub created_at: String,
+    pub updated_at: String,
 }
 
 /// 聊天会话列表元数据
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ChatSessionMeta {
- pub id: String,
- pub title: String,
- pub message_count: usize,
- pub created_at: String,
- pub updated_at: String,
+    pub id: String,
+    pub title: String,
+    pub message_count: usize,
+    pub created_at: String,
+    pub updated_at: String,
 }
 
 impl From<&ChatSession> for ChatSessionMeta {
- fn from(session: &ChatSession) -> Self {
- Self {
- id: session.id.clone(),
- title: session.title.clone(),
- message_count: session.messages.len(),
- created_at: session.created_at.clone(),
- updated_at: session.updated_at.clone(),
- }
- }
+    fn from(session: &ChatSession) -> Self {
+        Self {
+            id: session.id.clone(),
+            title: session.title.clone(),
+            message_count: session.messages.len(),
+            created_at: session.created_at.clone(),
+            updated_at: session.updated_at.clone(),
+        }
+    }
 }
 
 /// SSE 行解析:解析 "data: ..." 行
@@ -138,42 +138,41 @@ fn config_file_path(app: &AppHandle) -> Result<PathBuf, String> {
 
 /// 聊天会话目录路径
 fn sessions_dir(app: &AppHandle) -> Result<PathBuf, String> {
- let app_dir = app
- .path()
- .app_data_dir()
- .map_err(|e| format!("获取应用数据目录失败: {}", e))?;
- let sessions_dir = app_dir.join("chat_sessions");
- std::fs::create_dir_all(&sessions_dir)
- .map_err(|e| format!("创建会话目录失败: {}", e))?;
- Ok(sessions_dir)
+    let app_dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("获取应用数据目录失败: {}", e))?;
+    let sessions_dir = app_dir.join("chat_sessions");
+    std::fs::create_dir_all(&sessions_dir).map_err(|e| format!("创建会话目录失败: {}", e))?;
+    Ok(sessions_dir)
 }
 
 fn validate_session_id(session_id: &str) -> Result<(), String> {
- if session_id.is_empty()
- || !session_id
- .chars()
- .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_')
- {
- return Err(format!("非法会话 ID: {}", session_id));
- }
- Ok(())
+    if session_id.is_empty()
+        || !session_id
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_')
+    {
+        return Err(format!("非法会话 ID: {}", session_id));
+    }
+    Ok(())
 }
 
 fn session_file_path(app: &AppHandle, session_id: &str) -> Result<PathBuf, String> {
- validate_session_id(session_id)?;
- Ok(sessions_dir(app)?.join(format!("{}.json", session_id)))
+    validate_session_id(session_id)?;
+    Ok(sessions_dir(app)?.join(format!("{}.json", session_id)))
 }
 
 fn now_rfc3339() -> String {
- chrono::Utc::now().to_rfc3339()
+    chrono::Utc::now().to_rfc3339()
 }
 
 fn write_chat_session(app_handle: &AppHandle, session: &ChatSession) -> Result<(), String> {
- let path = session_file_path(app_handle, &session.id)?;
- let json = serde_json::to_string_pretty(session)
- .map_err(|e| format!("序列化聊天会话失败: {}", e))?;
- std::fs::write(&path, json).map_err(|e| format!("写入聊天会话失败: {}", e))?;
- Ok(())
+    let path = session_file_path(app_handle, &session.id)?;
+    let json =
+        serde_json::to_string_pretty(session).map_err(|e| format!("序列化聊天会话失败: {}", e))?;
+    std::fs::write(&path, json).map_err(|e| format!("写入聊天会话失败: {}", e))?;
+    Ok(())
 }
 
 fn read_saved_or_default_config(app_handle: &AppHandle) -> Result<AiApiConfig, String> {
@@ -194,71 +193,71 @@ fn hide_api_key(mut config: AiApiConfig) -> AiApiConfig {
 /// 列出聊天会话元数据
 #[tauri::command]
 pub fn list_chat_sessions(app_handle: AppHandle) -> Result<Vec<ChatSessionMeta>, String> {
- let dir = sessions_dir(&app_handle)?;
- let entries = std::fs::read_dir(&dir).map_err(|e| format!("读取会话目录失败: {}", e))?;
- let mut sessions = Vec::new();
+    let dir = sessions_dir(&app_handle)?;
+    let entries = std::fs::read_dir(&dir).map_err(|e| format!("读取会话目录失败: {}", e))?;
+    let mut sessions = Vec::new();
 
- for entry in entries.flatten() {
- let path = entry.path();
- if path.extension().and_then(|ext| ext.to_str()) != Some("json") {
- continue;
- }
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.extension().and_then(|ext| ext.to_str()) != Some("json") {
+            continue;
+        }
 
- let Ok(json) = std::fs::read_to_string(&path) else {
- continue;
- };
- let Ok(session) = serde_json::from_str::<ChatSession>(&json) else {
- continue;
- };
- sessions.push(ChatSessionMeta::from(&session));
- }
+        let Ok(json) = std::fs::read_to_string(&path) else {
+            continue;
+        };
+        let Ok(session) = serde_json::from_str::<ChatSession>(&json) else {
+            continue;
+        };
+        sessions.push(ChatSessionMeta::from(&session));
+    }
 
- sessions.sort_by(|a, b| b.updated_at.cmp(&a.updated_at));
- Ok(sessions)
+    sessions.sort_by(|a, b| b.updated_at.cmp(&a.updated_at));
+    Ok(sessions)
 }
 
 /// 获取单个聊天会话
 #[tauri::command]
 pub fn get_chat_session(app_handle: AppHandle, session_id: String) -> Result<ChatSession, String> {
- let path = session_file_path(&app_handle, &session_id)?;
- if !path.exists() {
- return Err(format!("会话不存在: {}", session_id));
- }
- let json = std::fs::read_to_string(&path).map_err(|e| format!("读取聊天会话失败: {}", e))?;
- serde_json::from_str(&json).map_err(|e| format!("解析聊天会话失败: {}", e))
+    let path = session_file_path(&app_handle, &session_id)?;
+    if !path.exists() {
+        return Err(format!("会话不存在: {}", session_id));
+    }
+    let json = std::fs::read_to_string(&path).map_err(|e| format!("读取聊天会话失败: {}", e))?;
+    serde_json::from_str(&json).map_err(|e| format!("解析聊天会话失败: {}", e))
 }
 
 /// 创建聊天会话
 #[tauri::command]
 pub fn create_chat_session(app_handle: AppHandle) -> Result<ChatSession, String> {
- let now = now_rfc3339();
- let session = ChatSession {
- id: Uuid::new_v4().to_string(),
- title: "新对话".to_string(),
- messages: Vec::new(),
- created_at: now.clone(),
- updated_at: now,
- };
- write_chat_session(&app_handle, &session)?;
- Ok(session)
+    let now = now_rfc3339();
+    let session = ChatSession {
+        id: Uuid::new_v4().to_string(),
+        title: "新对话".to_string(),
+        messages: Vec::new(),
+        created_at: now.clone(),
+        updated_at: now,
+    };
+    write_chat_session(&app_handle, &session)?;
+    Ok(session)
 }
 
 /// 保存聊天会话
 #[tauri::command]
 pub fn save_chat_session(app_handle: AppHandle, mut session: ChatSession) -> Result<(), String> {
- validate_session_id(&session.id)?;
- session.updated_at = now_rfc3339();
- write_chat_session(&app_handle, &session)
+    validate_session_id(&session.id)?;
+    session.updated_at = now_rfc3339();
+    write_chat_session(&app_handle, &session)
 }
 
 /// 删除聊天会话
 #[tauri::command]
 pub fn delete_chat_session(app_handle: AppHandle, session_id: String) -> Result<(), String> {
- let path = session_file_path(&app_handle, &session_id)?;
- if path.exists() {
- std::fs::remove_file(&path).map_err(|e| format!("删除聊天会话失败: {}", e))?;
- }
- Ok(())
+    let path = session_file_path(&app_handle, &session_id)?;
+    if path.exists() {
+        std::fs::remove_file(&path).map_err(|e| format!("删除聊天会话失败: {}", e))?;
+    }
+    Ok(())
 }
 
 ///发送 AI 消息 (SSE 流式推送)

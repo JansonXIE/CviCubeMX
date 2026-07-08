@@ -163,7 +163,6 @@ export default function App() {
   const handleOnboardingComplete = async (path: string, chip: string) => {
     setSdkPath(path);
     setChipType(chip);
-    await initializeApp(path, chip);
     setIsOnboardingOpen(false);
   };
 
