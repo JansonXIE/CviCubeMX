@@ -1,5 +1,5 @@
-import { create } from 'zustand';
-import { invoke } from '@tauri-apps/api/core';
+import { create } from "zustand";
+import { invoke } from "@tauri-apps/api/core";
 
 export interface MemoryRegion {
   name: string;
@@ -21,7 +21,11 @@ interface MemoryState {
   loadMemoryRegions: () => Promise<void>;
   addRegion: (region: MemoryRegion) => void;
   removeRegion: (name: string) => void;
-  updateRegion: (name: string, updated: Partial<MemoryRegion>, chipType?: string) => void;
+  updateRegion: (
+    name: string,
+    updated: Partial<MemoryRegion>,
+    chipType?: string,
+  ) => void;
   validateMemory: () => Promise<string[]>;
   exportDefconfig: (sourcePath: string, chipType: string) => Promise<void>;
   exportMemoryJson: (path: string) => Promise<void>;
@@ -64,7 +68,7 @@ export const useMemoryStore = create<MemoryState>((set, get) => ({
   loadMemoryRegions: async () => {
     set({ isLoading: true, error: null, warnings: [] });
     try {
-      const list = await invoke<MemoryRegion[]>('load_memory_regions');
+      const list = await invoke<MemoryRegion[]>("load_memory_regions");
       set({ regions: list, isLoading: false });
     } catch (err) {
       set({ error: String(err), isLoading: false });
@@ -85,15 +89,31 @@ export const useMemoryStore = create<MemoryState>((set, get) => ({
     set({ regions: regions.filter((r) => r.name !== name) });
   },
 
-  updateRegion: (name: string, updated: Partial<MemoryRegion>, chipType?: string) => {
+  updateRegion: (
+    name: string,
+    updated: Partial<MemoryRegion>,
+    chipType?: string,
+  ) => {
     const { regions } = get();
 
-    // 1. 深拷贝当前的内存区域列表
+    const syncBootlogoToIonEnd = (list: MemoryRegion[], ionEnd: number) =>
+      list.map((r) => {
+        if (r.name === "BOOTLOGO") {
+          return {
+            ...r,
+            start_address: ionEnd - r.size,
+            end_address: ionEnd,
+          };
+        }
+        return r;
+      });
+
+    //1. 深拷贝当前的内存区域列表
     let newRegions = regions.map((r) => {
       if (r.name === name) {
         const nextReg = { ...r, ...updated };
         // 普通区域在修改 start 或 size 时，自动级联重算 end_address
-        if (name !== "ION" && name !== "RTOS_ION") {
+        if (name !== "ION" && name !== "RTOS_ION" && name !== "BOOTLOGO") {
           nextReg.end_address = nextReg.start_address + nextReg.size;
         }
         return nextReg;
@@ -105,25 +125,32 @@ export const useMemoryStore = create<MemoryState>((set, get) => ({
     if (!target) return;
 
     const baseAddr = MEMORY_BASE_ADDRESS;
-    // DRAM 末尾边界随芯片型号变化：cv1841=128M / cv1842=256M / cv1843=512M
-    // 未指定芯片时回退默认 256M，保持历史行为不变
+    // DRAM末尾边界随芯片型号变化：cv1841=128M / cv1842=256M / cv1843=512M
+    // 未指定芯片时回退默认256M，保持历史行为不变
     const dramSize = getDramSizeByChip(chipType);
-    const endBoundary = baseAddr + dramSize; // RTOS_ION 钉死的 DDR 末尾
+    const endBoundary = baseAddr + dramSize; // RTOS_ION 钉死的 DDR末尾
 
-    // 2. 级联联动计算 (对照 memoryconfig.cpp 逻辑)
+    //2.级联联动计算 (对照 memoryconfig.cpp逻辑)
     if (name === "ION") {
-      // ION 区域：End Address 基于 RTOS_ION 的 Start Address；如果没有则默认为 256M边界 - 96M
+      // ION 区域：End Address 基于 RTOS_ION 的 Start Address；如果没有则默认为256M边界 -96M
       const rtosIon = newRegions.find((r) => r.name === "RTOS_ION");
       if (rtosIon) {
         target.end_address = rtosIon.start_address;
       } else {
         target.end_address = endBoundary - 96 * 1024 * 1024;
       }
-      // 计算新的起始地址
+      //计算新的起始地址
       target.start_address = target.end_address - target.size;
 
-      // H26X_BITSTREAM、H26X_ENC_BUFF、ISP_MEM_BASE 区域与 ION 共享起始物理地址
-      const relatedRegions = ["H26X_BITSTREAM", "H26X_ENC_BUFF", "ISP_MEM_BASE"];
+      // BOOTLOGO 位于 ION 尾部，end 与 ION end 保持一致
+      newRegions = syncBootlogoToIonEnd(newRegions, target.end_address);
+
+      // H26X_BITSTREAM、H26X_ENC_BUFF、ISP_MEM_BASE 区域与 ION共享起始物理地址
+      const relatedRegions = [
+        "H26X_BITSTREAM",
+        "H26X_ENC_BUFF",
+        "ISP_MEM_BASE",
+      ];
       newRegions = newRegions.map((r) => {
         if (relatedRegions.includes(r.name)) {
           const start = target.start_address;
@@ -136,11 +163,11 @@ export const useMemoryStore = create<MemoryState>((set, get) => ({
         return r;
       });
     } else if (name === "RTOS_ION") {
-      // RTOS_ION 区域：结束物理地址固定在 256M 边界，起始物理地址向前调整
+      // RTOS_ION 区域：结束物理地址固定在256M 边界，起始物理地址向前调整
       target.end_address = endBoundary;
       target.start_address = target.end_address - target.size;
 
-      // 当 RTOS_ION 大小改变时，需要调整 ION 及其级联子区域的地址
+      // 当 RTOS_ION 大小改变时，需要调整 ION及其级联子区域的地址
       const newIonEndAddress = target.start_address;
 
       newRegions = newRegions.map((r) => {
@@ -158,7 +185,13 @@ export const useMemoryStore = create<MemoryState>((set, get) => ({
       // 同步获取更新后的 ION 起始地址，并将 H26X_BITSTREAM、H26X_ENC_BUFF、ISP_MEM_BASE 与其同步对齐
       const updatedIon = newRegions.find((r) => r.name === "ION");
       if (updatedIon) {
-        const relatedRegions = ["H26X_BITSTREAM", "H26X_ENC_BUFF", "ISP_MEM_BASE"];
+        newRegions = syncBootlogoToIonEnd(newRegions, updatedIon.end_address);
+
+        const relatedRegions = [
+          "H26X_BITSTREAM",
+          "H26X_ENC_BUFF",
+          "ISP_MEM_BASE",
+        ];
         newRegions = newRegions.map((r) => {
           if (relatedRegions.includes(r.name)) {
             const start = updatedIon.start_address;
@@ -171,6 +204,14 @@ export const useMemoryStore = create<MemoryState>((set, get) => ({
           return r;
         });
       }
+    } else if (name === "BOOTLOGO") {
+      const ion = newRegions.find((r) => r.name === "ION");
+      if (ion) {
+        target.end_address = ion.end_address;
+        target.start_address = target.end_address - target.size;
+      } else {
+        target.end_address = target.start_address + target.size;
+      }
     }
 
     set({ regions: newRegions });
@@ -180,7 +221,9 @@ export const useMemoryStore = create<MemoryState>((set, get) => ({
     set({ isLoading: true, error: null, warnings: [] });
     try {
       // 后端返回重叠警告列表（信息性，不代表失败）；硬错误会以异常形式抛出
-      const warnings = await invoke<string[]>('validate_memory', { regions: get().regions });
+      const warnings = await invoke<string[]>("validate_memory", {
+        regions: get().regions,
+      });
       set({ isLoading: false, warnings });
       return warnings;
     } catch (err) {
@@ -192,7 +235,7 @@ export const useMemoryStore = create<MemoryState>((set, get) => ({
   exportDefconfig: async (sourcePath: string, chipType: string) => {
     set({ isLoading: true, error: null });
     try {
-      await invoke('export_memory_defconfig', {
+      await invoke("export_memory_defconfig", {
         regions: get().regions,
         sourcePath,
         chipType,
@@ -207,7 +250,7 @@ export const useMemoryStore = create<MemoryState>((set, get) => ({
   exportMemoryJson: async (path: string) => {
     set({ isLoading: true, error: null });
     try {
-      await invoke('export_memory_json', {
+      await invoke("export_memory_json", {
         regions: get().regions,
         path,
       });
